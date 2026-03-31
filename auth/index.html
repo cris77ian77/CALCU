@@ -848,7 +848,7 @@
         nombre, apellido, telefono, provincia,
         cuit: cuit || null, perfil,
       });
-      window.location.replace('/');
+      window.location.replace('../index.html');
     } catch(err) {
       showAlert('#completar-error', tradError(err), 'error');
       setLoading(btn, false);
@@ -872,7 +872,7 @@
         $('#panel-completar').classList.add('active');
       } else {
         // Sesión activa normal → redirigir al simulador
-        window.location.replace('/');
+        window.location.replace('../index.html');
       }
       return;
     } else {

@@ -10,7 +10,7 @@
   import { getAuth, signOut }                                         from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
   import { getFirestore, collection, addDoc, doc, updateDoc, getDoc,
            serverTimestamp }                                          from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
-  import { firebaseConfig }                                           from '/auth/firebase-config.js';
+  import { firebaseConfig }                                           from './auth/firebase-config.js';
 
   const app  = getApps().length ? getApp() : initializeApp(firebaseConfig);
   const auth = getAuth(app);
@@ -18,7 +18,7 @@
 
   auth.authStateReady().then(async () => {
     const user = auth.currentUser;
-    if (!user) { window.location.replace('/auth/'); return; }
+    if (!user) { window.location.replace('./auth/index.html'); return; }
 
     // Verificar que el usuario tenga perfil completo en Firestore
     try {
@@ -26,7 +26,7 @@
       const data = snap.data();
       // Si no existe el doc, o no tiene nombre Y no es admin → completar perfil
       if (!snap.exists() || (!data?.nombre && data?.rol !== 'admin')) {
-        window.location.replace('/auth/?completar=1');
+        window.location.replace('./auth/index.html?completar=1');
         return;
       }
     } catch(e) {
@@ -104,7 +104,7 @@
   // Botón cerrar sesión
   document.getElementById('btn-logout-top').addEventListener('click', async () => {
     await signOut(auth);
-    window.location.replace('/auth/');
+    window.location.replace('./auth/index.html');
   });
 </script>
 <!-- ─────────────────────────────────────────────────────── -->
