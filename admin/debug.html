@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Debug Firebase</title>
+<style>
+  body { font-family: monospace; padding: 2rem; background: #0f172a; color: #e2e8f0; }
+  h2 { color: #38bdf8; margin-bottom: 1rem; }
+  .box { background: #1e293b; border-radius: .5rem; padding: 1rem; margin-bottom: 1rem; }
+  .ok   { color: #4ade80; }
+  .err  { color: #f87171; }
+  .info { color: #fbbf24; }
+  pre { white-space: pre-wrap; word-break: break-all; font-size: .85rem; }
+  button {
+    background: #0ea5e9; color: #fff; border: none; border-radius: .4rem;
+    padding: .5rem 1.2rem; font-size: 1rem; cursor: pointer; margin-bottom: 1.5rem;
+  }
+</style>
+</head>
+<body>
+<h2>🔍 Diagnóstico Firebase</h2>
+<button onclick="runDebug()">▶ Ejecutar diagnóstico</button>
+<div id="out"></div>
+
+<script type="module">
+import { initializeApp }    from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js';
+import { getAuth, onAuthStateChanged, signInWithEmailAndPassword }
+                             from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
+import { getFirestore, collection, getDocs, doc, getDoc }
+                             from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
+import { firebaseConfig }   from '/auth/firebase-config.js';
+
+const app  = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db   = getFirestore(app);
+
+function log(msg, tipo = 'info') {
+  const out = document.getElementById('out');
+  const div = document.createElement('div');
+  div.className = 'box';
+  div.innerHTML = `<pre class="${tipo}">${msg}</pre>`;
+  out.appendChild(div);
+}
+
+window.runDebug = async function() {
+  document.getElementById('out').innerHTML = '';
+
+  // 1. Config
+  log(`✅ firebaseConfig cargado\n   projectId: ${firebaseConfig.projectId}`, 'ok');
+
+  // 2. Auth state
+  const user = auth.currentUser;
+  if (user) {
+    log(`✅ Usuario logueado: ${user.email}\n   UID: ${user.uid}`, 'ok');
+  } else {
+    log(`⚠️  No hay usuario logueado en este momento.\n   Iniciá sesión en /admin/ primero.`, 'info');
+  }
+
+  // 3. Leer propio documento
+  if (user) {
+    try {
+      const snap = await getDoc(doc(db, 'usuarios', user.uid));
+      if (snap.exists()) {
+        log(`✅ Documento propio leído OK\n   Datos: ${JSON.stringify(snap.data(), null, 2)}`, 'ok');
+      } else {
+        log(`⚠️  Documento propio NO existe en /usuarios/${user.uid}`, 'info');
+      }
+    } catch(e) {
+      log(`❌ Error leyendo documento propio:\n   ${e.code}\n   ${e.message}`, 'err');
+    }
+
+    // 4. Leer colección completa
+    try {
+      const snap = await getDocs(collection(db, 'usuarios'));
+      log(`✅ Colección 'usuarios' leída OK\n   Documentos encontrados: ${snap.size}\n\n${
+        snap.docs.map(d => `  - ${d.id}: ${JSON.stringify(d.data()).slice(0,120)}...`).join('\n')
+      }`, 'ok');
+    } catch(e) {
+      log(`❌ Error leyendo colección 'usuarios':\n   Código: ${e.code}\n   Mensaje: ${e.message}\n\n   ➜ Esto confirma que las REGLAS de Firestore bloquean la lectura de todos los usuarios.`, 'err');
+    }
+
+    // 5. Leer colección sesiones
+    try {
+      const snap = await getDocs(collection(db, 'sesiones'));
+      log(`✅ Colección 'sesiones' leída OK\n   Sesiones encontradas: ${snap.size}`, 'ok');
+    } catch(e) {
+      log(`❌ Error leyendo colección 'sesiones':\n   ${e.code}: ${e.message}`, 'err');
+    }
+  }
+
+  log('─── Diagnóstico completo ───', 'info');
+}
+
+// Auto-ejecutar si hay usuario logueado
+auth.authStateReady().then(() => {
+  if (auth.currentUser) window.runDebug();
+});
+</script>
+</body>
+</html>

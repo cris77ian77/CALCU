@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Acceso · Portal de Hielo</title>
+  <style>
+    /* ── Reset & base ─────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #f0f4f8;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+      color: #1e293b;
+    }
+
+    /* ── Widget contenedor ────────────────────────────────────── */
+    #auth-widget {
+      background: #fff;
+      border-radius: 1rem;
+      box-shadow: 0 4px 24px rgba(0,0,0,.10);
+      width: 100%;
+      max-width: 480px;
+      overflow: hidden;
+    }
+
+    /* ── Cabecera ─────────────────────────────────────────────── */
+    .auth-header {
+      background: linear-gradient(135deg, #0ea5e9 0%, #0369a1 100%);
+      padding: 2rem 2rem 1.5rem;
+      text-align: center;
+      color: #fff;
+    }
+    .auth-header h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      letter-spacing: -.5px;
+    }
+    .auth-header p {
+      font-size: .875rem;
+      opacity: .85;
+      margin-top: .25rem;
+    }
+
+    /* ── Tabs ─────────────────────────────────────────────────── */
+    .auth-tabs {
+      display: flex;
+      border-bottom: 2px solid #e2e8f0;
+    }
+    .tab-btn {
+      flex: 1;
+      padding: .9rem;
+      border: none;
+      background: #f8fafc;
+      cursor: pointer;
+      font-size: .9rem;
+      font-weight: 600;
+      color: #64748b;
+      transition: color .2s, background .2s;
+    }
+    .tab-btn.active {
+      background: #fff;
+      color: #0369a1;
+      border-bottom: 2px solid #0369a1;
+      margin-bottom: -2px;
+    }
+    .tab-btn:hover:not(.active) { color: #334155; }
+
+    /* ── Cuerpo del formulario ────────────────────────────────── */
+    .auth-body { padding: 1.75rem 2rem 2rem; }
+
+    .panel { display: none; }
+    .panel.active { display: block; }
+
+    /* ── Grupos y filas ───────────────────────────────────────── */
+    .form-row {
+      display: grid;
+      gap: .75rem;
+      margin-bottom: .75rem;
+    }
+    .form-row.cols-2 { grid-template-columns: 1fr 1fr; }
+
+    .form-group { display: flex; flex-direction: column; gap: .35rem; }
+    .form-group label {
+      font-size: .78rem;
+      font-weight: 600;
+      color: #475569;
+      text-transform: uppercase;
+      letter-spacing: .4px;
+    }
+    .form-group label .opt {
+      font-weight: 400;
+      color: #94a3b8;
+      text-transform: none;
+      letter-spacing: 0;
+      font-size: .75rem;
+    }
+
+    /* ── Inputs ───────────────────────────────────────────────── */
+    input, select {
+      width: 100%;
+      padding: .65rem .85rem;
+      border: 1.5px solid #cbd5e1;
+      border-radius: .5rem;
+      font-size: .9rem;
+      color: #1e293b;
+      background: #fff;
+      outline: none;
+      transition: border-color .2s, box-shadow .2s;
+      appearance: none;
+    }
+    input:focus, select:focus {
+      border-color: #0ea5e9;
+      box-shadow: 0 0 0 3px rgba(14,165,233,.15);
+    }
+    input.error, select.error {
+      border-color: #ef4444;
+      box-shadow: 0 0 0 3px rgba(239,68,68,.12);
+    }
+    .field-error {
+      font-size: .75rem;
+      color: #dc2626;
+      margin-top: .15rem;
+    }
+
+    /* ── Selector de perfil (tarjetas) ───────────────────────── */
+    .perfil-group {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: .6rem;
+      margin-bottom: .75rem;
+    }
+    .perfil-card {
+      position: relative;
+      cursor: pointer;
+    }
+    .perfil-card input[type="radio"] {
+      position: absolute;
+      opacity: 0;
+      width: 0; height: 0;
+    }
+    .perfil-card span {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: .4rem;
+      padding: .75rem .5rem;
+      border: 1.5px solid #cbd5e1;
+      border-radius: .6rem;
+      text-align: center;
+      font-size: .72rem;
+      font-weight: 600;
+      color: #64748b;
+      line-height: 1.3;
+      transition: all .18s;
+      background: #f8fafc;
+      cursor: pointer;
+    }
+    .perfil-card span .icon { font-size: 1.4rem; }
+    .perfil-card input:checked + span {
+      border-color: #0ea5e9;
+      background: #eff8ff;
+      color: #0369a1;
+      box-shadow: 0 0 0 3px rgba(14,165,233,.15);
+    }
+    .perfil-card span:hover { border-color: #93c5fd; background: #f0f9ff; }
+
+    /* ── Password wrapper (ojo) ───────────────────────────────── */
+    .input-wrap { position: relative; }
+    .input-wrap input { padding-right: 2.6rem; }
+    .toggle-pw {
+      position: absolute;
+      right: .7rem;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: #94a3b8;
+      font-size: 1rem;
+      padding: 0;
+      line-height: 1;
+    }
+    .toggle-pw:hover { color: #475569; }
+
+    /* ── Botón principal ──────────────────────────────────────── */
+    .btn-primary {
+      width: 100%;
+      padding: .85rem;
+      background: linear-gradient(135deg, #0ea5e9, #0369a1);
+      color: #fff;
+      border: none;
+      border-radius: .6rem;
+      font-size: .95rem;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 1rem;
+      transition: opacity .2s, transform .1s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: .5rem;
+    }
+    .btn-primary:hover:not(:disabled) { opacity: .9; }
+    .btn-primary:active:not(:disabled) { transform: scale(.98); }
+    .btn-primary:disabled { opacity: .6; cursor: not-allowed; }
+
+    /* ── Botón secundario / link ──────────────────────────────── */
+    .btn-link {
+      background: none;
+      border: none;
+      color: #0369a1;
+      cursor: pointer;
+      font-size: .84rem;
+      font-weight: 600;
+      padding: 0;
+      text-decoration: underline;
+    }
+    .btn-link:hover { color: #0ea5e9; }
+
+    /* ── Alertas ──────────────────────────────────────────────── */
+    .alert {
+      padding: .75rem 1rem;
+      border-radius: .5rem;
+      font-size: .85rem;
+      margin-bottom: .9rem;
+      display: none;
+    }
+    .alert.show { display: flex; align-items: flex-start; gap: .5rem; }
+    .alert-error   { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+    .alert-success { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
+    .alert-info    { background: #eff8ff; color: #1e40af; border: 1px solid #bfdbfe; }
+
+    /* ── Olvidé mi contraseña ─────────────────────────────────── */
+    .forgot-wrap {
+      text-align: right;
+      margin-top: .35rem;
+      margin-bottom: .25rem;
+    }
+
+    /* ── Panel "sesión iniciada" ──────────────────────────────── */
+    #panel-sesion .user-card {
+      background: #f8fafc;
+      border: 1.5px solid #e2e8f0;
+      border-radius: .75rem;
+      padding: 1.25rem;
+      margin-bottom: 1rem;
+    }
+    .user-avatar {
+      width: 3rem; height: 3rem;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #0ea5e9, #0369a1);
+      color: #fff;
+      font-size: 1.25rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: .75rem;
+    }
+    .user-name { font-size: 1.1rem; font-weight: 700; color: #1e293b; }
+    .user-email { font-size: .82rem; color: #64748b; margin-bottom: .75rem; }
+    .user-meta {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: .4rem;
+    }
+    .user-meta-item { font-size: .8rem; color: #475569; }
+    .user-meta-item strong { display: block; color: #1e293b; font-size: .85rem; }
+
+    .badge-perfil {
+      display: inline-flex;
+      align-items: center;
+      gap: .35rem;
+      background: #eff8ff;
+      color: #0369a1;
+      border: 1px solid #bae6fd;
+      border-radius: 2rem;
+      padding: .2rem .7rem;
+      font-size: .78rem;
+      font-weight: 700;
+      margin-top: .6rem;
+    }
+
+    .btn-logout {
+      width: 100%;
+      padding: .75rem;
+      background: #fff;
+      color: #dc2626;
+      border: 1.5px solid #fca5a5;
+      border-radius: .6rem;
+      font-size: .9rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background .2s, color .2s;
+    }
+    .btn-logout:hover { background: #fef2f2; }
+
+    /* ── Spinner ──────────────────────────────────────────────── */
+    .spinner {
+      width: 1rem; height: 1rem;
+      border: 2px solid rgba(255,255,255,.4);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin .6s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Footer ───────────────────────────────────────────────── */
+    .auth-footer {
+      text-align: center;
+      padding: 1rem;
+      font-size: .78rem;
+      color: #94a3b8;
+      border-top: 1px solid #f1f5f9;
+    }
+
+    /* ── Responsive ───────────────────────────────────────────── */
+    @media (max-width: 420px) {
+      .auth-body { padding: 1.25rem 1.25rem 1.5rem; }
+      .form-row.cols-2 { grid-template-columns: 1fr; }
+      .perfil-group { grid-template-columns: 1fr; }
+      .perfil-card span { flex-direction: row; justify-content: flex-start; padding: .6rem .85rem; }
+    }
+  </style>
+</head>
+<body>
+
+<div id="auth-widget">
+
+  <!-- Cabecera -->
+  <div class="auth-header">
+    <h1>❄️ Portal de Hielo</h1>
+    <p>Ingresá o creá tu cuenta para continuar</p>
+  </div>
+
+  <!-- Tabs (ocultas cuando hay sesión) -->
+  <div class="auth-tabs" id="auth-tabs">
+    <button class="tab-btn active" data-tab="login">Iniciar sesión</button>
+    <button class="tab-btn"        data-tab="registro">Registrarse</button>
+  </div>
+
+  <!-- Cuerpo -->
+  <div class="auth-body">
+
+    <!-- ── PANEL LOGIN ────────────────────────────────────────── -->
+    <div id="panel-login" class="panel active">
+
+      <div class="alert alert-error" id="login-error"></div>
+      <div class="alert alert-success" id="login-success"></div>
+
+      <form id="form-login" novalidate>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="login-email">Correo electrónico</label>
+            <input type="email" id="login-email" placeholder="ejemplo@correo.com" autocomplete="email" />
+            <span class="field-error" id="err-login-email"></span>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="login-password">Contraseña</label>
+            <div class="input-wrap">
+              <input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password" />
+              <button type="button" class="toggle-pw" data-target="login-password" aria-label="Mostrar contraseña">👁</button>
+            </div>
+            <span class="field-error" id="err-login-password"></span>
+          </div>
+        </div>
+
+        <div class="forgot-wrap">
+          <button type="button" class="btn-link" id="btn-forgot">¿Olvidaste tu contraseña?</button>
+        </div>
+
+        <button type="submit" class="btn-primary" id="btn-login">
+          Ingresar
+        </button>
+
+      </form>
+    </div><!-- /panel-login -->
+
+    <!-- ── PANEL REGISTRO ─────────────────────────────────────── -->
+    <div id="panel-registro" class="panel">
+
+      <div class="alert alert-error" id="reg-error"></div>
+
+      <form id="form-registro" novalidate>
+
+        <!-- Nombre y Apellido -->
+        <div class="form-row cols-2">
+          <div class="form-group">
+            <label for="reg-nombre">Nombre</label>
+            <input type="text" id="reg-nombre" placeholder="Juan" autocomplete="given-name" />
+            <span class="field-error" id="err-reg-nombre"></span>
+          </div>
+          <div class="form-group">
+            <label for="reg-apellido">Apellido</label>
+            <input type="text" id="reg-apellido" placeholder="Pérez" autocomplete="family-name" />
+            <span class="field-error" id="err-reg-apellido"></span>
+          </div>
+        </div>
+
+        <!-- Email -->
+        <div class="form-row">
+          <div class="form-group">
+            <label for="reg-email">Correo electrónico</label>
+            <input type="email" id="reg-email" placeholder="ejemplo@correo.com" autocomplete="email" />
+            <span class="field-error" id="err-reg-email"></span>
+          </div>
+        </div>
+
+        <!-- Teléfono y Provincia -->
+        <div class="form-row cols-2">
+          <div class="form-group">
+            <label for="reg-telefono">Teléfono</label>
+            <input type="tel" id="reg-telefono" placeholder="+54 9 11 0000-0000" autocomplete="tel" />
+            <span class="field-error" id="err-reg-telefono"></span>
+          </div>
+          <div class="form-group">
+            <label for="reg-provincia">Provincia</label>
+            <select id="reg-provincia">
+              <option value="">Seleccionar…</option>
+            </select>
+            <span class="field-error" id="err-reg-provincia"></span>
+          </div>
+        </div>
+
+        <!-- CUIT -->
+        <div class="form-row">
+          <div class="form-group">
+            <label for="reg-cuit">CUIT <span class="opt">(opcional)</span></label>
+            <input type="text" id="reg-cuit" placeholder="20-12345678-9" maxlength="13" inputmode="numeric" />
+            <span class="field-error" id="err-reg-cuit"></span>
+          </div>
+        </div>
+
+        <!-- Perfil -->
+        <div class="form-group" style="margin-bottom:.6rem;">
+          <label>Perfil de uso</label>
+        </div>
+        <div class="perfil-group" id="perfil-group">
+          <label class="perfil-card">
+            <input type="radio" name="perfil" value="consumo_propio" />
+            <span><span class="icon">🏠</span>Consumo propio</span>
+          </label>
+          <label class="perfil-card">
+            <input type="radio" name="perfil" value="venta_negocio" />
+            <span><span class="icon">🏪</span>Venta en negocio</span>
+          </label>
+          <label class="perfil-card">
+            <input type="radio" name="perfil" value="distribucion_hielo" />
+            <span><span class="icon">🚚</span>Distribución de hielo</span>
+          </label>
+        </div>
+        <span class="field-error" id="err-perfil" style="display:block;margin-bottom:.6rem;"></span>
+
+        <!-- Contraseña -->
+        <div class="form-row cols-2">
+          <div class="form-group">
+            <label for="reg-password">Contraseña</label>
+            <div class="input-wrap">
+              <input type="password" id="reg-password" placeholder="••••••••" autocomplete="new-password" />
+              <button type="button" class="toggle-pw" data-target="reg-password" aria-label="Mostrar contraseña">👁</button>
+            </div>
+            <span class="field-error" id="err-reg-password"></span>
+          </div>
+          <div class="form-group">
+            <label for="reg-password2">Repetir contraseña</label>
+            <div class="input-wrap">
+              <input type="password" id="reg-password2" placeholder="••••••••" autocomplete="new-password" />
+              <button type="button" class="toggle-pw" data-target="reg-password2" aria-label="Mostrar contraseña">👁</button>
+            </div>
+            <span class="field-error" id="err-reg-password2"></span>
+          </div>
+        </div>
+
+        <button type="submit" class="btn-primary" id="btn-registro">
+          Crear cuenta
+        </button>
+
+      </form>
+    </div><!-- /panel-registro -->
+
+    <!-- ── PANEL SESIÓN INICIADA ──────────────────────────────── -->
+    <div id="panel-sesion" class="panel">
+      <div class="user-card" id="user-card">
+        <div class="user-avatar" id="user-avatar">?</div>
+        <div class="user-name"  id="user-name">Cargando…</div>
+        <div class="user-email" id="user-email"></div>
+        <div class="user-meta"  id="user-meta"></div>
+      </div>
+      <button class="btn-logout" id="btn-logout">Cerrar sesión</button>
+    </div>
+
+    <!-- ── PANEL COMPLETAR PERFIL ─────────────────────────────── -->
+    <div id="panel-completar" class="panel">
+      <div class="alert alert-info show">
+        ℹ️ Para acceder al simulador, completá tu perfil.
+      </div>
+      <p style="font-size:.82rem;color:#64748b;margin:.75rem 0 1rem">
+        Cuenta: <strong id="completar-email">—</strong>
+      </p>
+
+      <div class="alert alert-error" id="completar-error"></div>
+
+      <form id="form-completar" novalidate>
+        <div class="form-row cols-2">
+          <div class="form-group">
+            <label for="comp-nombre">Nombre</label>
+            <input type="text" id="comp-nombre" placeholder="Juan" autocomplete="given-name" />
+            <span class="field-error" id="err-comp-nombre"></span>
+          </div>
+          <div class="form-group">
+            <label for="comp-apellido">Apellido</label>
+            <input type="text" id="comp-apellido" placeholder="Pérez" autocomplete="family-name" />
+            <span class="field-error" id="err-comp-apellido"></span>
+          </div>
+        </div>
+        <div class="form-row cols-2">
+          <div class="form-group">
+            <label for="comp-telefono">Teléfono</label>
+            <input type="tel" id="comp-telefono" placeholder="+54 9 11 0000-0000" />
+            <span class="field-error" id="err-comp-telefono"></span>
+          </div>
+          <div class="form-group">
+            <label for="comp-provincia">Provincia</label>
+            <select id="comp-provincia">
+              <option value="">Seleccionar…</option>
+            </select>
+            <span class="field-error" id="err-comp-provincia"></span>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="comp-cuit">CUIT <span class="opt">(opcional)</span></label>
+            <input type="text" id="comp-cuit" placeholder="20-12345678-9" maxlength="13" inputmode="numeric" />
+            <span class="field-error" id="err-comp-cuit"></span>
+          </div>
+        </div>
+        <div class="form-group" style="margin-bottom:.6rem;">
+          <label>Perfil de uso</label>
+        </div>
+        <div class="perfil-group">
+          <label class="perfil-card">
+            <input type="radio" name="comp-perfil" value="consumo_propio" />
+            <span><span class="icon">🏠</span>Consumo propio</span>
+          </label>
+          <label class="perfil-card">
+            <input type="radio" name="comp-perfil" value="venta_negocio" />
+            <span><span class="icon">🏪</span>Venta en negocio</span>
+          </label>
+          <label class="perfil-card">
+            <input type="radio" name="comp-perfil" value="distribucion_hielo" />
+            <span><span class="icon">🚚</span>Distribución de hielo</span>
+          </label>
+        </div>
+        <span class="field-error" id="err-comp-perfil" style="display:block;margin-bottom:.6rem;"></span>
+        <button type="submit" class="btn-primary" id="btn-completar">
+          Guardar y continuar →
+        </button>
+      </form>
+    </div>
+
+  </div><!-- /auth-body -->
+
+  <div class="auth-footer">
+    Tus datos están protegidos · <a href="#" style="color:#94a3b8">Privacidad</a>
+  </div>
+
+</div><!-- /auth-widget -->
+
+
+<script type="module">
+  import {
+    PROVINCIAS, PERFILES,
+    validarCuit, formatearCuit,
+    registrar, login, cerrarSesion,
+    recuperarPassword, obtenerDatosUsuario,
+    completarPerfil, onAuthChange
+  } from './auth.js';
+
+  // ── Utilidades DOM ────────────────────────────────────────────
+  const $  = (sel) => document.querySelector(sel);
+  const $$ = (sel) => document.querySelectorAll(sel);
+
+  function showAlert(id, msg, tipo = 'error') {
+    const el = $(id);
+    el.className = `alert alert-${tipo} show`;
+    el.innerHTML = (tipo === 'error' ? '⚠️ ' : tipo === 'success' ? '✅ ' : 'ℹ️ ') + msg;
+  }
+  function hideAlert(id) {
+    const el = $(id);
+    el.className = 'alert';
+    el.textContent = '';
+  }
+  function setFieldError(id, msg) {
+    const el = $(id);
+    if (el) { el.textContent = msg; el.style.display = msg ? 'block' : 'none'; }
+  }
+  function setInputError(input, msg) {
+    if (msg) input.classList.add('error');
+    else      input.classList.remove('error');
+  }
+  function clearErrors(...ids) {
+    ids.forEach(id => { setFieldError(id, ''); const el = $(id.replace('err-','#').replace('err-',''));  });
+    $$('.error').forEach(el => el.classList.remove('error'));
+    $$('.field-error').forEach(el => { el.textContent = ''; el.style.display = 'none'; });
+  }
+  function setLoading(btn, loading) {
+    if (loading) {
+      btn.disabled = true;
+      btn.dataset.orig = btn.innerHTML;
+      btn.innerHTML = '<span class="spinner"></span> Procesando…';
+    } else {
+      btn.disabled = false;
+      btn.innerHTML = btn.dataset.orig || btn.innerHTML;
+    }
+  }
+
+  // ── Poblar provincias (registro y completar perfil) ──────────
+  PROVINCIAS.forEach(p => {
+    ['#reg-provincia', '#comp-provincia'].forEach(sel => {
+      const opt = document.createElement('option');
+      opt.value = p; opt.textContent = p;
+      $(sel).appendChild(opt);
+    });
+  });
+
+  // ── Tabs ──────────────────────────────────────────────────────
+  $$('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      $$('.tab-btn').forEach(b => b.classList.remove('active'));
+      $$('.panel').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      $(`#panel-${btn.dataset.tab}`).classList.add('active');
+      hideAlert('#login-error');
+      hideAlert('#login-success');
+      hideAlert('#reg-error');
+      clearErrors();
+    });
+  });
+
+  // ── Toggle mostrar/ocultar contraseña ─────────────────────────
+  $$('.toggle-pw').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const input = $(`#${btn.dataset.target}`);
+      input.type = input.type === 'password' ? 'text' : 'password';
+      btn.textContent = input.type === 'password' ? '👁' : '🙈';
+    });
+  });
+
+  // ── Formatear CUIT en tiempo real (registro y completar) ─────
+  ['#reg-cuit', '#comp-cuit'].forEach(id => {
+    $(id).addEventListener('input', function() {
+      const pos = this.selectionStart;
+      this.value = formatearCuit(this.value);
+      try { this.setSelectionRange(pos, pos); } catch(_) {}
+    });
+  });
+
+  // ── Mensajes de error Firebase → español ─────────────────────
+  const erroresFirebase = {
+    'auth/email-already-in-use'  : 'Este correo ya está registrado.',
+    'auth/invalid-email'         : 'El correo electrónico no es válido.',
+    'auth/weak-password'         : 'La contraseña debe tener al menos 6 caracteres.',
+    'auth/user-not-found'        : 'No existe una cuenta con ese correo.',
+    'auth/wrong-password'        : 'La contraseña es incorrecta.',
+    'auth/invalid-credential'    : 'Correo o contraseña incorrectos.',
+    'auth/too-many-requests'     : 'Demasiados intentos fallidos. Intentá más tarde.',
+    'auth/network-request-failed': 'Error de conexión. Verificá tu internet.',
+  };
+  function tradError(err) {
+    return erroresFirebase[err.code] || err.message || 'Error inesperado.';
+  }
+
+  // ── FORMULARIO LOGIN ──────────────────────────────────────────
+  $('#form-login').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    hideAlert('#login-error');
+    hideAlert('#login-success');
+    clearErrors();
+
+    const email    = $('#login-email').value.trim();
+    const password = $('#login-password').value;
+    let ok = true;
+
+    if (!email) {
+      setFieldError('#err-login-email', 'Ingresá tu correo.');
+      setInputError($('#login-email'), true); ok = false;
+    }
+    if (!password) {
+      setFieldError('#err-login-password', 'Ingresá tu contraseña.');
+      setInputError($('#login-password'), true); ok = false;
+    }
+    if (!ok) return;
+
+    const btn = $('#btn-login');
+    setLoading(btn, true);
+    try {
+      await login(email, password);
+      // onAuthChange se encarga de mostrar el panel de sesión
+    } catch(err) {
+      showAlert('#login-error', tradError(err), 'error');
+      setLoading(btn, false);
+    }
+  });
+
+  // ── Recuperar contraseña ──────────────────────────────────────
+  $('#btn-forgot').addEventListener('click', async () => {
+    const email = $('#login-email').value.trim();
+    if (!email) {
+      setFieldError('#err-login-email', 'Ingresá tu correo para recuperar la contraseña.');
+      setInputError($('#login-email'), true);
+      return;
+    }
+    try {
+      await recuperarPassword(email);
+      showAlert('#login-success', 'Te enviamos un correo para restablecer tu contraseña.', 'success');
+    } catch(err) {
+      showAlert('#login-error', tradError(err), 'error');
+    }
+  });
+
+  // ── FORMULARIO REGISTRO ───────────────────────────────────────
+  $('#form-registro').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    clearErrors();
+    hideAlert('#reg-error');
+
+    const nombre    = $('#reg-nombre').value.trim();
+    const apellido  = $('#reg-apellido').value.trim();
+    const email     = $('#reg-email').value.trim();
+    const telefono  = $('#reg-telefono').value.trim();
+    const provincia = $('#reg-provincia').value;
+    const cuit      = $('#reg-cuit').value.trim();
+    const perfil    = document.querySelector('input[name="perfil"]:checked')?.value;
+    const password  = $('#reg-password').value;
+    const password2 = $('#reg-password2').value;
+
+    let ok = true;
+
+    const req = (val, errId, inputId, msg) => {
+      if (!val) { setFieldError(errId, msg); setInputError($(inputId), true); ok = false; }
+    };
+
+    req(nombre,    '#err-reg-nombre',    '#reg-nombre',    'Ingresá tu nombre.');
+    req(apellido,  '#err-reg-apellido',  '#reg-apellido',  'Ingresá tu apellido.');
+    req(email,     '#err-reg-email',     '#reg-email',     'Ingresá tu correo.');
+    req(telefono,  '#err-reg-telefono',  '#reg-telefono',  'Ingresá tu teléfono.');
+    req(provincia, '#err-reg-provincia', '#reg-provincia', 'Seleccioná una provincia.');
+
+    if (cuit && !validarCuit(cuit)) {
+      setFieldError('#err-reg-cuit', 'El CUIT ingresado no es válido.');
+      setInputError($('#reg-cuit'), true); ok = false;
+    }
+
+    if (!perfil) {
+      setFieldError('#err-perfil', 'Seleccioná un perfil de uso.'); ok = false;
+    }
+
+    if (!password) {
+      setFieldError('#err-reg-password', 'Ingresá una contraseña.');
+      setInputError($('#reg-password'), true); ok = false;
+    } else if (password.length < 6) {
+      setFieldError('#err-reg-password', 'Mínimo 6 caracteres.');
+      setInputError($('#reg-password'), true); ok = false;
+    }
+
+    if (!password2) {
+      setFieldError('#err-reg-password2', 'Repetí la contraseña.');
+      setInputError($('#reg-password2'), true); ok = false;
+    } else if (password !== password2) {
+      setFieldError('#err-reg-password2', 'Las contraseñas no coinciden.');
+      setInputError($('#reg-password2'), true); ok = false;
+    }
+
+    if (!ok) return;
+
+    const btn = $('#btn-registro');
+    setLoading(btn, true);
+    try {
+      await registrar({ nombre, apellido, email, telefono, provincia, cuit, perfil, password });
+      // onAuthChange mostrará el panel de sesión automáticamente
+    } catch(err) {
+      showAlert('#reg-error', tradError(err), 'error');
+      setLoading(btn, false);
+    }
+  });
+
+  // ── Cerrar sesión ─────────────────────────────────────────────
+  $('#btn-logout').addEventListener('click', async () => {
+    await cerrarSesion();
+  });
+
+  // ── Etiquetas de perfil ───────────────────────────────────────
+  const labelPerfil = {
+    consumo_propio:     '🏠 Consumo propio',
+    venta_negocio:      '🏪 Venta en negocio',
+    distribucion_hielo: '🚚 Distribución de hielo',
+  };
+
+  // ── Referencia al usuario actual (usada por form-completar) ───
+  let currentUser = null;
+
+  // ── FORMULARIO COMPLETAR PERFIL ───────────────────────────────
+  $('#form-completar').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    clearErrors();
+    hideAlert('#completar-error');
+
+    const nombre    = $('#comp-nombre').value.trim();
+    const apellido  = $('#comp-apellido').value.trim();
+    const telefono  = $('#comp-telefono').value.trim();
+    const provincia = $('#comp-provincia').value;
+    const cuit      = $('#comp-cuit').value.trim();
+    const perfil    = document.querySelector('input[name="comp-perfil"]:checked')?.value;
+    let ok = true;
+
+    const req = (val, errId, inputId, msg) => {
+      if (!val) { setFieldError(errId, msg); setInputError($(inputId), true); ok = false; }
+    };
+    req(nombre,    '#err-comp-nombre',    '#comp-nombre',    'Ingresá tu nombre.');
+    req(apellido,  '#err-comp-apellido',  '#comp-apellido',  'Ingresá tu apellido.');
+    req(telefono,  '#err-comp-telefono',  '#comp-telefono',  'Ingresá tu teléfono.');
+    req(provincia, '#err-comp-provincia', '#comp-provincia', 'Seleccioná una provincia.');
+
+    if (cuit && !validarCuit(cuit)) {
+      setFieldError('#err-comp-cuit', 'El CUIT ingresado no es válido.');
+      setInputError($('#comp-cuit'), true); ok = false;
+    }
+    if (!perfil) {
+      setFieldError('#err-comp-perfil', 'Seleccioná un perfil de uso.'); ok = false;
+    }
+    if (!ok || !currentUser) return;
+
+    const btn = $('#btn-completar');
+    setLoading(btn, true);
+    try {
+      await completarPerfil(currentUser.uid, currentUser.email, {
+        nombre, apellido, telefono, provincia,
+        cuit: cuit || null, perfil,
+      });
+      window.location.replace('/');
+    } catch(err) {
+      showAlert('#completar-error', tradError(err), 'error');
+      setLoading(btn, false);
+    }
+  });
+
+  // ── Observador de autenticación ───────────────────────────────
+  onAuthChange(async (user) => {
+    const tabs = $('#auth-tabs');
+    const completar = new URLSearchParams(window.location.search).get('completar') === '1';
+
+    $$('.panel').forEach(p => p.classList.remove('active'));
+    $$('.tab-btn').forEach(b => b.classList.remove('active'));
+
+    if (user) {
+      currentUser = user;
+      if (completar) {
+        // Mostrar formulario de completar perfil
+        tabs.style.display = 'none';
+        $('#completar-email').textContent = user.email;
+        $('#panel-completar').classList.add('active');
+      } else {
+        // Sesión activa normal → redirigir al simulador
+        window.location.replace('/');
+      }
+      return;
+    } else {
+      // Sin sesión: mostrar tabs y login por defecto
+      currentUser = null;
+      tabs.style.display = '';
+      $('[data-tab="login"]')?.classList.add('active');
+      $('#panel-login').classList.add('active');
+    }
+  });
+</script>
+
+</body>
+</html>

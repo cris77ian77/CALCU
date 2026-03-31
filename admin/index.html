@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Panel Admin · Fábrica de Hielo</title>
+
+<!-- SheetJS para exportar Excel -->
+<script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+
+<style>
+/* ── Reset ─────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', system-ui, sans-serif; background: #f0f4f8; color: #1e293b; font-size: 14px; }
+
+/* ── Login ─────────────────────────────────────────────────── */
+#section-login {
+  min-height: 100vh; display: flex; align-items: center;
+  justify-content: center; padding: 1.5rem;
+  background: linear-gradient(135deg, #0d3b66 0%, #1a6fa8 100%);
+}
+.login-card {
+  background: #fff; border-radius: 1rem; padding: 2.5rem 2rem;
+  width: 100%; max-width: 380px;
+  box-shadow: 0 8px 40px rgba(0,0,0,.25);
+}
+.login-card .logo { text-align: center; margin-bottom: 1.5rem; }
+.login-card .logo h1 { font-size: 1.3rem; font-weight: 800; color: #0d3b66; }
+.login-card .logo p  { font-size: .8rem; color: #64748b; margin-top: .25rem; }
+.login-card .badge-admin {
+  display: inline-block; background: #fef3c7; color: #92400e;
+  border: 1px solid #fcd34d; border-radius: 20px;
+  padding: 2px 10px; font-size: .72rem; font-weight: 700; margin-top: .4rem;
+}
+.lf-group { display: flex; flex-direction: column; gap: .4rem; margin-bottom: .9rem; }
+.lf-group label { font-size: .78rem; font-weight: 600; color: #475569; text-transform: uppercase; letter-spacing: .3px; }
+.lf-group input {
+  padding: .65rem .85rem; border: 1.5px solid #cbd5e1; border-radius: .5rem;
+  font-size: .9rem; outline: none; transition: border-color .2s;
+}
+.lf-group input:focus { border-color: #0ea5e9; box-shadow: 0 0 0 3px rgba(14,165,233,.15); }
+.lf-group input.err { border-color: #ef4444; }
+.lf-error { font-size: .78rem; color: #dc2626; margin-top: .2rem; display: none; }
+.lf-error.show { display: block; }
+.btn-admin-login {
+  width: 100%; padding: .85rem; background: linear-gradient(135deg, #0ea5e9, #0369a1);
+  color: #fff; border: none; border-radius: .6rem; font-size: .95rem;
+  font-weight: 700; cursor: pointer; transition: opacity .2s;
+}
+.btn-admin-login:hover { opacity: .9; }
+.btn-admin-login:disabled { opacity: .6; cursor: not-allowed; }
+
+/* ── Header ────────────────────────────────────────────────── */
+#section-panel { display: none; min-height: 100vh; }
+.admin-header {
+  background: linear-gradient(135deg, #0d3b66 0%, #1a6fa8 100%);
+  color: #fff; padding: 1rem 2rem;
+  display: flex; align-items: center; gap: 1rem;
+}
+.admin-header h1 { font-size: 1.15rem; font-weight: 800; }
+.admin-header p  { font-size: .78rem; opacity: .75; }
+.admin-badge {
+  background: #fef3c7; color: #92400e; border: 1px solid #fcd34d;
+  border-radius: 20px; padding: 2px 10px; font-size: .72rem; font-weight: 700;
+}
+.header-right-admin { margin-left: auto; display: flex; align-items: center; gap: .75rem; }
+.admin-email { font-size: .8rem; opacity: .85; }
+.btn-logout-admin {
+  background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.3);
+  color: #fff; border-radius: 20px; padding: 5px 14px;
+  font-size: .8rem; font-weight: 700; cursor: pointer; transition: background .2s;
+}
+.btn-logout-admin:hover { background: rgba(255,255,255,.25); }
+
+/* ── Main content ──────────────────────────────────────────── */
+.admin-main { max-width: 1400px; margin: 0 auto; padding: 1.5rem 1.25rem; }
+
+/* ── Stats cards ───────────────────────────────────────────── */
+.stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
+@media(max-width: 900px) { .stats-grid { grid-template-columns: repeat(2,1fr); } }
+@media(max-width: 500px) { .stats-grid { grid-template-columns: 1fr; } }
+.stat-card {
+  background: #fff; border-radius: .75rem; padding: 1.1rem 1.25rem;
+  box-shadow: 0 1px 6px rgba(0,0,0,.07); border-left: 4px solid #0ea5e9;
+}
+.stat-card.hot  { border-color: #ef4444; }
+.stat-card.warm { border-color: #f59e0b; }
+.stat-card.cold { border-color: #64748b; }
+.stat-card .sc-label { font-size: .72rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: .4px; }
+.stat-card .sc-val   { font-size: 2rem; font-weight: 800; color: #0d3b66; line-height: 1.1; margin-top: .25rem; }
+.stat-card .sc-sub   { font-size: .75rem; color: #94a3b8; margin-top: .2rem; }
+
+/* ── Toolbar ───────────────────────────────────────────────── */
+.toolbar {
+  display: flex; align-items: center; gap: .75rem;
+  margin-bottom: 1rem; flex-wrap: wrap;
+}
+.toolbar h2 { font-size: .95rem; font-weight: 800; color: #0d3b66; flex: 1; }
+.search-box {
+  display: flex; align-items: center; gap: .4rem;
+  background: #fff; border: 1.5px solid #cbd5e1; border-radius: .5rem;
+  padding: .45rem .75rem; font-size: .85rem;
+}
+.search-box input { border: none; outline: none; width: 200px; font-size: .85rem; color: #1e293b; }
+.filter-select {
+  padding: .45rem .75rem; border: 1.5px solid #cbd5e1; border-radius: .5rem;
+  font-size: .85rem; outline: none; background: #fff; color: #1e293b; cursor: pointer;
+}
+.btn-export {
+  display: flex; align-items: center; gap: .4rem;
+  padding: .55rem 1rem; background: #16a34a; color: #fff;
+  border: none; border-radius: .5rem; font-size: .85rem; font-weight: 700;
+  cursor: pointer; transition: opacity .2s;
+}
+.btn-export:hover { opacity: .88; }
+.btn-refresh {
+  padding: .55rem .85rem; background: #f1f5f9; border: 1.5px solid #cbd5e1;
+  border-radius: .5rem; font-size: .85rem; cursor: pointer; transition: background .2s;
+}
+.btn-refresh:hover { background: #e2e8f0; }
+
+/* ── Table ─────────────────────────────────────────────────── */
+.table-wrap {
+  background: #fff; border-radius: .75rem;
+  box-shadow: 0 1px 6px rgba(0,0,0,.07); overflow: hidden;
+}
+table { width: 100%; border-collapse: collapse; }
+thead { background: #f8fafc; }
+th {
+  padding: .75rem 1rem; text-align: left; font-size: .72rem;
+  font-weight: 700; color: #64748b; text-transform: uppercase;
+  letter-spacing: .4px; border-bottom: 2px solid #e2e8f0;
+  cursor: pointer; white-space: nowrap; user-select: none;
+}
+th:hover { color: #0369a1; }
+th .sort-icon { margin-left: .3rem; opacity: .4; }
+th.sorted .sort-icon { opacity: 1; color: #0369a1; }
+td {
+  padding: .7rem 1rem; border-bottom: 1px solid #f1f5f9;
+  font-size: .84rem; color: #334155; vertical-align: middle;
+}
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: #f8fafc; }
+.td-name { font-weight: 700; color: #0d3b66; }
+.td-email { color: #64748b; font-size: .78rem; }
+
+/* ── Badges ────────────────────────────────────────────────── */
+.badge-perfil {
+  display: inline-block; border-radius: 20px; padding: 2px 9px;
+  font-size: .72rem; font-weight: 700; white-space: nowrap;
+}
+.bp-consumo  { background: #eff8ff; color: #0369a1; border: 1px solid #bae6fd; }
+.bp-negocio  { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
+.bp-distrib  { background: #fefce8; color: #854d0e; border: 1px solid #fde68a; }
+
+.badge-temp {
+  display: inline-flex; align-items: center; gap: .3rem;
+  border-radius: 20px; padding: 3px 10px; font-size: .75rem; font-weight: 700;
+}
+.bt-hot  { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+.bt-warm { background: #fffbeb; color: #d97706; border: 1px solid #fde68a; }
+.bt-cold { background: #f1f5f9; color: #64748b; border: 1px solid #cbd5e1; }
+
+/* ── Botón ver detalle ─────────────────────────────────────── */
+.btn-ver {
+  padding: 4px 12px; background: #eff8ff; color: #0369a1;
+  border: 1px solid #bae6fd; border-radius: 20px;
+  font-size: .78rem; font-weight: 700; cursor: pointer; transition: all .15s;
+}
+.btn-ver:hover { background: #0369a1; color: #fff; }
+
+/* ── Empty / Loading ───────────────────────────────────────── */
+.table-msg {
+  text-align: center; padding: 3rem; color: #94a3b8;
+  font-size: .9rem;
+}
+.spinner-wrap { display: flex; justify-content: center; padding: 3rem; }
+.spinner {
+  width: 2rem; height: 2rem; border: 3px solid #e2e8f0;
+  border-top-color: #0ea5e9; border-radius: 50%;
+  animation: spin .6s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Drawer (detalle usuario) ──────────────────────────────── */
+.drawer-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,.35);
+  z-index: 100; opacity: 0; pointer-events: none; transition: opacity .25s;
+}
+.drawer-overlay.open { opacity: 1; pointer-events: all; }
+.drawer {
+  position: fixed; top: 0; right: -640px; bottom: 0;
+  width: 640px; max-width: 100vw; background: #fff;
+  z-index: 101; overflow-y: auto; transition: right .28s cubic-bezier(.4,0,.2,1);
+  display: flex; flex-direction: column;
+}
+.drawer.open { right: 0; }
+.drawer-header {
+  background: linear-gradient(135deg, #0d3b66, #1a6fa8);
+  color: #fff; padding: 1.25rem 1.5rem;
+  display: flex; align-items: flex-start; gap: 1rem;
+}
+.drawer-avatar {
+  width: 48px; height: 48px; border-radius: 50%;
+  background: rgba(255,255,255,.25); display: flex;
+  align-items: center; justify-content: center;
+  font-size: 1.4rem; font-weight: 800; flex-shrink: 0;
+}
+.drawer-name  { font-size: 1.1rem; font-weight: 800; }
+.drawer-email { font-size: .8rem; opacity: .8; margin-top: .15rem; }
+.drawer-close {
+  margin-left: auto; background: rgba(255,255,255,.15); border: none;
+  color: #fff; border-radius: .4rem; padding: .35rem .65rem;
+  font-size: 1rem; cursor: pointer; line-height: 1;
+}
+.drawer-close:hover { background: rgba(255,255,255,.3); }
+.drawer-body { padding: 1.25rem 1.5rem; flex: 1; }
+
+.info-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: .6rem;
+  margin-bottom: 1.25rem;
+}
+.info-item { background: #f8fafc; border-radius: .5rem; padding: .6rem .85rem; }
+.info-item .ik { font-size: .7rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: .3px; }
+.info-item .iv { font-size: .9rem; font-weight: 600; color: #1e293b; margin-top: .15rem; }
+
+.section-title {
+  font-size: .78rem; font-weight: 700; color: #64748b;
+  text-transform: uppercase; letter-spacing: .4px;
+  margin: 1.25rem 0 .6rem; padding-bottom: .4rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+/* Sesiones del usuario */
+.sessions-table { width: 100%; border-collapse: collapse; font-size: .8rem; }
+.sessions-table th {
+  padding: .5rem .75rem; font-size: .7rem; background: #f8fafc;
+  font-weight: 700; color: #64748b; text-transform: uppercase;
+  letter-spacing: .3px; border-bottom: 1px solid #e2e8f0;
+  cursor: default;
+}
+.sessions-table td { padding: .5rem .75rem; border-bottom: 1px solid #f1f5f9; color: #475569; }
+.sessions-table tr:last-child td { border-bottom: none; }
+.sessions-table tr:hover td { background: #f8fafc; }
+.no-sessions { text-align: center; padding: 1.5rem; color: #94a3b8; font-size: .85rem; }
+
+/* ── Toast ─────────────────────────────────────────────────── */
+.toast {
+  position: fixed; bottom: 1.5rem; right: 1.5rem;
+  background: #1e293b; color: #fff; padding: .65rem 1.1rem;
+  border-radius: .5rem; font-size: .85rem; font-weight: 600;
+  z-index: 200; opacity: 0; transform: translateY(10px);
+  transition: opacity .2s, transform .2s; pointer-events: none;
+}
+.toast.show { opacity: 1; transform: translateY(0); }
+</style>
+</head>
+<body>
+
+<!-- ══ LOGIN ═══════════════════════════════════════════════════ -->
+<div id="section-login">
+  <div class="login-card">
+    <div class="logo">
+      <h1>🧊 Panel de Administración</h1>
+      <p>Fábrica de Hielo · Simulador</p>
+      <span class="badge-admin">🔐 Acceso Restringido</span>
+    </div>
+
+    <div id="login-alert" class="lf-error" style="margin-bottom:.85rem;font-size:.82rem;background:#fef2f2;padding:.6rem .85rem;border-radius:.4rem;border:1px solid #fecaca;"></div>
+
+    <div class="lf-group">
+      <label>Correo electrónico</label>
+      <input type="email" id="adm-email" placeholder="admin@correo.com" autocomplete="email">
+    </div>
+    <div class="lf-group">
+      <label>Contraseña</label>
+      <input type="password" id="adm-pass" placeholder="••••••••" autocomplete="current-password">
+    </div>
+    <button class="btn-admin-login" id="btn-adm-login">Ingresar al panel</button>
+  </div>
+</div>
+
+<!-- ══ PANEL ════════════════════════════════════════════════════ -->
+<div id="section-panel">
+
+  <!-- Header -->
+  <div class="admin-header">
+    <div>
+      <h1>🧊 Panel de Administración</h1>
+      <p>Fábrica de Hielo · Simulador de Flujo de Fondos</p>
+    </div>
+    <span class="admin-badge">⚙️ Admin</span>
+    <div class="header-right-admin">
+      <span class="admin-email" id="adm-email-display"></span>
+      <button class="btn-logout-admin" id="btn-adm-logout">Salir</button>
+    </div>
+  </div>
+
+  <div class="admin-main">
+
+    <!-- Stats -->
+    <div class="stats-grid" id="stats-grid">
+      <div class="stat-card">
+        <div class="sc-label">Total usuarios</div>
+        <div class="sc-val" id="st-total">—</div>
+        <div class="sc-sub">registrados</div>
+      </div>
+      <div class="stat-card hot">
+        <div class="sc-label">🔥 Leads calientes</div>
+        <div class="sc-val" id="st-hot">—</div>
+        <div class="sc-sub">visita ≤ 7 días</div>
+      </div>
+      <div class="stat-card warm">
+        <div class="sc-label">🌡️ Leads tibios</div>
+        <div class="sc-val" id="st-warm">—</div>
+        <div class="sc-sub">visita 8-30 días</div>
+      </div>
+      <div class="stat-card cold">
+        <div class="sc-label">Sesiones totales</div>
+        <div class="sc-val" id="st-sessions">—</div>
+        <div class="sc-sub">en toda la plataforma</div>
+      </div>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="toolbar">
+      <h2>👥 Usuarios</h2>
+      <div class="search-box">
+        🔍 <input type="text" id="search-input" placeholder="Buscar por nombre, email o provincia…">
+      </div>
+      <select class="filter-select" id="filter-temp">
+        <option value="">Todos los leads</option>
+        <option value="caliente">🔥 Calientes</option>
+        <option value="tibio">🌡️ Tibios</option>
+        <option value="frio">🧊 Fríos</option>
+      </select>
+      <select class="filter-select" id="filter-perfil">
+        <option value="">Todos los perfiles</option>
+        <option value="consumo_propio">🏠 Consumo propio</option>
+        <option value="venta_negocio">🏪 Venta en negocio</option>
+        <option value="distribucion_hielo">🚚 Distribución</option>
+      </select>
+      <button class="btn-refresh" id="btn-refresh" title="Actualizar">↻</button>
+      <button class="btn-export" id="btn-export">⬇️ Exportar Excel</button>
+    </div>
+
+    <!-- Table -->
+    <div class="table-wrap">
+      <div id="table-loading" class="spinner-wrap"><div class="spinner"></div></div>
+      <div id="table-empty" class="table-msg" style="display:none">No se encontraron usuarios.</div>
+      <table id="users-table" style="display:none">
+        <thead>
+          <tr>
+            <th data-col="nombre">Nombre <span class="sort-icon">↕</span></th>
+            <th>Perfil</th>
+            <th data-col="provincia">Provincia <span class="sort-icon">↕</span></th>
+            <th data-col="creadoEn">Registro <span class="sort-icon">↕</span></th>
+            <th data-col="ultimaVisita">Última visita <span class="sort-icon">↕</span></th>
+            <th data-col="sesiones">Sesiones <span class="sort-icon">↕</span></th>
+            <th data-col="temp">Temperatura <span class="sort-icon">↕</span></th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="users-tbody"></tbody>
+      </table>
+    </div>
+
+  </div><!-- /admin-main -->
+</div><!-- /section-panel -->
+
+<!-- ══ DRAWER (detalle usuario) ═════════════════════════════════ -->
+<div class="drawer-overlay" id="drawer-overlay"></div>
+<div class="drawer" id="drawer">
+  <div class="drawer-header">
+    <div class="drawer-avatar" id="dr-avatar">?</div>
+    <div>
+      <div class="drawer-name"  id="dr-name">Cargando…</div>
+      <div class="drawer-email" id="dr-email"></div>
+    </div>
+    <button class="drawer-close" id="drawer-close">✕</button>
+  </div>
+  <div class="drawer-body" id="drawer-body">
+    <!-- Se llena dinámicamente -->
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- ══ SCRIPT ════════════════════════════════════════════════════ -->
+<script type="module">
+import { initializeApp }      from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js';
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged }
+                               from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
+import { getFirestore, collection, getDocs, doc, getDoc, query, where, orderBy }
+                               from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
+import { firebaseConfig }      from '/auth/firebase-config.js';
+
+// ── Firebase ──────────────────────────────────────────────────
+const app  = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db   = getFirestore(app);
+
+// ── Utilidades DOM ────────────────────────────────────────────
+const $ = s => document.querySelector(s);
+
+function toast(msg, ms = 2800) {
+  const t = $('#toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), ms);
+}
+
+// ── Estado global ─────────────────────────────────────────────
+let allUsers    = [];   // filas combinadas (usuario + stats sesiones)
+let allSessions = [];   // todas las sesiones raw
+let sortCol     = 'ultimaVisita';
+let sortDir     = -1;   // -1 desc, 1 asc
+
+// ── LOGIN ─────────────────────────────────────────────────────
+$('#btn-adm-login').addEventListener('click', async () => {
+  const email = $('#adm-email').value.trim();
+  const pass  = $('#adm-pass').value;
+  const btn   = $('#btn-adm-login');
+  const alert = $('#login-alert');
+  alert.classList.remove('show'); alert.style.display = 'none';
+
+  if (!email || !pass) {
+    showLoginError('Completá los dos campos.');
+    return;
+  }
+  btn.disabled = true; btn.textContent = 'Ingresando…';
+  try {
+    const cred = await signInWithEmailAndPassword(auth, email, pass);
+    const uid  = cred.user.uid;
+    // Verificar rol admin en Firestore
+    const snap = await getDoc(doc(db, 'usuarios', uid));
+    if (!snap.exists() || snap.data().rol !== 'admin') {
+      await signOut(auth);
+      showLoginError('No tenés permisos de administrador.');
+      btn.disabled = false; btn.textContent = 'Ingresar al panel';
+      return;
+    }
+    // OK → el observer de onAuthStateChanged carga el panel
+  } catch(e) {
+    const msgs = {
+      'auth/invalid-credential' : 'Email o contraseña incorrectos.',
+      'auth/user-not-found'     : 'No existe una cuenta con ese email.',
+      'auth/wrong-password'     : 'Contraseña incorrecta.',
+      'auth/too-many-requests'  : 'Demasiados intentos. Esperá unos minutos.',
+    };
+    showLoginError(msgs[e.code] || e.message);
+    btn.disabled = false; btn.textContent = 'Ingresar al panel';
+  }
+});
+
+$('#adm-pass').addEventListener('keydown', e => {
+  if (e.key === 'Enter') $('#btn-adm-login').click();
+});
+
+function showLoginError(msg) {
+  const a = $('#login-alert');
+  a.textContent = '⚠️ ' + msg;
+  a.classList.add('show');
+  a.style.display = 'block';
+}
+
+// ── AUTH STATE ────────────────────────────────────────────────
+onAuthStateChanged(auth, async user => {
+  if (user) {
+    const snap = await getDoc(doc(db, 'usuarios', user.uid));
+    if (snap.exists() && snap.data().rol === 'admin') {
+      $('#section-login').style.display = 'none';
+      $('#section-panel').style.display = 'block';
+      $('#adm-email-display').textContent = user.email;
+      await loadData();
+    }
+  } else {
+    $('#section-login').style.display = 'flex';
+    $('#section-panel').style.display = 'none';
+  }
+});
+
+$('#btn-adm-logout').addEventListener('click', async () => {
+  await signOut(auth);
+});
+
+// ── CARGAR DATOS ──────────────────────────────────────────────
+async function loadData() {
+  showLoading();
+  try {
+    // 1. Traer todos los usuarios
+    const usersSnap    = await getDocs(collection(db, 'usuarios'));
+    // 2. Traer todas las sesiones
+    const sessionsSnap = await getDocs(collection(db, 'sesiones'));
+
+    allSessions = sessionsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+    // Agrupar sesiones por uid
+    const sessByUid = {};
+    allSessions.forEach(s => {
+      if (!sessByUid[s.uid]) sessByUid[s.uid] = [];
+      sessByUid[s.uid].push(s);
+    });
+
+    // Combinar usuario + stats
+    allUsers = usersSnap.docs.map(d => {
+      const u    = { uid: d.id, ...d.data() };
+      const sess = sessByUid[d.id] || [];
+
+      // Última visita
+      let ultimaVisita = null;
+      sess.forEach(s => {
+        const ts = s.timestampEntrada?.toDate?.() ?? (s.timestampEntrada ? new Date(s.timestampEntrada) : null);
+        if (ts && (!ultimaVisita || ts > ultimaVisita)) ultimaVisita = ts;
+      });
+
+      // Recálculos totales
+      const recalcTotal = sess.reduce((a, s) => a + (s.recalculos || 0), 0);
+
+      // Máquina más usada
+      const maqCount = {};
+      sess.forEach(s => {
+        const m = s.valores?.maquina;
+        if (m) maqCount[m] = (maqCount[m] || 0) + 1;
+      });
+      const maqTop = Object.entries(maqCount).sort((a,b) => b[1]-a[1])[0]?.[0] ?? '—';
+
+      return {
+        ...u,
+        sesiones:     sess.length,
+        ultimaVisita,
+        recalcTotal,
+        maqTop,
+        temperatura:  calcTemp(ultimaVisita, sess.length),
+      };
+    });
+
+    updateStats();
+    renderTable();
+  } catch(e) {
+    console.error(e);
+    toast('Error al cargar datos: ' + e.message);
+    showLoading(false);
+  }
+}
+
+function calcTemp(ultimaVisita, sesiones) {
+  if (!ultimaVisita) return 'frio';
+  const days = (Date.now() - ultimaVisita.getTime()) / (1000 * 60 * 60 * 24);
+  if (days <= 7  || sesiones >= 6) return 'caliente';
+  if (days <= 30 || sesiones >= 3) return 'tibio';
+  return 'frio';
+}
+
+// ── STATS ─────────────────────────────────────────────────────
+function updateStats() {
+  const hot  = allUsers.filter(u => u.temperatura === 'caliente').length;
+  const warm = allUsers.filter(u => u.temperatura === 'tibio').length;
+  $('#st-total').textContent    = allUsers.length;
+  $('#st-hot').textContent      = hot;
+  $('#st-warm').textContent     = warm;
+  $('#st-sessions').textContent = allSessions.length;
+}
+
+// ── RENDER TABLE ──────────────────────────────────────────────
+function getFilteredUsers() {
+  const q    = $('#search-input').value.toLowerCase().trim();
+  const temp = $('#filter-temp').value;
+  const perf = $('#filter-perfil').value;
+
+  return allUsers
+    .filter(u => {
+      if (temp && u.temperatura !== temp) return false;
+      if (perf && u.perfil !== perf) return false;
+      if (q) {
+        const hay = [u.nombre, u.apellido, u.email, u.provincia].join(' ').toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    })
+    .sort((a, b) => {
+      let va = a[sortCol], vb = b[sortCol];
+      if (sortCol === 'nombre') { va = (a.nombre + a.apellido).toLowerCase(); vb = (b.nombre + b.apellido).toLowerCase(); }
+      if (sortCol === 'temp')   { va = tempOrder(a.temperatura); vb = tempOrder(b.temperatura); }
+      if (va == null) va = sortDir === 1 ? Infinity : -Infinity;
+      if (vb == null) vb = sortDir === 1 ? Infinity : -Infinity;
+      return va < vb ? -sortDir : va > vb ? sortDir : 0;
+    });
+}
+
+function tempOrder(t) { return t === 'caliente' ? 0 : t === 'tibio' ? 1 : 2; }
+
+function renderTable() {
+  const rows  = getFilteredUsers();
+  const tbody = $('#users-tbody');
+  const table = $('#users-table');
+  const empty = $('#table-empty');
+
+  $('#table-loading').style.display = 'none';
+
+  if (rows.length === 0) {
+    table.style.display = 'none';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+  table.style.display = 'table';
+
+  tbody.innerHTML = rows.map(u => `
+    <tr>
+      <td>
+        <div class="td-name">${esc([u.nombre, u.apellido].filter(Boolean).join(' ') || u.email)}</div>
+        <div class="td-email">${esc(u.email)}</div>
+      </td>
+      <td>${badgePerfil(u.perfil)}</td>
+      <td>${esc(u.provincia || '—')}</td>
+      <td>${fmtDate(u.creadoEn)}</td>
+      <td>${fmtDate(u.ultimaVisita) || '<span style="color:#94a3b8">Sin visitas</span>'}</td>
+      <td style="font-weight:700;color:#0d3b66">${u.sesiones}</td>
+      <td>${badgeTemp(u.temperatura)}</td>
+      <td><button class="btn-ver" data-uid="${u.uid}">Ver →</button></td>
+    </tr>
+  `).join('');
+
+  // Click en "Ver"
+  tbody.querySelectorAll('.btn-ver').forEach(btn => {
+    btn.addEventListener('click', () => openDrawer(btn.dataset.uid));
+  });
+
+  // Actualizar iconos de sort
+  document.querySelectorAll('th[data-col]').forEach(th => {
+    const icon = th.querySelector('.sort-icon');
+    if (th.dataset.col === sortCol) {
+      th.classList.add('sorted');
+      icon.textContent = sortDir === -1 ? '↓' : '↑';
+    } else {
+      th.classList.remove('sorted');
+      icon.textContent = '↕';
+    }
+  });
+}
+
+function showLoading(show = true) {
+  $('#table-loading').style.display = show ? 'flex' : 'none';
+  $('#users-table').style.display   = 'none';
+  $('#table-empty').style.display   = 'none';
+}
+
+// ── SORT ──────────────────────────────────────────────────────
+document.querySelectorAll('th[data-col]').forEach(th => {
+  th.addEventListener('click', () => {
+    if (sortCol === th.dataset.col) sortDir *= -1;
+    else { sortCol = th.dataset.col; sortDir = -1; }
+    renderTable();
+  });
+});
+
+// ── FILTROS ───────────────────────────────────────────────────
+$('#search-input').addEventListener('input', renderTable);
+$('#filter-temp').addEventListener('change', renderTable);
+$('#filter-perfil').addEventListener('change', renderTable);
+$('#btn-refresh').addEventListener('click', loadData);
+
+// ── DRAWER ────────────────────────────────────────────────────
+function openDrawer(uid) {
+  const u    = allUsers.find(x => x.uid === uid);
+  if (!u) return;
+  const sess = allSessions.filter(s => s.uid === uid)
+    .sort((a, b) => {
+      const ta = a.timestampEntrada?.toDate?.()?.getTime() ?? 0;
+      const tb = b.timestampEntrada?.toDate?.()?.getTime() ?? 0;
+      return tb - ta;
+    });
+
+  $('#dr-avatar').textContent = (u.nombre?.[0] ?? u.email?.[0] ?? '?').toUpperCase();
+  $('#dr-name').textContent   = `${u.nombre} ${u.apellido}`;
+  $('#dr-email').textContent  = u.email;
+
+  const perfLabels = {
+    consumo_propio:     '🏠 Consumo propio',
+    venta_negocio:      '🏪 Venta en negocio',
+    distribucion_hielo: '🚚 Distribución de hielo',
+  };
+
+  $('#drawer-body').innerHTML = `
+    <div class="info-grid">
+      <div class="info-item"><div class="ik">Teléfono</div><div class="iv">${esc(u.telefono || '—')}</div></div>
+      <div class="info-item"><div class="ik">Provincia</div><div class="iv">${esc(u.provincia || '—')}</div></div>
+      <div class="info-item"><div class="ik">CUIT</div><div class="iv">${esc(u.cuit || '—')}</div></div>
+      <div class="info-item"><div class="ik">Perfil</div><div class="iv">${esc(perfLabels[u.perfil] || u.perfil || '—')}</div></div>
+      <div class="info-item"><div class="ik">Fecha de registro</div><div class="iv">${fmtDate(u.creadoEn) || '—'}</div></div>
+      <div class="info-item"><div class="ik">Última visita</div><div class="iv">${fmtDate(u.ultimaVisita) || 'Sin visitas'}</div></div>
+      <div class="info-item"><div class="ik">Sesiones totales</div><div class="iv" style="font-size:1.2rem;font-weight:800;color:#0d3b66">${u.sesiones}</div></div>
+      <div class="info-item"><div class="ik">Recálculos totales</div><div class="iv" style="font-size:1.2rem;font-weight:800;color:#0d3b66">${u.recalcTotal}</div></div>
+      <div class="info-item"><div class="ik">Máquina favorita</div><div class="iv">${esc(u.maqTop)}</div></div>
+      <div class="info-item"><div class="ik">Temperatura</div><div class="iv">${badgeTemp(u.temperatura)}</div></div>
+    </div>
+
+    <div class="section-title">📋 Historial de sesiones (${sess.length})</div>
+    ${sess.length === 0
+      ? `<div class="no-sessions">Este usuario aún no usó la calculadora.</div>`
+      : `<table class="sessions-table">
+          <thead><tr>
+            <th>Fecha</th><th>Duración</th><th>Recálculos</th>
+            <th>Máquina</th><th>Pago</th><th>Precio hielo</th>
+          </tr></thead>
+          <tbody>
+            ${sess.map(s => {
+              const ts  = s.timestampEntrada?.toDate?.() ?? (s.timestampEntrada ? new Date(s.timestampEntrada) : null);
+              const dur = s.duracion ? fmtDuracion(s.duracion) : '—';
+              return `<tr>
+                <td>${fmtDateTime(ts)}</td>
+                <td>${dur}</td>
+                <td style="font-weight:700">${s.recalculos ?? 0}</td>
+                <td>${esc(s.valores?.maquina ?? '—')}</td>
+                <td>${esc(s.valores?.formaDePago ?? '—')}</td>
+                <td>${s.valores?.precioHielo != null ? 'USD ' + s.valores.precioHielo : '—'}</td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>`
+    }
+  `;
+
+  $('#drawer-overlay').classList.add('open');
+  $('#drawer').classList.add('open');
+}
+
+function closeDrawer() {
+  $('#drawer-overlay').classList.remove('open');
+  $('#drawer').classList.remove('open');
+}
+$('#drawer-close').addEventListener('click', closeDrawer);
+$('#drawer-overlay').addEventListener('click', closeDrawer);
+
+// ── EXPORTAR EXCEL ────────────────────────────────────────────
+$('#btn-export').addEventListener('click', () => {
+  const rows = getFilteredUsers();
+  if (rows.length === 0) { toast('No hay datos para exportar.'); return; }
+
+  const tempLabel = { caliente: '🔥 Caliente', tibio: '🌡️ Tibio', frio: '🧊 Frío' };
+  const perfLabel = {
+    consumo_propio: 'Consumo propio', venta_negocio: 'Venta en negocio',
+    distribucion_hielo: 'Distribución de hielo',
+  };
+
+  // Hoja 1: resumen usuarios
+  const wsData = [
+    ['Nombre', 'Apellido', 'Email', 'Teléfono', 'Perfil', 'Provincia', 'CUIT',
+     'Fecha registro', 'Última visita', 'Sesiones', 'Recálculos', 'Máq. favorita', 'Temperatura'],
+    ...rows.map(u => [
+      u.nombre, u.apellido, u.email, u.telefono || '',
+      perfLabel[u.perfil] || u.perfil || '',
+      u.provincia || '', u.cuit || '',
+      fmtDateExcel(u.creadoEn),
+      fmtDateExcel(u.ultimaVisita),
+      u.sesiones, u.recalcTotal, u.maqTop,
+      tempLabel[u.temperatura] || u.temperatura,
+    ]),
+  ];
+
+  // Hoja 2: todas las sesiones
+  const wsSessions = [
+    ['Email', 'Nombre', 'Fecha entrada', 'Duración (seg)', 'Recálculos',
+     'Máquina', 'Forma de pago', 'Dólar', 'Precio hielo', 'Alquiler',
+     'Horas/día', 'Días/mes'],
+    ...allSessions.map(s => {
+      const u  = allUsers.find(x => x.uid === s.uid);
+      const ts = s.timestampEntrada?.toDate?.() ?? null;
+      return [
+        s.email, u ? `${u.nombre} ${u.apellido}` : '',
+        ts ? ts.toLocaleString('es-AR') : '',
+        s.duracion ?? 0, s.recalculos ?? 0,
+        s.valores?.maquina ?? '', s.valores?.formaDePago ?? '',
+        s.valores?.dolar ?? '', s.valores?.precioHielo ?? '',
+        s.valores?.alquiler ?? '', s.valores?.horasDia ?? '',
+        s.valores?.diasMes ?? '',
+      ];
+    }),
+  ];
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(wsData),      'Usuarios');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(wsSessions), 'Sesiones');
+  XLSX.writeFile(wb, `leads_fabrica_hielo_${new Date().toISOString().slice(0,10)}.xlsx`);
+  toast('✅ Excel exportado correctamente');
+});
+
+// ── HELPERS ───────────────────────────────────────────────────
+function esc(s) {
+  if (s == null) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function fmtDate(v) {
+  if (!v) return '';
+  const d = v instanceof Date ? v : (v?.toDate ? v.toDate() : new Date(v));
+  if (isNaN(d)) return '';
+  return d.toLocaleDateString('es-AR', { day:'2-digit', month:'2-digit', year:'numeric' });
+}
+
+function fmtDateTime(v) {
+  if (!v) return '—';
+  const d = v instanceof Date ? v : (v?.toDate ? v.toDate() : new Date(v));
+  if (isNaN(d)) return '—';
+  return d.toLocaleString('es-AR', { day:'2-digit', month:'2-digit', year:'2-digit', hour:'2-digit', minute:'2-digit' });
+}
+
+function fmtDateExcel(v) {
+  if (!v) return '';
+  const d = v instanceof Date ? v : (v?.toDate ? v.toDate() : new Date(v));
+  return isNaN(d) ? '' : d.toLocaleString('es-AR');
+}
+
+function fmtDuracion(seg) {
+  if (seg < 60)  return `${seg}s`;
+  if (seg < 3600) return `${Math.floor(seg/60)}m ${seg%60}s`;
+  return `${Math.floor(seg/3600)}h ${Math.floor((seg%3600)/60)}m`;
+}
+
+function badgePerfil(p) {
+  const cls = { consumo_propio:'bp-consumo', venta_negocio:'bp-negocio', distribucion_hielo:'bp-distrib' };
+  const lbl = { consumo_propio:'🏠 Consumo', venta_negocio:'🏪 Negocio', distribucion_hielo:'🚚 Distribución' };
+  return `<span class="badge-perfil ${cls[p]||''}">${esc(lbl[p]||p||'—')}</span>`;
+}
+
+function badgeTemp(t) {
+  const cfg = {
+    caliente: ['bt-hot',  '🔥 Caliente'],
+    tibio:    ['bt-warm', '🌡️ Tibio'],
+    frio:     ['bt-cold', '🧊 Frío'],
+  };
+  const [cls, lbl] = cfg[t] || ['bt-cold', '🧊 Frío'];
+  return `<span class="badge-temp ${cls}">${lbl}</span>`;
+}
+</script>
+</body>
+</html>
