@@ -434,7 +434,7 @@ thead th.mes0-col { background: #7d4e00 !important; border-right: 2px solid #e8c
 
 
       <div class="field">
-        <label>Sueldo empleado (USD/mes)</label>
+        <label>Sueldo por empleado (USD/mes)</label>
         <input type="number" id="sueldoEmpleado" value="1000" min="0" oninput="recalc()">
         <div class="derived" id="sueldoEmp-ars"></div>
       </div>
@@ -511,13 +511,13 @@ thead th.mes0-col { background: #7d4e00 !important; border-right: 2px solid #e8c
 <script>
 // ── DATA ──
 const MODELS = {
-  I500:  { name:'I-500',   cap:500,  contado:26000, financiado:29200, kwProm:3.50,  kwMax:6.54,  agua:500,   compresor:'MT64 · 5,24 kW',    tipo:'roll' },
-  I1000: { name:'I-1.000', cap:1000, contado:36600, financiado:41000, kwProm:7.15,  kwMax:9.44,  agua:1000,  compresor:'MTZ160 · 7,4 kW',    tipo:'roll' },
-  I1500: { name:'I-1.500', cap:1500, contado:45500, financiado:51200, kwProm:8.86,  kwMax:14.42, agua:1500,  compresor:'MTZ160 · 12,38 kW',  tipo:'roll' },
-  I3000: { name:'I-3.000', cap:3000, contado:67000, financiado:75300, kwProm:16.58, kwMax:29.04, agua:3000,  compresor:'2×MT160 · 24,76 kW', tipo:'roll' },
-  GL3000:  { name:'GL-3.000',  cap:3000,  contado:30200, financiado:33800, kwProm:7.76,  kwMax:13.59, agua:3000,  compresor:'Condensación por agua', tipo:'gl' },
-  GL5000:  { name:'GL-5.000',  cap:5000,  contado:42500, financiado:47600, kwProm:10.79, kwMax:18.90, agua:5000,  compresor:'Condensación por agua', tipo:'gl' },
-  GL10000: { name:'GL-10.000', cap:10000, contado:58700, financiado:65700, kwProm:18.16, kwMax:31.80, agua:10000, compresor:'Condensación por agua', tipo:'gl' },
+  I500:  { name:'I-500',   cap:500,  contado:26000, financiado:29200, kwProm:3.50,  kwMax:6.54,  agua:500,   compresor:'MT64 · 5,24 kW',    tipo:'roll', hEmbolsado:2,  hVentas:2  },
+  I1000: { name:'I-1.000', cap:1000, contado:36600, financiado:41000, kwProm:7.15,  kwMax:9.44,  agua:1000,  compresor:'MTZ160 · 7,4 kW',    tipo:'roll', hEmbolsado:3,  hVentas:2  },
+  I1500: { name:'I-1.500', cap:1500, contado:45500, financiado:51200, kwProm:8.86,  kwMax:14.42, agua:1500,  compresor:'MTZ160 · 12,38 kW',  tipo:'roll', hEmbolsado:3,  hVentas:2  },
+  I3000: { name:'I-3.000', cap:3000, contado:67000, financiado:75300, kwProm:16.58, kwMax:29.04, agua:3000,  compresor:'2×MT160 · 24,76 kW', tipo:'roll', hEmbolsado:6,  hVentas:2  },
+  GL3000:  { name:'GL-3.000',  cap:3000,  contado:30200, financiado:41100, kwProm:7.76,  kwMax:13.59, agua:3000,  compresor:'Condensación por agua', tipo:'gl', hEmbolsado:24, hVentas:8  },
+  GL5000:  { name:'GL-5.000',  cap:5000,  contado:42500, financiado:57900, kwProm:10.79, kwMax:18.90, agua:5000,  compresor:'Condensación por agua', tipo:'gl', hEmbolsado:24, hVentas:12 },
+  GL10000: { name:'GL-10.000', cap:10000, contado:58700, financiado:96800, kwProm:18.16, kwMax:31.80, agua:10000, compresor:'Condensación por agua', tipo:'gl', hEmbolsado:24, hVentas:16 },
 };
 const BADGES = {};
 const MES_LABELS = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
@@ -652,6 +652,7 @@ function buildModelGrid() {
           <span>⚡ Máx: ${m.kwMax} kW · 💧 Agua: ${m.agua.toLocaleString('es-AR')} lt/día</span>
           <span>🔧 ${m.compresor}</span>
           <span>📐 USD ${pxKg}/kg capacidad (contado)</span>
+          <span>⏱ ${m.hEmbolsado}h embolsado + ${m.hVentas}h ventas = <strong>${m.hEmbolsado + m.hVentas} hs/día</strong> · 👤 ${(() => { const t = m.hEmbolsado + m.hVentas; const e = Math.ceil(t/8); const hxe = (t/e).toFixed(1).replace('.',','); return t <= 8 ? `1 empleado (${t}h/día)` : `${e} empleados · ${hxe}h/día c/u`; })()}</span>
         </div>
       </div>`;
   });
@@ -850,8 +851,10 @@ function recalc() {
     const ingresos     = produccion * precioHielo;
     const costoEnergia = m.kwProm * util * horasDia * diasMes * precioKwh;
     const otrosVar     = ingresos * pctOtros;
-    const totalVar     = costoEnergia + otrosVar;
-    const totalFijo    = alquiler + sueldoEmp;
+    const hTotal       = m.hEmbolsado + m.hVentas;
+    const costoLaboral = sueldoEmp * (hTotal / 8) * util;
+    const totalVar     = costoEnergia + otrosVar + costoLaboral;
+    const totalFijo    = alquiler;
 
     // cuota financiada (en USD al TC ingresado)
     const cuotaMes = pagoMode==='financiado' ? (maquinaUSD * 0.6) / 12 : 0;
@@ -859,8 +862,8 @@ function recalc() {
     const ebitda   = ingresos - totalVar - totalFijo;
     const flujoNeto= ebitda - cuotaMes;
 
-    months.push({ lbl, util, produccion, ingresos, costoEnergia, otrosVar, totalVar,
-                  alquiler, sueldoEmp, totalFijo, cuotaMes, ebitda, flujoNeto });
+    months.push({ lbl, util, produccion, ingresos, costoEnergia, otrosVar, costoLaboral, totalVar,
+                  alquiler, totalFijo, cuotaMes, ebitda, flujoNeto });
   }
 
   // ── TOTALES ──
@@ -1005,10 +1008,10 @@ function recalc() {
       ${hdrRow('▶ EGRESOS VARIABLES')}
       ${row('Costo Energía (electricidad)', null, months.map(m=>-m.costoEnergia))}
       ${row('Otros Costos Variables (bolsas/agua)', null, months.map(m=>-m.otrosVar))}
+      ${row('Personal (según utilización)', null, months.map(m=>-m.costoLaboral))}
       ${row('Total Egresos Variables', null, months.map(m=>-m.totalVar))}
       ${hdrRow('▶ EGRESOS FIJOS')}
       ${row('Alquiler', null, months.map(m=>-m.alquiler))}
-      ${row('Sueldo Empleado', null, months.map(m=>-m.sueldoEmp))}
       ${row('Total Egresos Fijos', null, months.map(m=>-m.totalFijo))}
       <tr class="neto-row">
         <td>RESULTADO OPERATIVO</td>
