@@ -577,19 +577,6 @@
 
 </div><!-- /auth-widget -->
 
-<!-- EmailJS SDK -->
-<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-<script>
-  // EmailJS: init con public key
-  (function() {
-    window._ejs = {
-      serviceId:  'service_ddo7iqs',
-      templateId: 'template_35q95xh',
-      adminEmail: 'cristian@polair.com.ar',
-    };
-    emailjs.init({ publicKey: 'fYaCaTEQ7ctLYdo6e' });
-  })();
-</script>
 
 <script type="module">
   import {
@@ -610,7 +597,7 @@
   }
   const utm = JSON.parse(sessionStorage.getItem('calcu_utm') || '{}');
 
-  // ── Notificación email al admin ───────────────────────────────
+  // ── Notificación email al admin (fetch directo, sin SDK) ─────
   async function notificarAdmin({ nombre, apellido, email, telefono, provincia, perfil }) {
     const perfLabels = {
       consumo_propio:     'Consumo propio',
@@ -618,21 +605,28 @@
       distribucion_hielo: 'Distribución de hielo',
     };
     try {
-      const { serviceId, templateId, adminEmail } = window._ejs;
-      await emailjs.send(serviceId, templateId, {
-          to_email:     adminEmail,
-          nombre,
-          apellido,
-          email,
-          telefono:     telefono  || '—',
-          provincia:    provincia || '—',
-          perfil:       perfLabels[perfil] || perfil || '—',
-          utm_source:   utm.utm_source   || 'Directo',
-          utm_medium:   utm.utm_medium   || '—',
-          utm_campaign: utm.utm_campaign || '—',
-          fecha:        new Date().toLocaleString('es-AR'),
-        }
-      );
+      await fetch('https://api.emailjs.com/api/v1.0/email/send', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          service_id:  'service_ddo7iqs',
+          template_id: 'template_35q95xh',
+          user_id:     'fYaCaTEQ7ctLYdo6e',
+          template_params: {
+            to_email:     'cristian@polair.com.ar',
+            nombre,
+            apellido,
+            email,
+            telefono:     telefono  || '—',
+            provincia:    provincia || '—',
+            perfil:       perfLabels[perfil] || perfil || '—',
+            utm_source:   utm.utm_source   || 'Directo',
+            utm_medium:   utm.utm_medium   || '—',
+            utm_campaign: utm.utm_campaign || '—',
+            fecha:        new Date().toLocaleString('es-AR'),
+          },
+        }),
+      });
     } catch(e) {
       console.warn('Notificación admin no enviada:', e);
     }
