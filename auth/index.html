@@ -577,6 +577,18 @@
 
 </div><!-- /auth-widget -->
 
+<!-- EmailJS SDK -->
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script>
+  // ── Configuración EmailJS ──────────────────────────────────────
+  // Reemplazá estos valores con los de tu cuenta en emailjs.com
+  const EMAILJS_PUBLIC_KEY  = 'TU_PUBLIC_KEY';   // Account → API Keys → Public Key
+  const EMAILJS_SERVICE_ID  = 'TU_SERVICE_ID';   // Email Services → tu servicio
+  const EMAILJS_TEMPLATE_ID = 'TU_TEMPLATE_ID';  // Email Templates → tu template
+  const ADMIN_EMAIL         = 'TU_EMAIL_ADMIN';  // Tu email donde recibís los avisos
+
+  emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY });
+</script>
 
 <script type="module">
   import {
@@ -586,6 +598,46 @@
     recuperarPassword, obtenerDatosUsuario,
     completarPerfil, onAuthChange
   } from './auth.js';
+
+  // ── Captura UTM params ────────────────────────────────────────
+  const UTM_KEYS = ['utm_source','utm_medium','utm_campaign','utm_content','utm_term'];
+  const params   = new URLSearchParams(window.location.search);
+  const utmDesdeUrl = {};
+  UTM_KEYS.forEach(k => { const v = params.get(k); if (v) utmDesdeUrl[k] = v; });
+  if (Object.keys(utmDesdeUrl).length) {
+    sessionStorage.setItem('calcu_utm', JSON.stringify(utmDesdeUrl));
+  }
+  const utm = JSON.parse(sessionStorage.getItem('calcu_utm') || '{}');
+
+  // ── Notificación email al admin ───────────────────────────────
+  async function notificarAdmin({ nombre, apellido, email, telefono, provincia, perfil }) {
+    const perfLabels = {
+      consumo_propio:     'Consumo propio',
+      venta_negocio:      'Venta en negocio',
+      distribucion_hielo: 'Distribución de hielo',
+    };
+    try {
+      await window.emailjs.send(
+        window.EMAILJS_SERVICE_ID,
+        window.EMAILJS_TEMPLATE_ID,
+        {
+          to_email:     window.ADMIN_EMAIL,
+          nombre,
+          apellido,
+          email,
+          telefono:     telefono  || '—',
+          provincia:    provincia || '—',
+          perfil:       perfLabels[perfil] || perfil || '—',
+          utm_source:   utm.utm_source   || 'Directo',
+          utm_medium:   utm.utm_medium   || '—',
+          utm_campaign: utm.utm_campaign || '—',
+          fecha:        new Date().toLocaleString('es-AR'),
+        }
+      );
+    } catch(e) {
+      console.warn('Notificación admin no enviada:', e);
+    }
+  }
 
   // ── Utilidades DOM ────────────────────────────────────────────
   const $  = (sel) => document.querySelector(sel);
@@ -787,7 +839,9 @@
     const btn = $('#btn-registro');
     setLoading(btn, true);
     try {
-      await registrar({ nombre, apellido, email, telefono, provincia, cuit, perfil, password });
+      await registrar({ nombre, apellido, email, telefono, provincia, cuit, perfil, password, utm });
+      // Fire-and-forget: no bloqueamos el registro si falla el email
+      notificarAdmin({ nombre, apellido, email, telefono, provincia, perfil });
       // onAuthChange mostrará el panel de sesión automáticamente
     } catch(err) {
       showAlert('#reg-error', tradError(err), 'error');
@@ -846,8 +900,9 @@
     try {
       await completarPerfil(currentUser.uid, currentUser.email, {
         nombre, apellido, telefono, provincia,
-        cuit: cuit || null, perfil,
+        cuit: cuit || null, perfil, utm,
       });
+      notificarAdmin({ nombre, apellido, email: currentUser.email, telefono, provincia, perfil });
       window.location.replace('../index.html');
     } catch(err) {
       showAlert('#completar-error', tradError(err), 'error');

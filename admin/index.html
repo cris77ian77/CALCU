@@ -695,6 +695,8 @@ function openDrawer(uid) {
       <div class="info-item"><div class="ik">Recálculos totales</div><div class="iv" style="font-size:1.2rem;font-weight:800;color:#0d3b66">${u.recalcTotal}</div></div>
       <div class="info-item"><div class="ik">Máquina favorita</div><div class="iv">${esc(u.maqTop)}</div></div>
       <div class="info-item"><div class="ik">Temperatura</div><div class="iv">${badgeTemp(u.temperatura)}</div></div>
+      <div class="info-item"><div class="ik">Origen (utm_source)</div><div class="iv">${esc(u.utm?.utm_source || 'Directo')}</div></div>
+      <div class="info-item"><div class="ik">Campaña</div><div class="iv">${esc(u.utm?.utm_campaign || '—')}</div></div>
     </div>
 
     <div class="section-title">📋 Historial de sesiones (${sess.length})</div>
@@ -748,7 +750,8 @@ $('#btn-export').addEventListener('click', () => {
   // Hoja 1: resumen usuarios
   const wsData = [
     ['Nombre', 'Apellido', 'Email', 'Teléfono', 'Perfil', 'Provincia', 'CUIT',
-     'Fecha registro', 'Última visita', 'Sesiones', 'Recálculos', 'Máq. favorita', 'Temperatura'],
+     'Fecha registro', 'Última visita', 'Sesiones', 'Recálculos', 'Máq. favorita', 'Temperatura',
+     'Origen', 'Medio', 'Campaña'],
     ...rows.map(u => [
       u.nombre, u.apellido, u.email, u.telefono || '',
       perfLabel[u.perfil] || u.perfil || '',
@@ -757,6 +760,9 @@ $('#btn-export').addEventListener('click', () => {
       fmtDateExcel(u.ultimaVisita),
       u.sesiones, u.recalcTotal, u.maqTop,
       tempLabel[u.temperatura] || u.temperatura,
+      u.utm?.utm_source   || 'Directo',
+      u.utm?.utm_medium   || '—',
+      u.utm?.utm_campaign || '—',
     ]),
   ];
 

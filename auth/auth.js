@@ -54,13 +54,14 @@ export function formatearCuit(valor) {
 
 // ── Registro ─────────────────────────────────────────────────
 export async function registrar({ nombre, apellido, email, telefono,
-                                   provincia, cuit, perfil, password }) {
+                                   provincia, cuit, perfil, password, utm = {} }) {
   const cred = await createUserWithEmailAndPassword(auth, email, password);
   const uid  = cred.user.uid;
   await setDoc(doc(db, 'usuarios', uid), {
     nombre, apellido, email, telefono, provincia,
     cuit:    cuit || null,
     perfil,
+    utm,
     creadoEn: new Date().toISOString()
   });
   return cred.user;
