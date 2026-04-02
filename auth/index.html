@@ -836,7 +836,7 @@
     registrando = true;
     try {
       await registrar({ nombre, apellido, email, telefono, provincia, cuit, perfil, password, utm });
-      notificarAdmin({ nombre, apellido, email, telefono, provincia, perfil });
+      await notificarAdmin({ nombre, apellido, email, telefono, provincia, perfil });
       window.location.replace('../index.html');
     } catch(err) {
       registrando = false;
@@ -899,7 +899,7 @@
         nombre, apellido, telefono, provincia,
         cuit: cuit || null, perfil, utm,
       });
-      notificarAdmin({ nombre, apellido, email: currentUser.email, telefono, provincia, perfil });
+      await notificarAdmin({ nombre, apellido, email: currentUser.email, telefono, provincia, perfil });
       window.location.replace('../index.html');
     } catch(err) {
       showAlert('#completar-error', tradError(err), 'error');
