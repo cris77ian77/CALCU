@@ -580,14 +580,15 @@
 <!-- EmailJS SDK -->
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <script>
-  // ── Configuración EmailJS ──────────────────────────────────────
-  // Reemplazá estos valores con los de tu cuenta en emailjs.com
-  const EMAILJS_PUBLIC_KEY  = 'fYaCaTEQ7ctLYdo6e';
-  const EMAILJS_SERVICE_ID  = 'service_ddo7iqs';
-  const EMAILJS_TEMPLATE_ID = 'template_lfjsjp7';
-  const ADMIN_EMAIL         = 'cristian@polair.com.ar';
-
-  emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY });
+  // EmailJS: init con public key
+  (function() {
+    window._ejs = {
+      serviceId:  'service_ddo7iqs',
+      templateId: 'template_lfjsjp7',
+      adminEmail: 'cristian@polair.com.ar',
+    };
+    emailjs.init({ publicKey: 'fYaCaTEQ7ctLYdo6e' });
+  })();
 </script>
 
 <script type="module">
@@ -617,11 +618,9 @@
       distribucion_hielo: 'Distribución de hielo',
     };
     try {
-      await window.emailjs.send(
-        window.EMAILJS_SERVICE_ID,
-        window.EMAILJS_TEMPLATE_ID,
-        {
-          to_email:     window.ADMIN_EMAIL,
+      const { serviceId, templateId, adminEmail } = window._ejs;
+      await emailjs.send(serviceId, templateId, {
+          to_email:     adminEmail,
           nombre,
           apellido,
           email,
