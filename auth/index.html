@@ -605,7 +605,8 @@
       distribucion_hielo: 'Distribución de hielo',
     };
     try {
-      await fetch('https://api.emailjs.com/api/v1.0/email/send', {
+      console.log('[EMAIL] Enviando notificación al admin...');
+      const res = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -627,8 +628,9 @@
           },
         }),
       });
+      console.log('[EMAIL] Respuesta:', res.status, await res.text());
     } catch(e) {
-      console.warn('Notificación admin no enviada:', e);
+      console.warn('[EMAIL] Error al enviar:', e);
     }
   }
 
