@@ -159,6 +159,13 @@ header p  { font-size: 13px; opacity: .8; margin-top: 2px; }
 .model-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 20px; }
 @media(max-width: 900px) { .model-grid { grid-template-columns: repeat(2,1fr); } }
 @media(max-width: 500px) { .model-grid { grid-template-columns: 1fr; } }
+.mc-section-label {
+  grid-column: 1 / -1;
+  font-size: 13px; font-weight: 800; color: #1a6fa8;
+  text-transform: uppercase; letter-spacing: .06em;
+  border-bottom: 2px solid #d0dbe8; padding-bottom: 5px;
+  margin-top: 6px;
+}
 
 .model-card {
   border: 2.5px solid #d0d7e3; border-radius: 12px; padding: 16px;
@@ -353,7 +360,7 @@ thead th.mes0-col { background: #7d4e00 !important; border-right: 2px solid #e8c
 
   <!-- ── SELECCIÓN MÁQUINA ── -->
   <div class="card">
-    <h2>🏭 Selección de Máquina — Roll Ice · Polair</h2>
+    <h2>🏭 Selección de Máquina · Polair</h2>
     <div class="model-grid" id="model-grid"></div>
 
     <h2 style="margin-top:20px;">🏠 Cámara Frigorífica · Polair</h2>
@@ -504,10 +511,13 @@ thead th.mes0-col { background: #7d4e00 !important; border-right: 2px solid #e8c
 <script>
 // ── DATA ──
 const MODELS = {
-  I500:  { name:'I-500',   cap:500,  contado:26000, financiado:29200, kwProm:3.50,  kwMax:6.54,  agua:500,  compresor:'MT64 · 5,24 kW' },
-  I1000: { name:'I-1.000', cap:1000, contado:36600, financiado:41000, kwProm:7.15,  kwMax:9.44,  agua:1000, compresor:'MTZ160 · 7,4 kW' },
-  I1500: { name:'I-1.500', cap:1500, contado:45500, financiado:51200, kwProm:8.86,  kwMax:14.42, agua:1500, compresor:'MTZ160 · 12,38 kW' },
-  I3000: { name:'I-3.000', cap:3000, contado:67000, financiado:75300, kwProm:16.58, kwMax:29.04, agua:3000, compresor:'2×MT160 · 24,76 kW' },
+  I500:  { name:'I-500',   cap:500,  contado:26000, financiado:29200, kwProm:3.50,  kwMax:6.54,  agua:500,   compresor:'MT64 · 5,24 kW',    tipo:'roll' },
+  I1000: { name:'I-1.000', cap:1000, contado:36600, financiado:41000, kwProm:7.15,  kwMax:9.44,  agua:1000,  compresor:'MTZ160 · 7,4 kW',    tipo:'roll' },
+  I1500: { name:'I-1.500', cap:1500, contado:45500, financiado:51200, kwProm:8.86,  kwMax:14.42, agua:1500,  compresor:'MTZ160 · 12,38 kW',  tipo:'roll' },
+  I3000: { name:'I-3.000', cap:3000, contado:67000, financiado:75300, kwProm:16.58, kwMax:29.04, agua:3000,  compresor:'2×MT160 · 24,76 kW', tipo:'roll' },
+  GL3000:  { name:'GL-3.000',  cap:3000,  contado:30200, financiado:33800, kwProm:7.76,  kwMax:13.59, agua:3000,  compresor:'Condensación por agua', tipo:'gl' },
+  GL5000:  { name:'GL-5.000',  cap:5000,  contado:42500, financiado:47600, kwProm:10.79, kwMax:18.90, agua:5000,  compresor:'Condensación por agua', tipo:'gl' },
+  GL10000: { name:'GL-10.000', cap:10000, contado:58700, financiado:65700, kwProm:18.16, kwMax:31.80, agua:10000, compresor:'Condensación por agua', tipo:'gl' },
 };
 const BADGES = {};
 const MES_LABELS = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
@@ -609,11 +619,21 @@ function init() {
 // ── MODEL GRID ──
 function buildModelGrid() {
   const g = document.getElementById('model-grid');
-  g.innerHTML = Object.entries(MODELS).map(([key, m]) => {
+  let html = '';
+  let lastTipo = null;
+  const TIPO_LABELS = {
+    roll: '🧊 Roll Ice · Polair',
+    gl:   '🧊 GL · Polair'
+  };
+  Object.entries(MODELS).forEach(([key, m]) => {
+    if (m.tipo !== lastTipo) {
+      html += `<div class="mc-section-label">${TIPO_LABELS[m.tipo] || m.tipo}</div>`;
+      lastTipo = m.tipo;
+    }
     const badge = BADGES[key] ? `<div class="mc-badge">${BADGES[key]}</div>` : '';
-    const sel = key === selectedModel ? 'selected' : '';
-    const pxKg = (m.contado / m.cap).toFixed(2);
-    return `
+    const sel   = key === selectedModel ? 'selected' : '';
+    const pxKg  = (m.contado / m.cap).toFixed(2);
+    html += `
       <div class="model-card ${sel}" id="mc-${key}" onclick="selectModel('${key}')">
         ${badge}
         <div class="mc-name">${m.name}</div>
@@ -634,7 +654,8 @@ function buildModelGrid() {
           <span>📐 USD ${pxKg}/kg capacidad (contado)</span>
         </div>
       </div>`;
-  }).join('');
+  });
+  g.innerHTML = html;
 }
 
 function selectModel(key) {
