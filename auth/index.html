@@ -837,12 +837,13 @@
 
     const btn = $('#btn-registro');
     setLoading(btn, true);
+    registrando = true;
     try {
       await registrar({ nombre, apellido, email, telefono, provincia, cuit, perfil, password, utm });
-      // Fire-and-forget: no bloqueamos el registro si falla el email
       notificarAdmin({ nombre, apellido, email, telefono, provincia, perfil });
-      // onAuthChange mostrará el panel de sesión automáticamente
+      window.location.replace('../index.html');
     } catch(err) {
+      registrando = false;
       showAlert('#reg-error', tradError(err), 'error');
       setLoading(btn, false);
     }
@@ -861,7 +862,8 @@
   };
 
   // ── Referencia al usuario actual (usada por form-completar) ───
-  let currentUser = null;
+  let currentUser  = null;
+  let registrando  = false; // evita que onAuthChange redirija antes de que setDoc termine
 
   // ── FORMULARIO COMPLETAR PERFIL ───────────────────────────────
   $('#form-completar').addEventListener('submit', async (e) => {
@@ -924,8 +926,9 @@
         tabs.style.display = 'none';
         $('#completar-email').textContent = user.email;
         $('#panel-completar').classList.add('active');
-      } else {
+      } else if (!registrando) {
         // Sesión activa normal → redirigir al simulador
+        // (si registrando=true, el form submit se encarga de redirigir después de setDoc)
         window.location.replace('../index.html');
       }
       return;
