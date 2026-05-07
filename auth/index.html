@@ -127,6 +127,23 @@
       color: #dc2626;
       margin-top: .15rem;
     }
+    .field-hint {
+      font-size: .72rem;
+      color: #64748b;
+      margin-top: .15rem;
+      line-height: 1.35;
+    }
+    .login-hint {
+      font-size: .85rem;
+      color: #475569;
+      margin-bottom: 1rem;
+      line-height: 1.4;
+    }
+    input[readonly] {
+      background: #f8fafc;
+      color: #64748b;
+      cursor: not-allowed;
+    }
 
     /* ── Selector de perfil (tarjetas) ───────────────────────── */
     .perfil-group {
@@ -337,11 +354,11 @@
   <!-- Cabecera -->
   <div class="auth-header">
     <h1>❄️ Portal de Hielo</h1>
-    <p>Ingresá o creá tu cuenta para continuar</p>
+    <p>Ingresá tu email y celular para continuar</p>
   </div>
 
-  <!-- Tabs (ocultas cuando hay sesión) -->
-  <div class="auth-tabs" id="auth-tabs">
+  <!-- Tabs (ocultas en flujo simplificado; quedan en el DOM para fallback) -->
+  <div class="auth-tabs" id="auth-tabs" style="display:none">
     <button class="tab-btn active" data-tab="login">Iniciar sesión</button>
     <button class="tab-btn"        data-tab="registro">Registrarse</button>
   </div>
@@ -349,11 +366,15 @@
   <!-- Cuerpo -->
   <div class="auth-body">
 
-    <!-- ── PANEL LOGIN ────────────────────────────────────────── -->
+    <!-- ── PANEL LOGIN (email + celular) ───────────────────────── -->
     <div id="panel-login" class="panel active">
 
       <div class="alert alert-error" id="login-error"></div>
       <div class="alert alert-success" id="login-success"></div>
+
+      <p class="login-hint">
+        Si es la primera vez, te pediremos algunos datos más en el siguiente paso.
+      </p>
 
       <form id="form-login" novalidate>
 
@@ -367,24 +388,44 @@
 
         <div class="form-row">
           <div class="form-group">
-            <label for="login-password">Contraseña</label>
-            <div class="input-wrap">
-              <input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password" />
-              <button type="button" class="toggle-pw" data-target="login-password" aria-label="Mostrar contraseña">👁</button>
-            </div>
-            <span class="field-error" id="err-login-password"></span>
+            <label for="login-telefono">Celular</label>
+            <input type="tel" id="login-telefono" placeholder="11 1234-5678" autocomplete="tel" />
+            <span class="field-hint">Es tu llave de acceso. La próxima vez ingresás con estos mismos datos.</span>
+            <span class="field-error" id="err-login-telefono"></span>
           </div>
         </div>
 
-        <div class="forgot-wrap">
-          <button type="button" class="btn-link" id="btn-forgot">¿Olvidaste tu contraseña?</button>
-        </div>
-
         <button type="submit" class="btn-primary" id="btn-login">
-          Ingresar
+          Continuar
         </button>
 
       </form>
+
+      <!-- Sección de fallback (aparece si email+celular no matchean) -->
+      <div id="fallback-section" style="display:none; margin-top:1.25rem; padding-top:1rem; border-top:1px solid #e2e8f0;">
+        <p style="font-size:.82rem; color:#64748b; margin-bottom:.6rem;">
+          ¿Te registraste antes con una contraseña?
+        </p>
+        <button type="button" class="btn-link" id="btn-show-old-pw" style="display:block; margin-bottom:.5rem;">
+          Ingresar con mi contraseña anterior
+        </button>
+        <button type="button" class="btn-link" id="btn-forgot" style="display:block;">
+          Recuperar acceso por email
+        </button>
+
+        <!-- Form de password viejo (oculto hasta que se hace clic) -->
+        <div id="old-password-section" style="display:none; margin-top:.85rem;">
+          <div class="form-group" style="margin-bottom:.65rem;">
+            <label for="old-password">Contraseña anterior</label>
+            <div class="input-wrap">
+              <input type="password" id="old-password" placeholder="••••••••" autocomplete="current-password" />
+              <button type="button" class="toggle-pw" data-target="old-password" aria-label="Mostrar contraseña">👁</button>
+            </div>
+          </div>
+          <button type="button" class="btn-primary" id="btn-old-login">Ingresar con contraseña</button>
+        </div>
+      </div>
+
     </div><!-- /panel-login -->
 
     <!-- ── PANEL REGISTRO ─────────────────────────────────────── -->
@@ -582,9 +623,11 @@
   import {
     PROVINCIAS, PERFILES,
     validarCuit, formatearCuit,
+    validarTelefono,
     registrar, login, cerrarSesion,
     recuperarPassword, obtenerDatosUsuario,
-    completarPerfil, onAuthChange
+    completarPerfil, onAuthChange,
+    loginConTelefono, registrarConTelefono, migrarPasswordATelefono
   } from './auth.js';
 
   // ── Captura UTM params ────────────────────────────────────────
@@ -726,7 +769,7 @@
     return erroresFirebase[err.code] || err.message || 'Error inesperado.';
   }
 
-  // ── FORMULARIO LOGIN ──────────────────────────────────────────
+  // ── FORMULARIO LOGIN (email + celular, auto-detect login/registro) ─
   $('#form-login').addEventListener('submit', async (e) => {
     e.preventDefault();
     hideAlert('#login-error');
@@ -734,24 +777,111 @@
     clearErrors();
 
     const email    = $('#login-email').value.trim();
-    const password = $('#login-password').value;
+    const telefono = $('#login-telefono').value.trim();
     let ok = true;
 
     if (!email) {
       setFieldError('#err-login-email', 'Ingresá tu correo.');
       setInputError($('#login-email'), true); ok = false;
     }
-    if (!password) {
-      setFieldError('#err-login-password', 'Ingresá tu contraseña.');
-      setInputError($('#login-password'), true); ok = false;
+    if (!telefono) {
+      setFieldError('#err-login-telefono', 'Ingresá tu celular.');
+      setInputError($('#login-telefono'), true); ok = false;
+    } else if (!validarTelefono(telefono)) {
+      setFieldError('#err-login-telefono', 'El celular debe tener al menos 10 dígitos.');
+      setInputError($('#login-telefono'), true); ok = false;
     }
     if (!ok) return;
 
     const btn = $('#btn-login');
     setLoading(btn, true);
+    $('#fallback-section').style.display = 'none';
+    $('#old-password-section').style.display = 'none';
+
     try {
-      await login(email, password);
-      // onAuthChange se encarga de mostrar el panel de sesión
+      // 1. Intentar login (caso recurrente)
+      await loginConTelefono(email, telefono);
+      // onAuthChange redirige al simulador
+    } catch(loginErr) {
+      const loginCode = loginErr.code || '';
+
+      // Errores que NO son "credenciales que no matchean" → mostrar y abortar.
+      // Firebase devuelve 'invalid-credential' tanto si el email no existe como
+      // si la password es incorrecta (email enumeration protection), así que no
+      // podemos distinguir desde el cliente. La estrategia: intentar registrar.
+      const credCodes = [
+        'auth/user-not-found',
+        'auth/wrong-password',
+        'auth/invalid-credential',
+        'auth/invalid-login-credentials',
+      ];
+      if (!credCodes.includes(loginCode)) {
+        showAlert('#login-error', tradError(loginErr), 'error');
+        setLoading(btn, false);
+        return;
+      }
+
+      // 2. Login falló por credenciales. Intentar registrar.
+      try {
+        passwordlessRegistrando = true;
+        pendingTelefono = telefono;
+        await registrarConTelefono(email, telefono);
+        // Registro OK → onAuthChange mostrará #panel-completar
+      } catch(regErr) {
+        passwordlessRegistrando = false;
+        pendingTelefono = '';
+        if (regErr.code === 'auth/email-already-in-use') {
+          // 3. El email ya existe → era el caso "wrong password" → mostrar fallback
+          showAlert('#login-error', 'Esos datos no coinciden con una cuenta existente.', 'error');
+          $('#fallback-section').style.display = 'block';
+        } else {
+          showAlert('#login-error', tradError(regErr), 'error');
+        }
+        setLoading(btn, false);
+      }
+    }
+  });
+
+  // ── Mostrar input de password vieja (fallback) ────────────────
+  $('#btn-show-old-pw').addEventListener('click', () => {
+    $('#old-password-section').style.display = 'block';
+    $('#old-password').focus();
+  });
+
+  // ── Login con password vieja + ofrecer migrar al celular ─────
+  $('#btn-old-login').addEventListener('click', async () => {
+    hideAlert('#login-error');
+    hideAlert('#login-success');
+
+    const email    = $('#login-email').value.trim();
+    const telefono = $('#login-telefono').value.trim();
+    const oldPw    = $('#old-password').value;
+
+    if (!email) {
+      showAlert('#login-error', 'Ingresá tu correo en el campo de arriba.', 'error');
+      return;
+    }
+    if (!oldPw) {
+      showAlert('#login-error', 'Ingresá tu contraseña anterior.', 'error');
+      return;
+    }
+
+    const btn = $('#btn-old-login');
+    setLoading(btn, true);
+    try {
+      await login(email, oldPw);
+      // Logueado con password vieja. Si tipearon celular válido arriba, ofrecer migrar.
+      if (telefono && validarTelefono(telefono)) {
+        const ok = window.confirm(
+          '¿Querés que la próxima vez puedas ingresar solo con tu email y celular?\n\n' +
+          '(Recomendado: no más contraseñas que recordar.)'
+        );
+        if (ok) {
+          try { await migrarPasswordATelefono(telefono); }
+          catch(_) { /* silencioso: si falla, la password vieja sigue funcionando */ }
+        }
+      }
+      // onAuthChange redirige al simulador
     } catch(err) {
       showAlert('#login-error', tradError(err), 'error');
       setLoading(btn, false);
@@ -762,13 +892,13 @@
   $('#btn-forgot').addEventListener('click', async () => {
     const email = $('#login-email').value.trim();
     if (!email) {
-      setFieldError('#err-login-email', 'Ingresá tu correo para recuperar la contraseña.');
+      setFieldError('#err-login-email', 'Ingresá tu correo en el campo de arriba.');
       setInputError($('#login-email'), true);
       return;
     }
     try {
       await recuperarPassword(email);
-      showAlert('#login-success', 'Te enviamos un correo para restablecer tu contraseña.', 'success');
+      showAlert('#login-success', 'Te enviamos un correo para restablecer tu acceso.', 'success');
     } catch(err) {
       showAlert('#login-error', tradError(err), 'error');
     }
@@ -857,7 +987,9 @@
 
   // ── Referencia al usuario actual (usada por form-completar) ───
   let currentUser  = null;
-  let registrando  = false; // evita que onAuthChange redirija antes de que setDoc termine
+  let registrando  = false; // flujo viejo: evita redirect entre createUser y setDoc
+  let passwordlessRegistrando = false; // flujo nuevo: muestra paso 2 (completar)
+  let pendingTelefono = '';            // celular tipeado en paso 1, pre-llena paso 2
 
   // ── FORMULARIO COMPLETAR PERFIL ───────────────────────────────
   $('#form-completar').addEventListener('submit', async (e) => {
@@ -915,22 +1047,29 @@
 
     if (user) {
       currentUser = user;
-      if (completar) {
-        // Mostrar formulario de completar perfil
-        tabs.style.display = 'none';
+      if (passwordlessRegistrando) {
+        // Recién registrado via email+celular → paso 2 (completar perfil)
+        if (tabs) tabs.style.display = 'none';
+        $('#completar-email').textContent = user.email;
+        if (pendingTelefono) {
+          $('#comp-telefono').value = pendingTelefono;
+          $('#comp-telefono').readOnly = true;
+        }
+        $('#panel-completar').classList.add('active');
+      } else if (completar) {
+        // Usuario ya logueado pero sin perfil completo
+        if (tabs) tabs.style.display = 'none';
         $('#completar-email').textContent = user.email;
         $('#panel-completar').classList.add('active');
       } else if (!registrando) {
         // Sesión activa normal → redirigir al simulador
-        // (si registrando=true, el form submit se encarga de redirigir después de setDoc)
+        // (si registrando=true, el form-registro viejo redirige después de setDoc)
         window.location.replace('../index.html');
       }
       return;
     } else {
-      // Sin sesión: mostrar tabs y login por defecto
+      // Sin sesión: panel de login por defecto
       currentUser = null;
-      tabs.style.display = '';
-      $('[data-tab="login"]')?.classList.add('active');
       $('#panel-login').classList.add('active');
     }
   });
