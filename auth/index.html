@@ -802,28 +802,41 @@
       // 1. Intentar login (caso recurrente)
       await loginConTelefono(email, telefono);
       // onAuthChange redirige al simulador
-    } catch(err) {
-      const code = err.code || '';
-      if (code === 'auth/user-not-found') {
-        // 2. Email no existe → registrar nueva cuenta
-        try {
-          passwordlessRegistrando = true;
-          pendingTelefono = telefono;
-          await registrarConTelefono(email, telefono);
-          // onAuthChange mostrará #panel-completar para el paso 2
-        } catch(err2) {
-          passwordlessRegistrando = false;
-          pendingTelefono = '';
-          showAlert('#login-error', tradError(err2), 'error');
-          setLoading(btn, false);
-        }
-      } else if (code === 'auth/wrong-password' || code === 'auth/invalid-credential') {
-        // 3. Email existe pero el celular no matchea → mostrar fallback
-        showAlert('#login-error', 'Esos datos no coinciden con una cuenta existente.', 'error');
-        $('#fallback-section').style.display = 'block';
+    } catch(loginErr) {
+      const loginCode = loginErr.code || '';
+
+      // Errores que NO son "credenciales que no matchean" → mostrar y abortar.
+      // Firebase devuelve 'invalid-credential' tanto si el email no existe como
+      // si la password es incorrecta (email enumeration protection), así que no
+      // podemos distinguir desde el cliente. La estrategia: intentar registrar.
+      const credCodes = [
+        'auth/user-not-found',
+        'auth/wrong-password',
+        'auth/invalid-credential',
+        'auth/invalid-login-credentials',
+      ];
+      if (!credCodes.includes(loginCode)) {
+        showAlert('#login-error', tradError(loginErr), 'error');
         setLoading(btn, false);
-      } else {
-        showAlert('#login-error', tradError(err), 'error');
+        return;
+      }
+
+      // 2. Login falló por credenciales. Intentar registrar.
+      try {
+        passwordlessRegistrando = true;
+        pendingTelefono = telefono;
+        await registrarConTelefono(email, telefono);
+        // Registro OK → onAuthChange mostrará #panel-completar
+      } catch(regErr) {
+        passwordlessRegistrando = false;
+        pendingTelefono = '';
+        if (regErr.code === 'auth/email-already-in-use') {
+          // 3. El email ya existe → era el caso "wrong password" → mostrar fallback
+          showAlert('#login-error', 'Esos datos no coinciden con una cuenta existente.', 'error');
+          $('#fallback-section').style.display = 'block';
+        } else {
+          showAlert('#login-error', tradError(regErr), 'error');
+        }
         setLoading(btn, false);
       }
     }
