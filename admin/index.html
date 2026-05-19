@@ -7,6 +7,8 @@
 
 <!-- SheetJS para exportar Excel -->
 <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+<!-- Chart.js para gráficos -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 
 <style>
 /* ── Reset ─────────────────────────────────────────────────── */
@@ -253,6 +255,72 @@ tr:hover td { background: #f8fafc; }
   transition: opacity .2s, transform .2s; pointer-events: none;
 }
 .toast.show { opacity: 1; transform: translateY(0); }
+
+/* ── Nav tabs ───────────────────────────────────────────────── */
+.nav-tabs {
+  display: flex; background: #fff; border-radius: .75rem .75rem 0 0;
+  border-bottom: 2px solid #e2e8f0; margin-bottom: 0;
+}
+.nav-tab-btn {
+  padding: .85rem 1.5rem; font-size: .88rem; font-weight: 700;
+  color: #64748b; border: none; background: none; cursor: pointer;
+  border-bottom: 3px solid transparent; margin-bottom: -2px;
+  transition: color .15s, border-color .15s;
+}
+.nav-tab-btn:hover { color: #0d3b66; }
+.nav-tab-btn.active { color: #0d3b66; border-bottom-color: #0ea5e9; }
+
+/* ── Tab panels ─────────────────────────────────────────────── */
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+#tab-usuarios .toolbar { margin-top: 1rem; }
+
+/* ── Stat section card ──────────────────────────────────────── */
+.stat-section {
+  background: #fff; border-radius: .75rem;
+  box-shadow: 0 1px 6px rgba(0,0,0,.07);
+  padding: 1.25rem 1.5rem; margin-bottom: 1.25rem;
+}
+.stat-section h3 {
+  font-size: .9rem; font-weight: 800; color: #0d3b66; margin-bottom: 1rem;
+}
+.chart-canvas-wrap { position: relative; height: 280px; }
+
+/* ── Range selector ─────────────────────────────────────────── */
+.range-selector { display: flex; align-items: center; gap: .5rem; margin-bottom: 1.25rem; }
+.range-selector label { font-size: .78rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: .3px; }
+.range-btn {
+  padding: .38rem .85rem; font-size: .82rem; font-weight: 700;
+  border: 1.5px solid #cbd5e1; border-radius: .4rem;
+  background: #fff; color: #64748b; cursor: pointer; transition: all .15s;
+}
+.range-btn:hover, .range-btn.active { background: #0d3b66; color: #fff; border-color: #0d3b66; }
+
+/* ── Two-column chart grid ──────────────────────────────────── */
+.charts-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-bottom: 1.25rem; }
+@media(max-width: 820px) { .charts-2col { grid-template-columns: 1fr; } }
+
+/* ── Retención layout ───────────────────────────────────────── */
+.retention-layout { display: grid; grid-template-columns: 200px 1fr; gap: 1.75rem; align-items: start; }
+@media(max-width: 700px) { .retention-layout { grid-template-columns: 1fr; } }
+.ret-legend { display: flex; flex-direction: column; gap: .4rem; margin-top: .75rem; font-size: .82rem; }
+.ret-legend-item { display: flex; align-items: center; gap: .5rem; }
+.ret-dot { width: 11px; height: 11px; border-radius: 50%; flex-shrink: 0; }
+
+/* ── Stats data table ───────────────────────────────────────── */
+.sdt { width: 100%; border-collapse: collapse; font-size: .82rem; margin-top: .85rem; }
+.sdt th {
+  padding: .45rem .75rem; background: #f8fafc; font-size: .7rem; font-weight: 700;
+  color: #64748b; text-transform: uppercase; letter-spacing: .3px;
+  border-bottom: 1px solid #e2e8f0; cursor: default;
+}
+.sdt td { padding: .45rem .75rem; border-bottom: 1px solid #f1f5f9; color: #475569; }
+.sdt tr:last-child td { border-bottom: none; }
+.sdt tr:hover td { background: #f8fafc; }
+.var-pos { color: #16a34a; font-weight: 700; }
+.var-neg { color: #dc2626; font-weight: 700; }
+.var-neu { color: #94a3b8; font-size: .78rem; }
+.daily-table-scroll { max-height: 200px; overflow-y: auto; margin-top: .75rem; }
 </style>
 </head>
 <body>
@@ -322,48 +390,120 @@ tr:hover td { background: #f8fafc; }
       </div>
     </div>
 
-    <!-- Toolbar -->
-    <div class="toolbar">
-      <h2>👥 Usuarios</h2>
-      <div class="search-box">
-        🔍 <input type="text" id="search-input" placeholder="Buscar por nombre, email o provincia…">
-      </div>
-      <select class="filter-select" id="filter-temp">
-        <option value="">Todos los leads</option>
-        <option value="caliente">🔥 Calientes</option>
-        <option value="tibio">🌡️ Tibios</option>
-        <option value="frio">🧊 Fríos</option>
-      </select>
-      <select class="filter-select" id="filter-perfil">
-        <option value="">Todos los perfiles</option>
-        <option value="consumo_propio">🏠 Consumo propio</option>
-        <option value="venta_negocio">🏪 Venta en negocio</option>
-        <option value="distribucion_hielo">🚚 Distribución</option>
-      </select>
-      <button class="btn-refresh" id="btn-refresh" title="Actualizar">↻</button>
-      <button class="btn-export" id="btn-export">⬇️ Exportar Excel</button>
+    <!-- Nav Tabs -->
+    <div class="nav-tabs">
+      <button class="nav-tab-btn active" data-tab="usuarios">👥 Usuarios</button>
+      <button class="nav-tab-btn" data-tab="estadisticas">📊 Estadísticas</button>
     </div>
 
-    <!-- Table -->
-    <div class="table-wrap">
-      <div id="table-loading" class="spinner-wrap"><div class="spinner"></div></div>
-      <div id="table-empty" class="table-msg" style="display:none">No se encontraron usuarios.</div>
-      <table id="users-table" style="display:none">
-        <thead>
-          <tr>
-            <th data-col="nombre">Nombre <span class="sort-icon">↕</span></th>
-            <th>Perfil</th>
-            <th data-col="provincia">Provincia <span class="sort-icon">↕</span></th>
-            <th data-col="creadoEn">Registro <span class="sort-icon">↕</span></th>
-            <th data-col="ultimaVisita">Última visita <span class="sort-icon">↕</span></th>
-            <th data-col="sesiones">Sesiones <span class="sort-icon">↕</span></th>
-            <th data-col="temp">Temperatura <span class="sort-icon">↕</span></th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody id="users-tbody"></tbody>
-      </table>
-    </div>
+    <!-- ── Tab: Usuarios ──────────────────────────────────────── -->
+    <div id="tab-usuarios" class="tab-panel active">
+
+      <!-- Toolbar -->
+      <div class="toolbar">
+        <h2>👥 Usuarios</h2>
+        <div class="search-box">
+          🔍 <input type="text" id="search-input" placeholder="Buscar por nombre, email o provincia…">
+        </div>
+        <select class="filter-select" id="filter-temp">
+          <option value="">Todos los leads</option>
+          <option value="caliente">🔥 Calientes</option>
+          <option value="tibio">🌡️ Tibios</option>
+          <option value="frio">🧊 Fríos</option>
+        </select>
+        <select class="filter-select" id="filter-perfil">
+          <option value="">Todos los perfiles</option>
+          <option value="consumo_propio">🏠 Consumo propio</option>
+          <option value="venta_negocio">🏪 Venta en negocio</option>
+          <option value="distribucion_hielo">🚚 Distribución</option>
+        </select>
+        <button class="btn-refresh" id="btn-refresh" title="Actualizar">↻</button>
+        <button class="btn-export" id="btn-export">⬇️ Exportar Excel</button>
+      </div>
+
+      <!-- Table -->
+      <div class="table-wrap">
+        <div id="table-loading" class="spinner-wrap"><div class="spinner"></div></div>
+        <div id="table-empty" class="table-msg" style="display:none">No se encontraron usuarios.</div>
+        <table id="users-table" style="display:none">
+          <thead>
+            <tr>
+              <th data-col="nombre">Nombre <span class="sort-icon">↕</span></th>
+              <th>Perfil</th>
+              <th data-col="provincia">Provincia <span class="sort-icon">↕</span></th>
+              <th data-col="creadoEn">Registro <span class="sort-icon">↕</span></th>
+              <th data-col="ultimaVisita">Última visita <span class="sort-icon">↕</span></th>
+              <th data-col="sesiones">Sesiones <span class="sort-icon">↕</span></th>
+              <th data-col="temp">Temperatura <span class="sort-icon">↕</span></th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="users-tbody"></tbody>
+        </table>
+      </div>
+
+    </div><!-- /tab-usuarios -->
+
+    <!-- ── Tab: Estadísticas ──────────────────────────────────── -->
+    <div id="tab-estadisticas" class="tab-panel">
+
+      <div class="range-selector" style="margin-top:1rem">
+        <label>Período:</label>
+        <button class="range-btn" data-days="7">7 días</button>
+        <button class="range-btn active" data-days="30">30 días</button>
+        <button class="range-btn" data-days="90">90 días</button>
+      </div>
+
+      <!-- 1. Entradas por día -->
+      <div class="stat-section">
+        <h3>📅 Entradas por día</h3>
+        <div class="chart-canvas-wrap"><canvas id="chart-daily"></canvas></div>
+        <div class="daily-table-scroll">
+          <table class="sdt">
+            <thead><tr><th>Fecha</th><th>Sesiones</th><th>Variación</th></tr></thead>
+            <tbody id="daily-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 2 y 3 en dos columnas -->
+      <div class="charts-2col">
+
+        <div class="stat-section">
+          <h3>📍 Usuarios por provincia</h3>
+          <div class="chart-canvas-wrap"><canvas id="chart-provincias"></canvas></div>
+        </div>
+
+        <div class="stat-section">
+          <h3>👤 Conversión por perfil</h3>
+          <div class="chart-canvas-wrap"><canvas id="chart-perfiles"></canvas></div>
+          <table class="sdt">
+            <thead><tr><th>Perfil</th><th>Usuarios</th><th>Ses. prom. (período)</th></tr></thead>
+            <tbody id="perfiles-tbody"></tbody>
+          </table>
+        </div>
+
+      </div>
+
+      <!-- 4. Retención -->
+      <div class="stat-section">
+        <h3>🔄 Retención de usuarios</h3>
+        <div class="retention-layout">
+          <div>
+            <div style="position:relative;height:200px"><canvas id="chart-retencion"></canvas></div>
+            <div class="ret-legend" id="ret-legend"></div>
+          </div>
+          <div>
+            <div style="font-size:.78rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.4px;margin-bottom:.6rem">Top 10 usuarios más activos</div>
+            <table class="sdt">
+              <thead><tr><th>#</th><th>Usuario</th><th>Sesiones</th><th>Última visita</th></tr></thead>
+              <tbody id="top-users-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /tab-estadisticas -->
 
   </div><!-- /admin-main -->
 </div><!-- /section-panel -->
@@ -538,6 +678,9 @@ async function loadData() {
 
     updateStats();
     renderTable();
+    if (document.getElementById('tab-estadisticas').classList.contains('active')) {
+      renderEstadisticas();
+    }
   } catch(e) {
     console.error(e);
     toast('Error al cargar datos: ' + e.message);
@@ -839,6 +982,243 @@ function badgeTemp(t) {
   };
   const [cls, lbl] = cfg[t] || ['bt-cold', '🧊 Frío'];
   return `<span class="badge-temp ${cls}">${lbl}</span>`;
+}
+
+// ══ ESTADÍSTICAS ══════════════════════════════════════════════
+
+// ── Tab switching ─────────────────────────────────────────────
+document.querySelectorAll('.nav-tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.nav-tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById(`tab-${btn.dataset.tab}`).classList.add('active');
+    if (btn.dataset.tab === 'estadisticas' && allSessions.length > 0) {
+      renderEstadisticas();
+    }
+  });
+});
+
+// ── Range selector ────────────────────────────────────────────
+let statsDays = 30;
+let chartDaily = null, chartProvincias = null, chartPerfiles = null, chartRetencion = null;
+
+document.querySelectorAll('.range-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.range-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    statsDays = parseInt(btn.dataset.days, 10);
+    renderEstadisticas();
+  });
+});
+
+// ── Render principal ──────────────────────────────────────────
+function renderEstadisticas() {
+  const cutoff = Date.now() - statsDays * 86400000;
+  const sessInRange = allSessions.filter(s => {
+    const ts = s.timestampEntrada?.toDate?.()?.getTime()
+      ?? (s.timestampEntrada ? new Date(s.timestampEntrada).getTime() : 0);
+    return ts >= cutoff;
+  });
+  renderDailyChart(sessInRange);
+  renderProvinciasChart();
+  renderPerfilesChart(sessInRange);
+  renderRetencionChart(sessInRange);
+}
+
+function killChart(ref) { if (ref) ref.destroy(); return null; }
+
+// ── 1. Entradas por día ───────────────────────────────────────
+function renderDailyChart(sessInRange) {
+  const buckets = {};
+  for (let i = statsDays - 1; i >= 0; i--) {
+    const key = new Date(Date.now() - i * 86400000)
+      .toLocaleDateString('es-AR', { day:'2-digit', month:'2-digit', year:'2-digit' });
+    buckets[key] = 0;
+  }
+  sessInRange.forEach(s => {
+    const ts = s.timestampEntrada?.toDate?.() ?? (s.timestampEntrada ? new Date(s.timestampEntrada) : null);
+    if (!ts) return;
+    const key = ts.toLocaleDateString('es-AR', { day:'2-digit', month:'2-digit', year:'2-digit' });
+    if (key in buckets) buckets[key]++;
+  });
+
+  const labels = Object.keys(buckets);
+  const values = Object.values(buckets);
+
+  chartDaily = killChart(chartDaily);
+  chartDaily = new Chart(document.getElementById('chart-daily'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{ label: 'Sesiones', data: values,
+        backgroundColor: 'rgba(14,165,233,0.75)', borderColor: '#0ea5e9',
+        borderWidth: 1, borderRadius: 4 }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { display: false }, ticks: { maxTicksLimit: 12, font: { size: 11 } } },
+        y: { beginAtZero: true, ticks: { stepSize: 1, font: { size: 11 } } }
+      }
+    }
+  });
+
+  const tbody = document.getElementById('daily-tbody');
+  const reversed = labels.map((l, i) => ({ label: l, val: values[i] })).reverse();
+  tbody.innerHTML = reversed.map((row, i) => {
+    const prev = reversed[i + 1];
+    let varHtml = '<span class="var-neu">—</span>';
+    if (prev != null) {
+      if (prev.val === 0 && row.val > 0) varHtml = '<span class="var-pos">+∞</span>';
+      else if (prev.val > 0) {
+        const pct = ((row.val - prev.val) / prev.val * 100).toFixed(1);
+        varHtml = parseFloat(pct) >= 0
+          ? `<span class="var-pos">+${pct}%</span>`
+          : `<span class="var-neg">${pct}%</span>`;
+      }
+    }
+    return `<tr><td>${row.label}</td><td style="font-weight:700">${row.val}</td><td>${varHtml}</td></tr>`;
+  }).join('');
+}
+
+// ── 2. Usuarios por provincia ─────────────────────────────────
+function renderProvinciasChart() {
+  const counts = {};
+  allUsers.forEach(u => {
+    const p = u.provincia || 'Sin datos';
+    counts[p] = (counts[p] || 0) + 1;
+  });
+  const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+  const labels = sorted.map(([p]) => p);
+  const values = sorted.map(([, c]) => c);
+  const total  = values.reduce((a, b) => a + b, 0);
+  const palette = ['#0ea5e9','#3b82f6','#6366f1','#8b5cf6','#a855f7',
+    '#ec4899','#f43f5e','#f97316','#eab308','#22c55e',
+    '#14b8a6','#06b6d4','#64748b','#94a3b8','#cbd5e1'];
+
+  chartProvincias = killChart(chartProvincias);
+  chartProvincias = new Chart(document.getElementById('chart-provincias'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{ label: 'Usuarios', data: values,
+        backgroundColor: palette.slice(0, labels.length), borderRadius: 4 }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: ctx => ` ${ctx.raw} (${(ctx.raw/total*100).toFixed(1)}%)` } }
+      },
+      scales: {
+        x: { beginAtZero: true, ticks: { stepSize: 1, font: { size: 11 } } },
+        y: { grid: { display: false }, ticks: { font: { size: 11 } } }
+      }
+    }
+  });
+}
+
+// ── 3. Conversión por perfil ──────────────────────────────────
+function renderPerfilesChart(sessInRange) {
+  const perfLabels = {
+    consumo_propio:     '🏠 Consumo propio',
+    venta_negocio:      '🏪 Negocio',
+    distribucion_hielo: '🚚 Distribución',
+  };
+  const data = {};
+  allUsers.forEach(u => {
+    const p = u.perfil || 'sin_perfil';
+    if (!data[p]) data[p] = { count: 0, sessTotal: 0 };
+    data[p].count++;
+  });
+  const sessByUid = {};
+  sessInRange.forEach(s => { sessByUid[s.uid] = (sessByUid[s.uid] || 0) + 1; });
+  allUsers.forEach(u => {
+    const p = u.perfil || 'sin_perfil';
+    if (data[p]) data[p].sessTotal += (sessByUid[u.uid] || 0);
+  });
+
+  const perfiles = Object.keys(data).sort((a, b) => data[b].count - data[a].count);
+  const colors   = ['#0ea5e9','#22c55e','#f59e0b','#8b5cf6','#ef4444'];
+
+  chartPerfiles = killChart(chartPerfiles);
+  chartPerfiles = new Chart(document.getElementById('chart-perfiles'), {
+    type: 'bar',
+    data: {
+      labels: perfiles.map(p => perfLabels[p] || p),
+      datasets: [{ label: 'Usuarios', data: perfiles.map(p => data[p].count),
+        backgroundColor: colors.slice(0, perfiles.length), borderRadius: 4 }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { size: 11 } } },
+        y: { beginAtZero: true, ticks: { stepSize: 1, font: { size: 11 } } }
+      }
+    }
+  });
+
+  document.getElementById('perfiles-tbody').innerHTML = perfiles.map(p => {
+    const d = data[p];
+    const avg = d.count > 0 ? (d.sessTotal / d.count).toFixed(1) : '0.0';
+    return `<tr><td>${perfLabels[p] || p}</td><td style="font-weight:700">${d.count}</td><td>${avg}</td></tr>`;
+  }).join('');
+}
+
+// ── 4. Retención ──────────────────────────────────────────────
+function renderRetencionChart(sessInRange) {
+  const sessByUid = {};
+  sessInRange.forEach(s => { sessByUid[s.uid] = (sessByUid[s.uid] || 0) + 1; });
+
+  const uids     = Object.keys(sessByUid);
+  const una      = uids.filter(uid => sessByUid[uid] === 1).length;
+  const varios   = uids.filter(uid => sessByUid[uid] > 1).length;
+  const sinSess  = allUsers.length - uids.length;
+  const total    = allUsers.length;
+
+  chartRetencion = killChart(chartRetencion);
+  chartRetencion = new Chart(document.getElementById('chart-retencion'), {
+    type: 'doughnut',
+    data: {
+      labels: ['1 sesión', '>1 sesión', 'Sin actividad'],
+      datasets: [{ data: [una, varios, sinSess],
+        backgroundColor: ['#fbbf24','#0ea5e9','#e2e8f0'], borderWidth: 0 }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      cutout: '62%',
+      plugins: { legend: { display: false } }
+    }
+  });
+
+  document.getElementById('ret-legend').innerHTML = [
+    ['#fbbf24', '1 sesión',        una],
+    ['#0ea5e9', '>1 sesiones',     varios],
+    ['#e2e8f0', 'Sin actividad',   sinSess],
+  ].map(([color, label, count]) =>
+    `<div class="ret-legend-item">
+       <span class="ret-dot" style="background:${color}"></span>
+       <span>${label}: <strong>${count}</strong> ${total > 0 ? `(${(count/total*100).toFixed(1)}%)` : ''}</span>
+     </div>`
+  ).join('');
+
+  document.getElementById('top-users-tbody').innerHTML = [...allUsers]
+    .filter(u => u.sesiones > 0)
+    .sort((a, b) => b.sesiones - a.sesiones)
+    .slice(0, 10)
+    .map((u, i) => `<tr>
+      <td style="color:#94a3b8;font-weight:700">${i + 1}</td>
+      <td>
+        <div style="font-weight:700;color:#0d3b66">${esc([u.nombre,u.apellido].filter(Boolean).join(' ') || u.email)}</div>
+        <div style="font-size:.75rem;color:#94a3b8">${esc(u.email)}</div>
+      </td>
+      <td style="font-weight:800;color:#0ea5e9">${u.sesiones}</td>
+      <td style="font-size:.78rem">${fmtDate(u.ultimaVisita) || '—'}</td>
+    </tr>`).join('');
 }
 </script>
 </body>
