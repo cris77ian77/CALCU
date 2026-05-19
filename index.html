@@ -106,6 +106,19 @@
     await signOut(auth);
     window.location.replace('./auth/index.html');
   });
+
+  // ── Tracking de clicks en botones de contacto ─────────────────
+  function trackContactClick(tipo) {
+    const u = auth.currentUser;
+    addDoc(collection(db, 'clicks'), {
+      uid:       u?.uid   || 'anonimo',
+      email:     u?.email || 'anonimo',
+      tipo,
+      timestamp: serverTimestamp(),
+    }).catch(() => {});
+  }
+  document.querySelector('.cbtn-calendly')?.addEventListener('click', () => trackContactClick('calendly'));
+  document.querySelector('.cbtn-whatsapp')?.addEventListener('click', () => trackContactClick('whatsapp'));
 </script>
 <!-- ─────────────────────────────────────────────────────── -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>

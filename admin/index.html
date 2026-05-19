@@ -434,6 +434,7 @@ tr:hover td { background: #f8fafc; }
               <th data-col="creadoEn">Registro <span class="sort-icon">↕</span></th>
               <th data-col="ultimaVisita">Última visita <span class="sort-icon">↕</span></th>
               <th data-col="sesiones">Sesiones <span class="sort-icon">↕</span></th>
+              <th data-col="clicksTotal">Contacto <span class="sort-icon">↕</span></th>
               <th data-col="temp">Temperatura <span class="sort-icon">↕</span></th>
               <th></th>
             </tr>
@@ -460,7 +461,7 @@ tr:hover td { background: #f8fafc; }
         <div class="chart-canvas-wrap"><canvas id="chart-daily"></canvas></div>
         <div class="daily-table-scroll">
           <table class="sdt">
-            <thead><tr><th>Fecha</th><th>Sesiones</th><th>Variación</th></tr></thead>
+            <thead><tr><th>Fecha</th><th>Sesiones</th><th>📅</th><th>💬</th><th>Var. ses.</th></tr></thead>
             <tbody id="daily-tbody"></tbody>
           </table>
         </div>
@@ -554,6 +555,7 @@ function toast(msg, ms = 2800) {
 // ── Estado global ─────────────────────────────────────────────
 let allUsers    = [];   // filas combinadas (usuario + stats sesiones)
 let allSessions = [];   // todas las sesiones raw
+let allClicks   = [];   // todos los clicks raw a botones de contacto
 let sortCol     = 'ultimaVisita';
 let sortDir     = -1;   // -1 desc, 1 asc
 
@@ -633,8 +635,11 @@ async function loadData() {
     const usersSnap    = await getDocs(collection(db, 'usuarios'));
     // 2. Traer todas las sesiones
     const sessionsSnap = await getDocs(collection(db, 'sesiones'));
+    // 3. Traer todos los clicks de contacto
+    const clicksSnap   = await getDocs(collection(db, 'clicks'));
 
     allSessions = sessionsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    allClicks   = clicksSnap.docs.map(d => ({ id: d.id, ...d.data() }));
 
     // Agrupar sesiones por uid
     const sessByUid = {};
@@ -643,10 +648,20 @@ async function loadData() {
       sessByUid[s.uid].push(s);
     });
 
+    // Agrupar clicks por uid
+    const clicksByUid = {};
+    allClicks.forEach(c => {
+      if (!clicksByUid[c.uid]) clicksByUid[c.uid] = { calendly: 0, whatsapp: 0, list: [] };
+      if (c.tipo === 'calendly') clicksByUid[c.uid].calendly++;
+      if (c.tipo === 'whatsapp') clicksByUid[c.uid].whatsapp++;
+      clicksByUid[c.uid].list.push(c);
+    });
+
     // Combinar usuario + stats
     allUsers = usersSnap.docs.map(d => {
       const u    = { uid: d.id, ...d.data() };
       const sess = sessByUid[d.id] || [];
+      const clk  = clicksByUid[d.id] || { calendly: 0, whatsapp: 0, list: [] };
 
       // Última visita
       let ultimaVisita = null;
@@ -668,11 +683,15 @@ async function loadData() {
 
       return {
         ...u,
-        sesiones:     sess.length,
+        sesiones:       sess.length,
         ultimaVisita,
         recalcTotal,
         maqTop,
-        temperatura:  calcTemp(ultimaVisita, sess.length),
+        temperatura:    calcTemp(ultimaVisita, sess.length),
+        clicksCalendly: clk.calendly,
+        clicksWhatsapp: clk.whatsapp,
+        clicksTotal:    clk.calendly + clk.whatsapp,
+        clicksList:     clk.list,
       };
     });
 
@@ -761,6 +780,7 @@ function renderTable() {
       <td>${fmtDate(u.creadoEn)}</td>
       <td>${fmtDate(u.ultimaVisita) || '<span style="color:#94a3b8">Sin visitas</span>'}</td>
       <td style="font-weight:700;color:#0d3b66">${u.sesiones}</td>
+      <td>${badgeContacto(u.clicksCalendly, u.clicksWhatsapp)}</td>
       <td>${badgeTemp(u.temperatura)}</td>
       <td><button class="btn-ver" data-uid="${u.uid}">Ver →</button></td>
     </tr>
@@ -815,6 +835,11 @@ function openDrawer(uid) {
       const tb = b.timestampEntrada?.toDate?.()?.getTime() ?? 0;
       return tb - ta;
     });
+  const clicks = (u.clicksList || []).slice().sort((a, b) => {
+    const ta = a.timestamp?.toDate?.()?.getTime() ?? 0;
+    const tb = b.timestamp?.toDate?.()?.getTime() ?? 0;
+    return tb - ta;
+  });
 
   $('#dr-avatar').textContent = (u.nombre?.[0] ?? u.email?.[0] ?? '?').toUpperCase();
   $('#dr-name').textContent   = `${u.nombre} ${u.apellido}`;
@@ -840,7 +865,28 @@ function openDrawer(uid) {
       <div class="info-item"><div class="ik">Temperatura</div><div class="iv">${badgeTemp(u.temperatura)}</div></div>
       <div class="info-item"><div class="ik">Origen (utm_source)</div><div class="iv">${esc(u.utm?.utm_source || 'Directo')}</div></div>
       <div class="info-item"><div class="ik">Campaña</div><div class="iv">${esc(u.utm?.utm_campaign || '—')}</div></div>
+      <div class="info-item"><div class="ik">📅 Clicks Calendly</div><div class="iv" style="font-size:1.2rem;font-weight:800;color:#0d3b66">${u.clicksCalendly}</div></div>
+      <div class="info-item"><div class="ik">💬 Clicks WhatsApp</div><div class="iv" style="font-size:1.2rem;font-weight:800;color:#16a34a">${u.clicksWhatsapp}</div></div>
     </div>
+
+    <div class="section-title">🔗 Historial de clicks de contacto (${clicks.length})</div>
+    ${clicks.length === 0
+      ? `<div class="no-sessions">Sin clicks a botones de contacto.</div>`
+      : `<table class="sessions-table">
+          <thead><tr><th>Fecha</th><th>Tipo</th></tr></thead>
+          <tbody>
+            ${clicks.map(c => {
+              const ts = c.timestamp?.toDate?.() ?? (c.timestamp ? new Date(c.timestamp) : null);
+              const tipoLbl = c.tipo === 'calendly'
+                ? '<span style="color:#0d3b66;font-weight:700">📅 Calendly</span>'
+                : c.tipo === 'whatsapp'
+                ? '<span style="color:#16a34a;font-weight:700">💬 WhatsApp</span>'
+                : esc(c.tipo);
+              return `<tr><td>${fmtDateTime(ts)}</td><td>${tipoLbl}</td></tr>`;
+            }).join('')}
+          </tbody>
+        </table>`
+    }
 
     <div class="section-title">📋 Historial de sesiones (${sess.length})</div>
     ${sess.length === 0
@@ -984,6 +1030,14 @@ function badgeTemp(t) {
   return `<span class="badge-temp ${cls}">${lbl}</span>`;
 }
 
+function badgeContacto(cal, wsp) {
+  if (!cal && !wsp) return '<span style="color:#cbd5e1">—</span>';
+  const parts = [];
+  if (cal) parts.push(`<span title="Clicks a Calendly" style="color:#0d3b66;font-weight:700">📅 ${cal}</span>`);
+  if (wsp) parts.push(`<span title="Clicks a WhatsApp" style="color:#16a34a;font-weight:700">💬 ${wsp}</span>`);
+  return `<span style="display:inline-flex;gap:.5rem;align-items:center">${parts.join('<span style="color:#cbd5e1">·</span>')}</span>`;
+}
+
 // ══ ESTADÍSTICAS ══════════════════════════════════════════════
 
 // ── Tab switching ─────────────────────────────────────────────
@@ -1020,7 +1074,12 @@ function renderEstadisticas() {
       ?? (s.timestampEntrada ? new Date(s.timestampEntrada).getTime() : 0);
     return ts >= cutoff;
   });
-  renderDailyChart(sessInRange);
+  const clicksInRange = allClicks.filter(c => {
+    const ts = c.timestamp?.toDate?.()?.getTime()
+      ?? (c.timestamp ? new Date(c.timestamp).getTime() : 0);
+    return ts >= cutoff;
+  });
+  renderDailyChart(sessInRange, clicksInRange);
   renderProvinciasChart();
   renderPerfilesChart(sessInRange);
   renderRetencionChart(sessInRange);
@@ -1029,35 +1088,46 @@ function renderEstadisticas() {
 function killChart(ref) { if (ref) ref.destroy(); return null; }
 
 // ── 1. Entradas por día ───────────────────────────────────────
-function renderDailyChart(sessInRange) {
-  const buckets = {};
+function renderDailyChart(sessInRange, clicksInRange) {
+  const sess = {}, cal = {}, wsp = {};
   for (let i = statsDays - 1; i >= 0; i--) {
     const key = new Date(Date.now() - i * 86400000)
       .toLocaleDateString('es-AR', { day:'2-digit', month:'2-digit', year:'2-digit' });
-    buckets[key] = 0;
+    sess[key] = 0; cal[key] = 0; wsp[key] = 0;
   }
   sessInRange.forEach(s => {
     const ts = s.timestampEntrada?.toDate?.() ?? (s.timestampEntrada ? new Date(s.timestampEntrada) : null);
     if (!ts) return;
     const key = ts.toLocaleDateString('es-AR', { day:'2-digit', month:'2-digit', year:'2-digit' });
-    if (key in buckets) buckets[key]++;
+    if (key in sess) sess[key]++;
+  });
+  clicksInRange.forEach(c => {
+    const ts = c.timestamp?.toDate?.() ?? (c.timestamp ? new Date(c.timestamp) : null);
+    if (!ts) return;
+    const key = ts.toLocaleDateString('es-AR', { day:'2-digit', month:'2-digit', year:'2-digit' });
+    if (c.tipo === 'calendly' && key in cal) cal[key]++;
+    if (c.tipo === 'whatsapp' && key in wsp) wsp[key]++;
   });
 
-  const labels = Object.keys(buckets);
-  const values = Object.values(buckets);
+  const labels   = Object.keys(sess);
+  const sessVals = Object.values(sess);
+  const calVals  = Object.values(cal);
+  const wspVals  = Object.values(wsp);
 
   chartDaily = killChart(chartDaily);
   chartDaily = new Chart(document.getElementById('chart-daily'), {
     type: 'bar',
     data: {
       labels,
-      datasets: [{ label: 'Sesiones', data: values,
-        backgroundColor: 'rgba(14,165,233,0.75)', borderColor: '#0ea5e9',
-        borderWidth: 1, borderRadius: 4 }]
+      datasets: [
+        { label: 'Sesiones',        data: sessVals, backgroundColor: 'rgba(14,165,233,0.75)', borderColor: '#0ea5e9', borderWidth: 1, borderRadius: 4 },
+        { label: '📅 Calendly',     data: calVals,  backgroundColor: 'rgba(13,59,102,0.85)',  borderColor: '#0d3b66', borderWidth: 1, borderRadius: 4 },
+        { label: '💬 WhatsApp',     data: wspVals,  backgroundColor: 'rgba(37,211,102,0.85)', borderColor: '#16a34a', borderWidth: 1, borderRadius: 4 },
+      ]
     },
     options: {
       responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
+      plugins: { legend: { position: 'top', labels: { font: { size: 11 }, boxWidth: 14 } } },
       scales: {
         x: { grid: { display: false }, ticks: { maxTicksLimit: 12, font: { size: 11 } } },
         y: { beginAtZero: true, ticks: { stepSize: 1, font: { size: 11 } } }
@@ -1066,20 +1136,28 @@ function renderDailyChart(sessInRange) {
   });
 
   const tbody = document.getElementById('daily-tbody');
-  const reversed = labels.map((l, i) => ({ label: l, val: values[i] })).reverse();
-  tbody.innerHTML = reversed.map((row, i) => {
-    const prev = reversed[i + 1];
+  const rows = labels.map((l, i) => ({
+    label: l, sess: sessVals[i], cal: calVals[i], wsp: wspVals[i]
+  })).reverse();
+  tbody.innerHTML = rows.map((row, i) => {
+    const prev = rows[i + 1];
     let varHtml = '<span class="var-neu">—</span>';
     if (prev != null) {
-      if (prev.val === 0 && row.val > 0) varHtml = '<span class="var-pos">+∞</span>';
-      else if (prev.val > 0) {
-        const pct = ((row.val - prev.val) / prev.val * 100).toFixed(1);
+      if (prev.sess === 0 && row.sess > 0) varHtml = '<span class="var-pos">+∞</span>';
+      else if (prev.sess > 0) {
+        const pct = ((row.sess - prev.sess) / prev.sess * 100).toFixed(1);
         varHtml = parseFloat(pct) >= 0
           ? `<span class="var-pos">+${pct}%</span>`
           : `<span class="var-neg">${pct}%</span>`;
       }
     }
-    return `<tr><td>${row.label}</td><td style="font-weight:700">${row.val}</td><td>${varHtml}</td></tr>`;
+    return `<tr>
+      <td>${row.label}</td>
+      <td style="font-weight:700">${row.sess}</td>
+      <td style="color:#0d3b66;font-weight:600">${row.cal || ''}</td>
+      <td style="color:#16a34a;font-weight:600">${row.wsp || ''}</td>
+      <td>${varHtml}</td>
+    </tr>`;
   }).join('');
 }
 
