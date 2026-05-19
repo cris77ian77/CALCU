@@ -461,7 +461,7 @@ tr:hover td { background: #f8fafc; }
         <div class="chart-canvas-wrap"><canvas id="chart-daily"></canvas></div>
         <div class="daily-table-scroll">
           <table class="sdt">
-            <thead><tr><th>Fecha</th><th>Sesiones</th><th>📅</th><th>💬</th><th>Var. ses.</th></tr></thead>
+            <thead><tr><th>Fecha</th><th>Sesiones</th><th>📅</th><th>💬</th><th>Media 7d</th><th>Var. vs MA</th></tr></thead>
             <tbody id="daily-tbody"></tbody>
           </table>
         </div>
@@ -1095,18 +1095,31 @@ function killChart(ref) { if (ref) ref.destroy(); return null; }
 
 // ── 1. Entradas por día ───────────────────────────────────────
 function renderDailyChart(sessInRange, clicksInRange) {
-  const sess = {}, cal = {}, wsp = {};
-  for (let i = statsDays - 1; i >= 0; i--) {
-    const key = new Date(Date.now() - i * 86400000)
-      .toLocaleDateString('es-AR', { day:'2-digit', month:'2-digit', year:'2-digit' });
-    sess[key] = 0; cal[key] = 0; wsp[key] = 0;
+  // Construyo buckets para statsDays + 7 días previos (los 7 extra alimentan la MA del primer día visible)
+  const totalDays = statsDays + 7;
+  const allKeys = [];
+  const sessAll = {};
+  for (let i = totalDays - 1; i >= 0; i--) {
+    const d = new Date(Date.now() - i * 86400000);
+    const key = d.toLocaleDateString('es-AR', { day:'2-digit', month:'2-digit', year:'2-digit' });
+    allKeys.push(key);
+    sessAll[key] = 0;
   }
-  sessInRange.forEach(s => {
+  // Lleno con TODAS las sesiones (no sólo sessInRange) para tener los 7 días previos al rango visible
+  const extCutoff = Date.now() - totalDays * 86400000;
+  allSessions.forEach(s => {
     const ts = s.timestampEntrada?.toDate?.() ?? (s.timestampEntrada ? new Date(s.timestampEntrada) : null);
-    if (!ts) return;
+    if (!ts || ts.getTime() < extCutoff) return;
     const key = ts.toLocaleDateString('es-AR', { day:'2-digit', month:'2-digit', year:'2-digit' });
-    if (key in sess) sess[key]++;
+    if (key in sessAll) sessAll[key]++;
   });
+
+  // Rango visible: últimos statsDays
+  const labels = allKeys.slice(7);
+
+  // Clicks dentro del rango visible
+  const cal = {}, wsp = {};
+  labels.forEach(k => { cal[k] = 0; wsp[k] = 0; });
   clicksInRange.forEach(c => {
     const ts = c.timestamp?.toDate?.() ?? (c.timestamp ? new Date(c.timestamp) : null);
     if (!ts) return;
@@ -1115,10 +1128,16 @@ function renderDailyChart(sessInRange, clicksInRange) {
     if (c.tipo === 'whatsapp' && key in wsp) wsp[key]++;
   });
 
-  const labels   = Object.keys(sess);
-  const sessVals = Object.values(sess);
-  const calVals  = Object.values(cal);
-  const wspVals  = Object.values(wsp);
+  const sessVals = labels.map(k => sessAll[k]);
+  const calVals  = labels.map(k => cal[k]);
+  const wspVals  = labels.map(k => wsp[k]);
+
+  // Media móvil 7d: para el día visible en posición i (en labels), promedia los 7 anteriores en allKeys[i..i+6]
+  const ma7Vals = labels.map((_, i) => {
+    let sum = 0;
+    for (let j = i; j < i + 7; j++) sum += sessAll[allKeys[j]] || 0;
+    return +(sum / 7).toFixed(2);
+  });
 
   chartDaily = killChart(chartDaily);
   chartDaily = new Chart(document.getElementById('chart-daily'), {
@@ -1126,9 +1145,13 @@ function renderDailyChart(sessInRange, clicksInRange) {
     data: {
       labels,
       datasets: [
-        { label: 'Sesiones',        data: sessVals, backgroundColor: 'rgba(14,165,233,0.75)', borderColor: '#0ea5e9', borderWidth: 1, borderRadius: 4 },
-        { label: '📅 Calendly',     data: calVals,  backgroundColor: 'rgba(13,59,102,0.85)',  borderColor: '#0d3b66', borderWidth: 1, borderRadius: 4 },
-        { label: '💬 WhatsApp',     data: wspVals,  backgroundColor: 'rgba(37,211,102,0.85)', borderColor: '#16a34a', borderWidth: 1, borderRadius: 4 },
+        { type: 'bar',  label: 'Sesiones',           data: sessVals, backgroundColor: 'rgba(14,165,233,0.75)', borderColor: '#0ea5e9', borderWidth: 1, borderRadius: 4, order: 3 },
+        { type: 'bar',  label: '📅 Calendly',        data: calVals,  backgroundColor: 'rgba(13,59,102,0.85)',  borderColor: '#0d3b66', borderWidth: 1, borderRadius: 4, order: 3 },
+        { type: 'bar',  label: '💬 WhatsApp',        data: wspVals,  backgroundColor: 'rgba(37,211,102,0.85)', borderColor: '#16a34a', borderWidth: 1, borderRadius: 4, order: 3 },
+        { type: 'line', label: 'Media móvil 7d',     data: ma7Vals,
+          borderColor: '#f59e0b', backgroundColor: 'rgba(245,158,11,0.12)',
+          borderWidth: 2.5, pointRadius: 3, pointBackgroundColor: '#f59e0b',
+          tension: 0.3, fill: false, order: 0 },
       ]
     },
     options: {
@@ -1136,32 +1159,31 @@ function renderDailyChart(sessInRange, clicksInRange) {
       plugins: { legend: { position: 'top', labels: { font: { size: 11 }, boxWidth: 14 } } },
       scales: {
         x: { grid: { display: false }, ticks: { maxTicksLimit: 12, font: { size: 11 } } },
-        y: { beginAtZero: true, ticks: { stepSize: 1, font: { size: 11 } } }
+        y: { beginAtZero: true, ticks: { font: { size: 11 } } }
       }
     }
   });
 
   const tbody = document.getElementById('daily-tbody');
   const rows = labels.map((l, i) => ({
-    label: l, sess: sessVals[i], cal: calVals[i], wsp: wspVals[i]
+    label: l, sess: sessVals[i], cal: calVals[i], wsp: wspVals[i], ma7: ma7Vals[i]
   })).reverse();
-  tbody.innerHTML = rows.map((row, i) => {
-    const prev = rows[i + 1];
+  tbody.innerHTML = rows.map(row => {
     let varHtml = '<span class="var-neu">—</span>';
-    if (prev != null) {
-      if (prev.sess === 0 && row.sess > 0) varHtml = '<span class="var-pos">+∞</span>';
-      else if (prev.sess > 0) {
-        const pct = ((row.sess - prev.sess) / prev.sess * 100).toFixed(1);
-        varHtml = parseFloat(pct) >= 0
-          ? `<span class="var-pos">+${pct}%</span>`
-          : `<span class="var-neg">${pct}%</span>`;
-      }
+    if (row.ma7 > 0) {
+      const pct = ((row.sess - row.ma7) / row.ma7 * 100).toFixed(1);
+      varHtml = parseFloat(pct) >= 0
+        ? `<span class="var-pos">+${pct}%</span>`
+        : `<span class="var-neg">${pct}%</span>`;
+    } else if (row.ma7 === 0 && row.sess > 0) {
+      varHtml = '<span class="var-pos">+∞</span>';
     }
     return `<tr>
       <td>${row.label}</td>
       <td style="font-weight:700">${row.sess}</td>
       <td style="color:#0d3b66;font-weight:600">${row.cal || ''}</td>
       <td style="color:#16a34a;font-weight:600">${row.wsp || ''}</td>
+      <td style="color:#b45309;font-weight:600">${row.ma7.toFixed(1)}</td>
       <td>${varHtml}</td>
     </tr>`;
   }).join('');
