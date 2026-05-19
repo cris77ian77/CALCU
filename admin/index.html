@@ -635,8 +635,14 @@ async function loadData() {
     const usersSnap    = await getDocs(collection(db, 'usuarios'));
     // 2. Traer todas las sesiones
     const sessionsSnap = await getDocs(collection(db, 'sesiones'));
-    // 3. Traer todos los clicks de contacto
-    const clicksSnap   = await getDocs(collection(db, 'clicks'));
+    // 3. Traer todos los clicks de contacto (tolerante: si las rules lo bloquean, sigue)
+    let clicksSnap;
+    try {
+      clicksSnap = await getDocs(collection(db, 'clicks'));
+    } catch(err) {
+      console.warn('[admin] No se pudo leer la colección clicks:', err.message);
+      clicksSnap = { docs: [] };
+    }
 
     allSessions = sessionsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
     allClicks   = clicksSnap.docs.map(d => ({ id: d.id, ...d.data() }));
