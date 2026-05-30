@@ -117,8 +117,9 @@
       timestamp: serverTimestamp(),
     }).catch(() => {});
   }
-  document.querySelector('.cbtn-calendly')?.addEventListener('click', () => trackContactClick('calendly'));
-  document.querySelector('.cbtn-whatsapp')?.addEventListener('click', () => trackContactClick('whatsapp'));
+  document.querySelectorAll('.cbtn-calendly').forEach(b => b.addEventListener('click', () => trackContactClick('calendly')));
+  document.querySelectorAll('.cbtn-whatsapp').forEach(b => b.addEventListener('click', () => trackContactClick('whatsapp')));
+  document.querySelectorAll('.cbtn-acomp')   .forEach(b => b.addEventListener('click', () => trackContactClick('acompanamiento')));
 </script>
 <!-- ─────────────────────────────────────────────────────── -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
@@ -128,12 +129,30 @@ body { font-family: Arial, sans-serif; background: #f0f2f5; color: #222; font-si
 
 header {
   background: linear-gradient(135deg, #0d3b66 0%, #1a6fa8 100%);
-  color: white; padding: 20px 32px;
-  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+  color: white; padding: 18px 32px;
+  display: flex; align-items: center; gap: 18px; flex-wrap: wrap;
+}
+.brand-logo {
+  height: 56px; width: auto; flex-shrink: 0;
+  background: #fff; border-radius: 10px; padding: 6px 12px;
+  box-shadow: 0 2px 10px rgba(0,0,0,.18);
+}
+.brand-text { display: flex; flex-direction: column; }
+.brand-sello {
+  height: 56px; width: 56px; border-radius: 50%; flex-shrink: 0;
+  box-shadow: 0 2px 10px rgba(0,0,0,.25);
+  border: 2px solid rgba(255,255,255,.4);
 }
 header h1 { font-size: 22px; font-weight: 700; }
 header p  { font-size: 13px; opacity: .8; margin-top: 2px; }
 .badge { background: rgba(255,255,255,.18); border-radius: 20px; padding: 4px 14px; font-size: 12px; white-space: nowrap; font-weight: 700; }
+@media(max-width: 720px) {
+  header { padding: 14px 18px; gap: 12px; }
+  .brand-logo { height: 44px; padding: 4px 8px; }
+  .brand-sello { height: 44px; width: 44px; }
+  header h1 { font-size: 17px; }
+  header p  { font-size: 11px; }
+}
 
 /* ── Usuario logueado ── */
 .header-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
@@ -174,10 +193,17 @@ header p  { font-size: 13px; opacity: .8; margin-top: 2px; }
 @media(max-width: 500px) { .model-grid { grid-template-columns: 1fr; } }
 .mc-section-label {
   grid-column: 1 / -1;
+  border-bottom: 2px solid #d0dbe8; padding-bottom: 8px;
+  margin-top: 6px;
+  display: flex; flex-direction: column; gap: 3px;
+}
+.mc-section-title {
   font-size: 13px; font-weight: 800; color: #1a6fa8;
   text-transform: uppercase; letter-spacing: .06em;
-  border-bottom: 2px solid #d0dbe8; padding-bottom: 5px;
-  margin-top: 6px;
+}
+.mc-section-sub {
+  font-size: 12px; color: #5b6b7e; font-weight: 500;
+  line-height: 1.4;
 }
 
 .model-card {
@@ -369,7 +395,32 @@ thead th.mes0-col { background: #7d4e00 !important; border-right: 2px solid #e8c
 .cbtn:hover { transform: translateY(-2px); box-shadow: 0 4px 14px rgba(0,0,0,.2); }
 .cbtn-calendly { background: #0A1F3D; color: #fff; }
 .cbtn-whatsapp { background: #25D366; color: #fff; }
+.cbtn-acomp    { background: #00AAFF; color: #fff; }
 .cbtn-icon { font-size: 22px; line-height: 1; }
+
+/* ── Barra de contacto compacta (arriba) ──────────────────── */
+.contact-bar-top {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  background: #fff; border-radius: 12px; padding: 12px 16px;
+  margin-bottom: 16px; box-shadow: 0 1px 6px rgba(0,0,0,.07);
+  border-left: 4px solid #0d3b66;
+}
+.contact-bar-top .cb-label {
+  font-size: 13px; font-weight: 700; color: #0d3b66;
+  margin-right: 4px;
+}
+.contact-bar-top .cbtn {
+  padding: 9px 16px; font-size: 13px; min-width: 0;
+  gap: 8px; box-shadow: 0 1px 4px rgba(0,0,0,.1);
+}
+.contact-bar-top .cbtn:hover { transform: translateY(-1px); }
+.contact-bar-top .cbtn-icon { font-size: 16px; }
+.contact-bar-top .cbtn-icon-svg { width: 16px; height: 16px; }
+@media(max-width: 700px) {
+  .contact-bar-top { padding: 12px; gap: 8px; }
+  .contact-bar-top .cb-label { width: 100%; margin-bottom: 4px; text-align: center; }
+  .contact-bar-top .cbtn { flex: 1; justify-content: center; padding: 8px 10px; font-size: 12px; }
+}
 .cbtn-icon-svg { flex-shrink: 0; }
 .contact-sub {
   font-size: 13px; color: #5b6b7e;
@@ -386,10 +437,12 @@ thead th.mes0-col { background: #7d4e00 !important; border-right: 2px solid #e8c
 <body>
 
 <header>
-  <div>
-    <h1>🧊 Fábrica de Hielo — Simulador de Flujo de Fondos</h1>
-    <p>Roll Ice · Línea Polair | Proyección 12 meses · Actualización en tiempo real</p>
+  <img class="brand-logo" src="./assets/polair-logo.png" alt="Polair · Refrigeración Polair S.R.L">
+  <div class="brand-text">
+    <h1>Fábrica de Hielo — Simulador de Flujo de Fondos</h1>
+    <p>Línea Polair | Proyección 12 meses · Actualización en tiempo real</p>
   </div>
+  <img class="brand-sello" src="./assets/polair-sello.jpg" alt="El Fabricante Argentino de Productoras de Hielo">
   <div class="badge" id="header-badge">I-1.500 · 1.500 kg/día</div>
   <div class="header-right">
     <div class="user-pill" id="user-pill">
@@ -401,6 +454,31 @@ thead th.mes0-col { background: #7d4e00 !important; border-right: 2px solid #e8c
 </header>
 
 <div class="main">
+
+  <!-- ── BARRA DE CONTACTO (arriba) ── -->
+  <div class="contact-bar-top">
+    <span class="cb-label">¿Necesitás ayuda con tu proyecto?</span>
+    <a class="cbtn cbtn-calendly"
+       href="https://calendly.com/cristian_polair/30min"
+       target="_blank" rel="noopener noreferrer">
+      <span class="cbtn-icon">📅</span>
+      <span>Agendá tu llamada</span>
+    </a>
+    <a class="cbtn cbtn-whatsapp"
+       href="https://wa.link/zg7ava"
+       target="_blank" rel="noopener noreferrer">
+      <svg class="cbtn-icon-svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+      </svg>
+      <span>WhatsApp</span>
+    </a>
+    <a class="cbtn cbtn-acomp"
+       href="./acompanamiento/"
+       target="_blank" rel="noopener noreferrer">
+      <span class="cbtn-icon">🚀</span>
+      <span>Acompañamiento integral</span>
+    </a>
+  </div>
 
   <div class="toggle-row">
     <label>Moneda:</label>
@@ -576,6 +654,12 @@ thead th.mes0-col { background: #7d4e00 !important; border-right: 2px solid #e8c
         </svg>
         <span>Escribinos por WhatsApp</span>
       </a>
+      <a class="cbtn cbtn-acomp"
+         href="./acompanamiento/"
+         target="_blank" rel="noopener noreferrer">
+        <span class="cbtn-icon">🚀</span>
+        <span>Acompañamiento integral Polair</span>
+      </a>
     </div>
     <p class="contact-sub">Polair · El Fabricante Argentino de Maquinas de Hielo · Rosario, Santa Fe, Argentina</p>
   </section>
@@ -696,12 +780,18 @@ function buildModelGrid() {
   let html = '';
   let lastTipo = null;
   const TIPO_LABELS = {
-    roll: '🧊 Roll Ice · Polair',
-    gl:   '🧊 GL · Polair'
+    roll: { title: 'Roll Ice · Polair',  sub: 'Máquinas de industria nacional fabricadas por Polair. Más de 500 máquinas vendidas y en marcha en todo el país.' },
+    gl:   { title: 'GL · Línea Global',  sub: 'Máquinas importadas por Polair, fabricadas en China según requerimientos de Polair para alta producción con menor inversión.' }
   };
   Object.entries(MODELS).forEach(([key, m]) => {
     if (m.tipo !== lastTipo) {
-      html += `<div class="mc-section-label">${TIPO_LABELS[m.tipo] || m.tipo}</div>`;
+      const lbl = TIPO_LABELS[m.tipo];
+      const title = lbl?.title ?? m.tipo;
+      const sub   = lbl?.sub ?? '';
+      html += `<div class="mc-section-label">
+        <span class="mc-section-title">${title}</span>
+        ${sub ? `<span class="mc-section-sub">${sub}</span>` : ''}
+      </div>`;
       lastTipo = m.tipo;
     }
     const badge = BADGES[key] ? `<div class="mc-badge">${BADGES[key]}</div>` : '';
