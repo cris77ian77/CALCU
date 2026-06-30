@@ -54,6 +54,20 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: #f0f4f8; colo
 
 /* ── Header ────────────────────────────────────────────────── */
 #section-panel { display: none; min-height: 100vh; }
+.topnav {
+  background: #08243f; display: flex; align-items: center; gap: .25rem;
+  padding: .5rem 1.25rem; flex-wrap: wrap;
+}
+.topnav .tn-brand {
+  color: #7fb2dd; font-weight: 800; font-size: .85rem;
+  letter-spacing: .5px; margin-right: 1rem;
+}
+.topnav a {
+  color: #cfe0f0; text-decoration: none; font-size: .85rem; font-weight: 600;
+  padding: .4rem .85rem; border-radius: 6px;
+  transition: background .15s, color .15s;
+}
+.topnav a:hover { background: rgba(255,255,255,.12); color: #fff; }
 .admin-header {
   background: linear-gradient(135deg, #0d3b66 0%, #1a6fa8 100%);
   color: #fff; padding: 1rem 2rem;
@@ -350,6 +364,15 @@ tr:hover td { background: #f8fafc; }
 
 <!-- ══ PANEL ════════════════════════════════════════════════════ -->
 <div id="section-panel">
+
+  <!-- Barra de navegación -->
+  <nav class="topnav">
+    <span class="tn-brand">FRIGOINSUMOS</span>
+    <a href="../index.html">Calculadora</a>
+    <a href="../acompanamiento/index.html">Acompañamiento</a>
+    <a href="../vending.html">Vending</a>
+    <a href="../camara.html">Cámara</a>
+  </nav>
 
   <!-- Header -->
   <div class="admin-header">
