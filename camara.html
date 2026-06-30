@@ -4,6 +4,19 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Calculadora Cámara de Frío</title>
+<!-- ── Guard de autenticación (mismo login que index.html) ── -->
+<style id="auth-hide">body { visibility: hidden; }</style>
+<script type="module">
+  import { initializeApp, getApps, getApp } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js';
+  import { getAuth }                         from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
+  import { firebaseConfig }                  from './auth/firebase-config.js';
+  const app  = getApps().length ? getApp() : initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  auth.authStateReady().then(() => {
+    if (!auth.currentUser) { window.location.replace('./auth/index.html'); return; }
+    document.getElementById('auth-hide')?.remove();   // usuario válido → mostrar
+  });
+</script>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
