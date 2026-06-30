@@ -1,0 +1,2079 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calculadora Cámara de Frío</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #1a1a2e;
+    color: #e0e0e0;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    min-height: 100vh;
+    padding: 20px;
+  }
+
+  .nota-version {
+    text-align: right;
+    font-size: 11px;
+    color: #78909c;
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+  }
+
+  header {
+    text-align: center;
+    margin-bottom: 22px;
+  }
+
+  header h1 {
+    font-size: clamp(1.3rem, 4vw, 1.9rem);
+    color: #4fc3f7;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    font-weight: 700;
+  }
+
+  header p {
+    font-size: 0.82rem;
+    color: #78909c;
+    margin-top: 4px;
+    letter-spacing: 1px;
+  }
+
+  .container {
+    max-width: 560px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  /* ── Dólar BNA ── */
+  .dolar-bar {
+    background: #0d2137;
+    border: 1px solid #1e3a5f;
+    border-radius: 10px;
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .dolar-bar .dolar-label {
+    font-size: 0.68rem;
+    letter-spacing: 1.5px;
+    color: #90a4ae;
+    text-transform: uppercase;
+  }
+
+  .dolar-bar .dolar-value {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #80cbc4;
+  }
+
+  .dolar-bar .dolar-status {
+    font-size: 0.68rem;
+    color: #78909c;
+  }
+
+  .dolar-bar .dolar-refresh {
+    background: none;
+    border: 1px solid #263959;
+    border-radius: 6px;
+    color: #90a4ae;
+    font-size: 0.7rem;
+    padding: 4px 10px;
+    cursor: pointer;
+    transition: border-color 0.2s, color 0.2s;
+    letter-spacing: 1px;
+  }
+
+  .dolar-bar .dolar-refresh:hover {
+    border-color: #80cbc4;
+    color: #80cbc4;
+  }
+
+  /* ── Selectores ── */
+  .selectors-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .selector-group {
+    background: #16213e;
+    border: 1px solid #1e3a5f;
+    border-radius: 10px;
+    padding: 13px 14px;
+  }
+
+  .selector-group label {
+    display: block;
+    font-size: 0.68rem;
+    color: #b0bec5;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .toggle-btn-group {
+    display: flex;
+    border-radius: 7px;
+    overflow: hidden;
+    border: 1px solid #263959;
+  }
+
+  .toggle-btn-group button {
+    flex: 1;
+    padding: 8px 6px;
+    background: #0f3460;
+    border: none;
+    color: #78909c;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+    letter-spacing: 0.5px;
+  }
+
+  .toggle-btn-group button:not(:last-child) {
+    border-right: 1px solid #263959;
+  }
+
+  .toggle-btn-group button.active {
+    background: #4fc3f7;
+    color: #0d1b2a;
+  }
+
+  /* ── Inputs ── */
+  .inputs-card {
+    background: #16213e;
+    border: 1px solid #1e3a5f;
+    border-radius: 10px;
+    padding: 18px;
+  }
+
+  .inputs-card h2 {
+    font-size: 0.68rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #90a4ae;
+    margin-bottom: 14px;
+  }
+
+  .inputs-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+
+  .input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .input-group label {
+    font-size: 0.68rem;
+    letter-spacing: 2px;
+    color: #b0bec5;
+    text-transform: uppercase;
+    text-align: center;
+  }
+
+  .input-group input {
+    background: #0d1b2a;
+    border: 1px solid #263959;
+    border-radius: 7px;
+    color: #4fc3f7;
+    font-size: 1.2rem;
+    font-weight: 700;
+    text-align: center;
+    padding: 12px 4px;
+    width: 100%;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    -moz-appearance: textfield;
+  }
+
+  .input-group input::-webkit-outer-spin-button,
+  .input-group input::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+  .input-group input:focus {
+    border-color: #4fc3f7;
+    box-shadow: 0 0 0 3px rgba(79, 195, 247, 0.12);
+  }
+
+  .input-group input.invalid {
+    border-color: #ef5350;
+    color: #ef5350;
+  }
+
+  .input-group .unit {
+    font-size: 0.65rem;
+    color: #78909c;
+    text-align: center;
+    letter-spacing: 1px;
+  }
+
+  /* ── Chips medidas std ── */
+  .chips-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    justify-content: center;
+    margin-top: 2px;
+  }
+
+  .chip {
+    background: #0d1b2a;
+    border: 1px solid #263959;
+    border-radius: 5px;
+    color: #78909c;
+    font-size: 0.65rem;
+    font-weight: 600;
+    padding: 3px 7px;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+  }
+
+  .chip:hover   { border-color: #4fc3f7; color: #4fc3f7; }
+  .chip.sel     { background: #0e3d5c; border-color: #4fc3f7; color: #4fc3f7; }
+
+  /* ── Resultados ── */
+  .results-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+
+  .result-card {
+    background: #0f3460;
+    border: 1px solid #1565c0;
+    border-radius: 10px;
+    padding: 15px 10px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .result-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+  }
+
+  .result-card.card-m2::before   { background: linear-gradient(90deg, #4fc3f7, #0288d1); }
+  .result-card.card-ars::before  { background: linear-gradient(90deg, #4fc3f7, #0288d1); }
+  .result-card.card-usd::before  { background: linear-gradient(90deg, #80cbc4, #00897b); }
+
+  .result-card.card-usd {
+    border-color: #00695c;
+    background: #0d2a28;
+  }
+
+  .result-card.card-kg {
+    border-color: #4a148c;
+    background: #1a0a2e;
+  }
+
+  .result-card.card-kg::before {
+    background: linear-gradient(90deg, #ce93d8, #7b1fa2);
+  }
+
+  .result-card.card-kg .result-value {
+    color: #ce93d8;
+  }
+
+  .result-card .result-label {
+    font-size: 0.62rem;
+    letter-spacing: 1.5px;
+    color: #b0bec5;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .result-card .result-value {
+    font-size: clamp(1.1rem, 4vw, 1.6rem);
+    font-weight: 800;
+    color: #4fc3f7;
+    line-height: 1.1;
+    word-break: break-all;
+  }
+
+  .result-card.card-usd .result-value {
+    color: #80cbc4;
+  }
+
+  .result-card .result-sub {
+    font-size: 0.62rem;
+    color: #90a4ae;
+    margin-top: 5px;
+    letter-spacing: 0.5px;
+  }
+
+  /* ── Detalle fórmula ── */
+  .formula-card {
+    background: #16213e;
+    border: 1px solid #1e3a5f;
+    border-radius: 10px;
+    padding: 13px 16px;
+    font-size: 0.74rem;
+    color: #90a4ae;
+    line-height: 1.8;
+  }
+
+  .formula-card span { color: #4fc3f7; font-weight: 600; }
+  .formula-card span.usd { color: #80cbc4; }
+
+  /* ── Cotización WhatsApp ── */
+  .wa-section {
+    background: #0d2b1e;
+    border: 1px solid #1b5e3a;
+    border-radius: 10px;
+    padding: 16px;
+    display: none;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .wa-section.visible { display: flex; }
+
+  .wa-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .wa-title {
+    font-size: 0.68rem;
+    letter-spacing: 2px;
+    color: #4caf7a;
+    text-transform: uppercase;
+  }
+
+  .wa-margen-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .wa-margen-row label {
+    font-size: 0.68rem;
+    color: #78909c;
+    letter-spacing: 1px;
+    white-space: nowrap;
+  }
+
+  .wa-margen-row input {
+    background: #0a1f14;
+    border: 1px solid #1b5e3a;
+    border-radius: 6px;
+    color: #4caf7a;
+    font-size: 0.9rem;
+    font-weight: 700;
+    text-align: center;
+    padding: 5px 8px;
+    width: 60px;
+    outline: none;
+    -moz-appearance: textfield;
+  }
+
+  .wa-margen-row input::-webkit-outer-spin-button,
+  .wa-margen-row input::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+  .wa-margen-row input:focus { border-color: #4caf7a; }
+
+  .wa-text {
+    background: #071510;
+    border: 1px solid #1b5e3a;
+    border-radius: 8px;
+    padding: 14px;
+    font-size: 0.78rem;
+    color: #c8e6c9;
+    line-height: 1.75;
+    white-space: pre-wrap;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    user-select: all;
+  }
+
+  .btn-copiar {
+    background: #1b5e3a;
+    border: none;
+    border-radius: 8px;
+    color: #c8e6c9;
+    font-size: 0.8rem;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 11px;
+    cursor: pointer;
+    transition: background 0.2s;
+    width: 100%;
+    font-weight: 600;
+  }
+
+  .btn-copiar:hover { background: #2e7d52; }
+  .btn-copiar.copiado { background: #0a3d22; color: #81c784; }
+
+  /* ── Botón limpiar ── */
+  .btn-limpiar {
+    background: transparent;
+    border: 1px solid #263959;
+    border-radius: 8px;
+    color: #78909c;
+    font-size: 0.82rem;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 12px;
+    cursor: pointer;
+    transition: border-color 0.2s, color 0.2s, background 0.2s;
+    width: 100%;
+  }
+
+  .btn-limpiar:hover {
+    border-color: #ef5350;
+    color: #ef5350;
+    background: rgba(239, 83, 80, 0.06);
+  }
+
+  .warn {
+    font-size: 0.68rem;
+    color: #ef5350;
+    text-align: center;
+    padding: 4px 0;
+    display: none;
+  }
+
+  @media (max-width: 420px) {
+    .inputs-grid   { grid-template-columns: 1fr; }
+    .results-grid  { grid-template-columns: 1fr; }
+    .selectors-row { grid-template-columns: 1fr; }
+  }
+
+  /* ══ TABS ══════════════════════════════════════════════════ */
+  .tab-bar {
+    display: flex;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid #1e3a5f;
+    margin-bottom: 4px;
+  }
+  .tab-btn {
+    flex: 1;
+    padding: 12px 6px;
+    background: #16213e;
+    border: none;
+    color: #78909c;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+  }
+  .tab-btn:not(:last-child) { border-right: 1px solid #1e3a5f; }
+  .tab-btn.active { background: #0f3460; color: #4fc3f7; }
+
+  /* ══ SOLAPA 3 — TABLA TÉCNICA ═══════════════════════════════ */
+  .tec-table {
+    width: 100%; border-collapse: collapse; font-size: 0.78rem;
+  }
+  .tec-table th {
+    background: #0f3460; color: #4fc3f7; padding: 9px 10px;
+    text-align: center; font-weight: 600; border-bottom: 2px solid #1e3a5f;
+    white-space: nowrap;
+  }
+  .tec-table th span { display: block; font-weight: 400; color: #90a4ae; font-size: 0.68rem; margin-top: 2px; }
+  .tec-table td {
+    padding: 8px 10px; text-align: center; color: #cfd8dc;
+    border-bottom: 1px solid #1e3a5f;
+  }
+  .tec-table td:first-child { font-weight: 600; color: #e0e0e0; }
+  .tec-table td b { color: #fff; font-size: 0.85rem; display: block; }
+  .tec-table td span { font-size: 0.68rem; color: #78909c; }
+  .tec-table tbody tr:hover td { background: #1a2a4a; }
+  .tr-ok td:not(:first-child):not(:nth-child(2)) { border-left: 2px solid #1b5e20; }
+  .tr-warn { background: rgba(230,81,0,0.06); }
+  .tr-warn td:not(:first-child):not(:nth-child(2)) { border-left: 2px solid #bf360c; }
+  .tr-bad { background: rgba(183,28,28,0.06); }
+  .tr-bad td:not(:first-child):not(:nth-child(2)) { border-left: 2px solid #7f0000; }
+  .no-apto { color: #ef5350 !important; font-weight: 700; font-size: 0.72rem; letter-spacing: 0.5px; }
+  .col-20, .col-30, .col-50, .col-2x20, .col-2x30 { min-width: 110px; }
+
+  /* ══ SOLAPA 2 — EQUIPO ══════════════════════════════════════ */
+  .eq-section {
+    background: #16213e;
+    border: 1px solid #1e3a5f;
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .eq-hdr {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 13px 16px;
+    cursor: pointer;
+    user-select: none;
+    gap: 8px;
+  }
+  .eq-hdr-title {
+    font-size: 0.68rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #90a4ae;
+    font-weight: 700;
+  }
+  .eq-hdr-q {
+    font-size: 0.82rem;
+    color: #4fc3f7;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  .eq-body {
+    padding: 12px 16px 16px;
+    border-top: 1px solid #1e3a5f;
+    display: flex;
+    flex-direction: column;
+    gap: 11px;
+  }
+  .eq-body.hidden { display: none; }
+  .eq-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .eq-lbl {
+    font-size: 0.7rem;
+    color: #90a4ae;
+    min-width: 130px;
+    letter-spacing: 0.5px;
+  }
+  .eq-inp {
+    background: #0d1b2a;
+    border: 1px solid #263959;
+    border-radius: 6px;
+    color: #4fc3f7;
+    font-size: 0.95rem;
+    font-weight: 700;
+    text-align: center;
+    padding: 7px 10px;
+    width: 86px;
+    outline: none;
+    -moz-appearance: textfield;
+  }
+  .eq-inp::-webkit-outer-spin-button,
+  .eq-inp::-webkit-inner-spin-button { -webkit-appearance: none; }
+  .eq-inp:focus { border-color: #4fc3f7; }
+  .eq-inp.wide { width: 120px; }
+  .eq-unit { font-size: 0.68rem; color: #546e7a; }
+  .eq-select {
+    background: #0d1b2a;
+    border: 1px solid #263959;
+    border-radius: 6px;
+    color: #4fc3f7;
+    font-size: 0.85rem;
+    padding: 7px 10px;
+    outline: none;
+  }
+  .eq-chips { display: flex; gap: 5px; flex-wrap: wrap; }
+  .eq-chip {
+    background: #0d1b2a;
+    border: 1px solid #263959;
+    border-radius: 5px;
+    color: #78909c;
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 5px 9px;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+  }
+  .eq-chip:hover  { border-color: #4fc3f7; color: #4fc3f7; }
+  .eq-chip.sel    { background: #0e3d5c; border-color: #4fc3f7; color: #4fc3f7; }
+
+  .btn-importar {
+    background: #0f3460;
+    border: 1px solid #4fc3f7;
+    border-radius: 7px;
+    color: #4fc3f7;
+    font-size: 0.72rem;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 8px 14px;
+    cursor: pointer;
+    transition: background 0.2s;
+    width: 100%;
+  }
+  .btn-importar:hover { background: #0e3d5c; }
+
+  /* ── Tabla de carga ── */
+  .carga-breakdown {
+    background: #0d1b2a;
+    border: 1px solid #1e3a5f;
+    border-radius: 10px;
+    overflow: hidden;
+    font-size: 0.76rem;
+  }
+  .carga-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 9px 14px;
+    border-bottom: 1px solid #1a2a40;
+    color: #90a4ae;
+  }
+  .carga-row:last-child { border-bottom: none; }
+  .carga-row .val { color: #4fc3f7; font-weight: 700; }
+  .carga-row.sub { color: #78909c; padding-left: 24px; font-size: 0.72rem; }
+  .carga-row.sep { border-top: 1px solid #263959; }
+  .carga-row.total-row {
+    background: #0f3460;
+    color: #e0e0e0;
+    font-weight: 700;
+    font-size: 0.82rem;
+    border-top: 2px solid #4fc3f7;
+  }
+  .carga-row.total-row .val { color: #fff; font-size: 1rem; }
+
+  .carga-units {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-top: 10px;
+  }
+  .carga-unit-card {
+    background: #0f3460;
+    border: 1px solid #1565c0;
+    border-radius: 8px;
+    padding: 12px 8px;
+    text-align: center;
+  }
+  .carga-unit-label { font-size: 0.58rem; color: #b0bec5; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 5px; }
+  .carga-unit-value { font-size: 1.1rem; font-weight: 800; color: #4fc3f7; }
+  .carga-recom {
+    background: #0d2137;
+    border: 1px solid #1e3a5f;
+    border-radius: 8px;
+    padding: 12px 14px;
+    font-size: 0.78rem;
+    color: #90a4ae;
+    line-height: 1.8;
+    margin-top: 10px;
+  }
+  .carga-recom span { color: #4fc3f7; font-weight: 700; }
+
+  .btn-calc {
+    background: #4fc3f7;
+    border: none;
+    border-radius: 8px;
+    color: #0d1b2a;
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 14px;
+    cursor: pointer;
+    transition: background 0.2s;
+    width: 100%;
+  }
+  .btn-calc:hover { background: #81d4fa; }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- Tab bar -->
+  <div class="tab-bar">
+    <button class="tab-btn active" onclick="switchTab(1)">❄️ Cámara</button>
+    <button class="tab-btn"        onclick="switchTab(2)">⚙️ Equipo</button>
+    <button class="tab-btn"        onclick="switchTab(3)">📋 Propuesta</button>
+    <button class="tab-btn"        onclick="switchTab(4)">📊 Técnica</button>
+  </div>
+
+  <!-- ══ SOLAPA 1 ══ -->
+  <div id="tab1">
+  <div class="nota-version">151 &nbsp;·&nbsp; 08-06-2026</div>
+
+  <header>
+    <h1>Cámara de Frío</h1>
+    <p>Calculadora de precios · Paneles con aislación</p>
+  </header>
+
+  <!-- Dólar BNA -->
+  <div class="dolar-bar">
+    <div>
+      <div class="dolar-label">Dólar BNA (venta)</div>
+      <div class="dolar-value" id="dolar-val">Cargando…</div>
+    </div>
+    <div class="dolar-status" id="dolar-status"></div>
+    <button class="dolar-refresh" onclick="fetchDolar()">↻ Actualizar</button>
+  </div>
+
+  <!-- Selectores -->
+  <div class="selectors-row">
+    <div class="selector-group">
+      <label>Espesor de panel</label>
+      <div class="toggle-btn-group">
+        <button class="active" data-value="60"  onclick="setOpt('espesor', this)">60 mm</button>
+        <button              data-value="100" onclick="setOpt('espesor', this)">100 mm</button>
+      </div>
+    </div>
+    <div class="selector-group">
+      <label>Incluye piso</label>
+      <div class="toggle-btn-group">
+        <button class="active" data-value="no" onclick="setOpt('piso', this)">Sin piso</button>
+        <button              data-value="si" onclick="setOpt('piso', this)">Con piso</button>
+      </div>
+    </div>
+    <div class="selector-group">
+      <label>Puertas batientes</label>
+      <div class="toggle-btn-group">
+        <button class="active" data-value="1" onclick="setOpt('puertas', this)">1</button>
+        <button              data-value="2" onclick="setOpt('puertas', this)">2</button>
+        <button              data-value="3" onclick="setOpt('puertas', this)">3</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dimensiones -->
+  <div class="inputs-card">
+    <h2>Dimensiones exteriores</h2>
+    <div class="inputs-grid">
+      <div class="input-group">
+        <label>Ancho</label>
+        <input type="number" id="ancho" min="1200" step="1" placeholder="" oninput="onDimInput('ancho')">
+        <span class="unit">mm</span>
+        <div class="chips-row" id="chips-ancho"></div>
+      </div>
+      <div class="input-group">
+        <label>Largo</label>
+        <input type="number" id="largo" min="1200" step="1" placeholder="" oninput="onDimInput('largo')">
+        <span class="unit">mm</span>
+        <div class="chips-row" id="chips-largo"></div>
+      </div>
+      <div class="input-group">
+        <label>Alto</label>
+        <input type="number" id="alto"  min="1200" step="1" placeholder="" oninput="onDimInput('alto')">
+        <span class="unit">mm</span>
+        <div class="chips-row" id="chips-alto"></div>
+      </div>
+    </div>
+    <div class="warn" id="warn-min">⚠ Las dimensiones mínimas son 1200 × 1200 × 1200 mm</div>
+  </div>
+
+  <!-- Resultados -->
+  <div class="results-grid">
+    <div class="result-card card-m2">
+      <div class="result-label">Superficie</div>
+      <div class="result-value" id="res-m2">—</div>
+      <div class="result-sub">m²</div>
+    </div>
+    <div class="result-card card-ars">
+      <div class="result-label">Precio ARS</div>
+      <div class="result-value" id="res-ars">—</div>
+      <div class="result-sub">pesos arg.</div>
+    </div>
+    <div class="result-card card-usd">
+      <div class="result-label">Precio USD</div>
+      <div class="result-value" id="res-usd">—</div>
+      <div class="result-sub">dólar BNA venta</div>
+    </div>
+    <div class="result-card card-kg">
+      <div class="result-label">Cap. hielo</div>
+      <div class="result-value" id="res-kg">—</div>
+      <div class="result-sub">kg (400 kg/m³)</div>
+    </div>
+  </div>
+
+  <!-- Detalle -->
+  <div class="formula-card" id="formula-detail">
+    Ingresá las dimensiones para ver el cálculo.
+  </div>
+
+  <!-- IVA -->
+  <div style="text-align:center;font-size:0.7rem;color:#90a4ae;letter-spacing:1.5px;padding:2px 0;">
+    PRECIOS NO INCLUYEN IVA 10,5%
+  </div>
+
+  <!-- Cotización WhatsApp -->
+  <div class="wa-section" id="wa-section">
+    <div class="wa-header">
+      <span class="wa-title">Cotización para WhatsApp</span>
+    </div>
+    <div class="wa-margen-row">
+      <label>Margen contado</label>
+      <input type="number" id="margen-contado" value="40" min="0" max="200" oninput="actualizarWA()">
+      <label>%</label>
+      <span style="flex:1"></span>
+      <label>Margen financiado</label>
+      <input type="number" id="margen-financiado" value="10" min="0" max="200" oninput="actualizarWA()">
+      <label>%</label>
+    </div>
+    <div class="wa-text" id="wa-text"></div>
+    <div style="display:flex; gap:8px;">
+      <button class="btn-copiar" id="btn-copiar" onclick="copiarWA()" style="flex:1">📋 &nbsp; Copiar texto</button>
+      <button class="btn-copiar" id="btn-pdf" onclick="generarPDFCamara()" style="flex:1; background:#b71c1c">📄 &nbsp; Descargar PDF</button>
+    </div>
+  </div>
+
+  <!-- Limpiar -->
+  <button class="btn-limpiar" onclick="limpiar()">✕ &nbsp; Limpiar</button>
+
+  </div><!-- /tab1 -->
+
+  <!-- ══ SOLAPA 2 — EQUIPO ══ -->
+  <div id="tab2" style="display:none; flex-direction:column; gap:14px;">
+
+    <!-- A · Cámara -->
+    <div class="eq-section">
+      <div class="eq-hdr" onclick="toggleEq('eq-a')">
+        <span class="eq-hdr-title">A · Datos de la cámara</span>
+        <span class="eq-hdr-q" id="eq-a-q">—</span>
+      </div>
+      <div class="eq-body" id="eq-a">
+        <button class="btn-importar" onclick="importarDeTab1()">⇅ Importar dimensiones y panel de Solapa 1</button>
+        <div class="eq-row">
+          <span class="eq-lbl">Ancho exterior</span>
+          <input class="eq-inp" type="number" id="eq-ancho" placeholder="" oninput="calcularCarga()">
+          <span class="eq-unit">mm</span>
+        </div>
+        <div class="eq-row">
+          <span class="eq-lbl">Largo exterior</span>
+          <input class="eq-inp" type="number" id="eq-largo" placeholder="" oninput="calcularCarga()">
+          <span class="eq-unit">mm</span>
+        </div>
+        <div class="eq-row">
+          <span class="eq-lbl">Alto exterior</span>
+          <input class="eq-inp" type="number" id="eq-alto" placeholder="" oninput="calcularCarga()">
+          <span class="eq-unit">mm</span>
+        </div>
+        <div class="eq-row">
+          <span class="eq-lbl">Panel</span>
+          <div class="toggle-btn-group" style="width:170px">
+            <button class="active" data-val="60"  onclick="setEqToggle('eq-panel',this); calcularCarga()">60 mm</button>
+            <button               data-val="100" onclick="setEqToggle('eq-panel',this); calcularCarga()">100 mm</button>
+          </div>
+        </div>
+        <div class="eq-row">
+          <span class="eq-lbl">Piso</span>
+          <div class="toggle-btn-group" style="width:170px">
+            <button class="active" data-val="no" onclick="setEqToggle('eq-piso',this); calcularCarga()">Sin piso</button>
+            <button               data-val="si"  onclick="setEqToggle('eq-piso',this); calcularCarga()">Con piso</button>
+          </div>
+        </div>
+        <div class="eq-row">
+          <span class="eq-lbl">Temp. interior</span>
+          <div style="display:flex; flex-direction:column; gap:6px">
+            <div class="eq-chips">
+              <button class="eq-chip" onclick="setEqTempChip(this,5)">+5°C</button>
+              <button class="eq-chip sel" onclick="setEqTempChip(this,-12)">−12°C</button>
+              <button class="eq-chip" onclick="setEqTempChip(this,-18)">−18°C</button>
+            </div>
+            <input class="eq-inp wide" type="number" id="eq-t-int" value="-12" oninput="clearTempChips(); calcularCarga()">
+          </div>
+        </div>
+        <div class="eq-row">
+          <span class="eq-lbl">Temp. exterior</span>
+          <input class="eq-inp" type="number" id="eq-t-ext" value="30" oninput="calcularCarga()">
+          <span class="eq-unit">°C</span>
+        </div>
+        <div class="eq-row">
+          <span class="eq-lbl">Humedad exterior</span>
+          <input class="eq-inp" type="number" id="eq-hr-ext" value="70" min="0" max="100" oninput="calcularCarga()">
+          <span class="eq-unit">% HR</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- B · Infiltración -->
+    <div class="eq-section">
+      <div class="eq-hdr" onclick="toggleEq('eq-b')">
+        <span class="eq-hdr-title">B · Infiltración por puerta</span>
+        <span class="eq-hdr-q" id="eq-b-q">—</span>
+      </div>
+      <div class="eq-body hidden" id="eq-b">
+        <div class="eq-row">
+          <span class="eq-lbl">Tipo de puerta</span>
+          <div class="toggle-btn-group" style="width:200px">
+            <button class="active" data-val="batiente"  onclick="setEqToggle('eq-puerta',this); calcularCarga()">Batiente</button>
+            <button               data-val="corrediza" onclick="setEqToggle('eq-puerta',this); calcularCarga()">Corrediza</button>
+          </div>
+        </div>
+        <div class="eq-row">
+          <span class="eq-lbl">Ancho de puerta</span>
+          <input class="eq-inp" type="number" id="eq-p-ancho" value="900" oninput="calcularCarga()">
+          <span class="eq-unit">mm</span>
+        </div>
+        <div class="eq-row">
+          <span class="eq-lbl">Alto de puerta</span>
+          <input class="eq-inp" type="number" id="eq-p-alto" value="2000" oninput="calcularCarga()">
+          <span class="eq-unit">mm</span>
+        </div>
+        <div class="eq-row">
+          <span class="eq-lbl">Aperturas / día</span>
+          <input class="eq-inp" type="number" id="eq-p-apert" value="10" oninput="calcularCarga()">
+        </div>
+        <div class="eq-row">
+          <span class="eq-lbl">Duración c/apertura</span>
+          <input class="eq-inp" type="number" id="eq-p-dur" value="2" oninput="calcularCarga()">
+          <span class="eq-unit">min</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- C · Producto -->
+    <div class="eq-section">
+      <div class="eq-hdr" onclick="toggleEq('eq-c')">
+        <span class="eq-hdr-title">C · Producto (recambio diario)</span>
+        <span class="eq-hdr-q" id="eq-c-q">—</span>
+      </div>
+      <div class="eq-body hidden" id="eq-c">
+        <div class="eq-row">
+          <span class="eq-lbl">Tipo de producto</span>
+          <select class="eq-select" id="eq-prod-tipo" onchange="onProdChange()">
+            <option value="hielo">Hielo (ya congelado)</option>
+            <option value="carne">Carne / Aves</option>
+            <option value="pescado">Pescado</option>
+            <option value="lacteos">Lácteos</option>
+            <option value="frutas">Frutas / Verduras</option>
+            <option value="bebidas">Bebidas</option>
+          </select>
+        </div>
+        <div class="eq-row">
+          <span class="eq-lbl">Recambio diario</span>
+          <input class="eq-inp wide" type="number" id="eq-prod-kg" value="500" oninput="calcularCarga()">
+          <span class="eq-unit">kg/día</span>
+        </div>
+        <div class="eq-row">
+          <span class="eq-lbl">Temp. de entrada</span>
+          <input class="eq-inp" type="number" id="eq-prod-tentry" value="0" oninput="calcularCarga()">
+          <span class="eq-unit">°C</span>
+        </div>
+        <div class="eq-row">
+          <span class="eq-lbl">Hs. de operación</span>
+          <input class="eq-inp" type="number" id="eq-prod-hop" value="16" min="1" max="24" oninput="calcularCarga()">
+          <span class="eq-unit">h/día</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- D · Cargas internas -->
+    <div class="eq-section">
+      <div class="eq-hdr" onclick="toggleEq('eq-d')">
+        <span class="eq-hdr-title">D · Cargas internas</span>
+        <span class="eq-hdr-q" id="eq-d-q">—</span>
+      </div>
+      <div class="eq-body hidden" id="eq-d">
+        <div class="eq-row">
+          <span class="eq-lbl">Iluminación</span>
+          <input class="eq-inp" type="number" id="eq-luz" value="" placeholder="auto" oninput="calcularCarga()">
+          <span class="eq-unit">W (vacío=auto)</span>
+        </div>
+        <div class="eq-row">
+          <span class="eq-lbl">Personas</span>
+          <input class="eq-inp" type="number" id="eq-personas" value="0" min="0" oninput="calcularCarga()">
+        </div>
+        <div class="eq-row">
+          <span class="eq-lbl">Motores extra</span>
+          <input class="eq-inp" type="number" id="eq-motores" value="0" oninput="calcularCarga()">
+          <span class="eq-unit">W</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Calcular -->
+    <button class="btn-calc" onclick="calcularCarga()">Calcular carga frigorífica</button>
+
+    <!-- Resultados -->
+    <div id="carga-result-box" style="display:none; flex-direction:column; gap:10px;">
+      <div class="carga-breakdown" id="carga-breakdown"></div>
+      <div class="carga-units">
+        <div class="carga-unit-card">
+          <div class="carga-unit-label">Total</div>
+          <div class="carga-unit-value" id="carga-kw">—</div>
+          <div style="font-size:.6rem;color:#546e7a;margin-top:3px">kW</div>
+        </div>
+        <div class="carga-unit-card">
+          <div class="carga-unit-label">Total</div>
+          <div class="carga-unit-value" id="carga-kcal">—</div>
+          <div style="font-size:.6rem;color:#546e7a;margin-top:3px">kcal/h</div>
+        </div>
+      </div>
+      <div class="carga-recom" id="carga-recom"></div>
+      <div id="eq-selector"></div>
+
+      <!-- Cotización equipo WhatsApp -->
+      <div id="eq-quote-box" style="display:none;flex-direction:column;gap:10px;margin-top:4px;">
+        <div style="font-size:.68rem;color:#90a4ae;letter-spacing:1.5px;text-transform:uppercase;padding:2px 0;">Cotización para WhatsApp — Equipo de frío</div>
+        <textarea id="eq-quote-text" style="width:100%;height:260px;background:#0d1b2e;border:1px solid #1e3a5f;border-radius:10px;padding:14px;color:#cfd8dc;font-size:.75rem;font-family:monospace;resize:vertical;box-sizing:border-box;"></textarea>
+        <button class="btn-calc" onclick="copiarEqQuote()" id="btn-copiar-eq">📋 &nbsp; Copiar texto</button>
+      </div>
+    </div>
+
+  </div><!-- /tab2 -->
+
+  <!-- ══ SOLAPA 3 — PROPUESTA INTEGRAL ══ -->
+  <div id="tab3" style="display:none; flex-direction:column; gap:14px; padding-top:4px;">
+
+    <div style="font-size:0.7rem;color:#90a4ae;letter-spacing:1px;line-height:1.8;background:#16213e;border:1px solid #1e3a5f;border-radius:10px;padding:13px 16px;">
+      Generá primero la cotización en <strong style="color:#4fc3f7">❄️ Cámara</strong> y seleccioná un equipo en <strong style="color:#4fc3f7">⚙️ Equipo</strong> para armar la propuesta integral.
+    </div>
+
+    <div id="prop-status" style="display:none;background:#0d2137;border:1px solid #1e3a5f;border-radius:10px;padding:13px 16px;font-size:.78rem;color:#cfd8dc;line-height:1.9;">
+    </div>
+
+    <button class="btn-calc" onclick="generarPropuesta()">📋 Generar propuesta integral</button>
+
+    <div id="prop-box" style="display:none;flex-direction:column;gap:10px;">
+      <textarea id="prop-text" style="width:100%;height:380px;background:#0d1b2e;border:1px solid #1e3a5f;border-radius:10px;padding:14px;color:#cfd8dc;font-size:.75rem;font-family:monospace;resize:vertical;box-sizing:border-box;"></textarea>
+      <button class="btn-calc" onclick="copiarProp()" id="btn-copiar-prop">📋 &nbsp; Copiar texto</button>
+    </div>
+
+  </div>
+
+  <!-- ══ SOLAPA 4 — TABLA TÉCNICA ══ -->
+  <div id="tab4" style="display:none; flex-direction:column; gap:16px; padding-top:4px;">
+
+    <div style="font-size:0.7rem; color:#90a4ae; letter-spacing:1px; line-height:1.7; background:#16213e; border:1px solid #1e3a5f; border-radius:10px; padding:13px 16px;">
+      Equipos <strong style="color:#4fc3f7">Copeland</strong> · Unidad condensadora + evaporador · 380V/3F/50Hz · T° ambiente 32°C<br>
+      Rendimiento con <strong style="color:#4fc3f7">DT = 8°C</strong> (T° evaporación = T° cámara − 8°C) · Valores extrapolados bajo −15°C
+    </div>
+
+    <!-- Tabla DT=8°C -->
+    <div style="font-size:0.68rem; color:#90a4ae; letter-spacing:1.5px; text-transform:uppercase; padding:0 2px;">Rendimiento a DT = 8°C</div>
+    <div style="overflow-x:auto; border-radius:10px; border:1px solid #1e3a5f;">
+      <table class="tec-table">
+        <thead>
+          <tr>
+            <th>T° cámara</th>
+            <th>T° evap.</th>
+            <th class="col-20">MT 2.0<br><span>2 HP</span></th>
+            <th class="col-30">MT 3.0<br><span>3 HP</span></th>
+            <th class="col-50">MT 5.0<br><span>5 HP</span></th>
+            <th class="col-2x20">2×MT 2.0<br><span>4 HP</span></th>
+            <th class="col-2x30">2×MT 3.0<br><span>6 HP</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="tr-ok">
+            <td>+10°C</td><td>+2°C</td>
+            <td><b>5,12 kW</b><br><span>4.403 kcal/h</span></td>
+            <td><b>8,15 kW</b><br><span>7.009 kcal/h</span></td>
+            <td><b>13,72 kW</b><br><span>11.799 kcal/h</span></td>
+            <td><b>10,24 kW</b><br><span>8.806 kcal/h</span></td>
+            <td><b>16,30 kW</b><br><span>14.018 kcal/h</span></td>
+          </tr>
+          <tr class="tr-ok">
+            <td>+5°C</td><td>−3°C</td>
+            <td><b>3,94 kW</b><br><span>3.388 kcal/h</span></td>
+            <td><b>6,46 kW</b><br><span>5.556 kcal/h</span></td>
+            <td><b>11,13 kW</b><br><span>9.572 kcal/h</span></td>
+            <td><b>7,88 kW</b><br><span>6.777 kcal/h</span></td>
+            <td><b>12,92 kW</b><br><span>11.111 kcal/h</span></td>
+          </tr>
+          <tr class="tr-ok">
+            <td>0°C</td><td>−8°C</td>
+            <td><b>2,95 kW</b><br><span>2.535 kcal/h</span></td>
+            <td><b>4,93 kW</b><br><span>4.240 kcal/h</span></td>
+            <td><b>8,83 kW</b><br><span>7.594 kcal/h</span></td>
+            <td><b>5,90 kW</b><br><span>5.071 kcal/h</span></td>
+            <td><b>9,86 kW</b><br><span>8.480 kcal/h</span></td>
+          </tr>
+          <tr class="tr-ok">
+            <td>−5°C</td><td>−13°C</td>
+            <td><b>2,09 kW</b><br><span>1.801 kcal/h</span></td>
+            <td><b>3,66 kW</b><br><span>3.148 kcal/h</span></td>
+            <td><b>6,75 kW</b><br><span>5.805 kcal/h</span></td>
+            <td><b>4,19 kW</b><br><span>3.602 kcal/h</span></td>
+            <td><b>7,32 kW</b><br><span>6.295 kcal/h</span></td>
+          </tr>
+          <tr class="tr-warn">
+            <td>−12°C</td><td>−20°C</td>
+            <td><b>0,96 kW</b><br><span>825 kcal/h</span></td>
+            <td><b>2,05 kW</b><br><span>1.763 kcal/h</span></td>
+            <td><b>3,95 kW</b><br><span>3.397 kcal/h</span></td>
+            <td><b>1,92 kW</b><br><span>1.650 kcal/h</span></td>
+            <td><b>4,10 kW</b><br><span>3.526 kcal/h</span></td>
+          </tr>
+          <tr class="tr-bad">
+            <td>−18°C</td><td>−26°C</td>
+            <td class="no-apto">NO APTO</td>
+            <td><b>0,67 kW</b><br><span>576 kcal/h</span></td>
+            <td><b>1,55 kW</b><br><span>1.333 kcal/h</span></td>
+            <td class="no-apto">NO APTO</td>
+            <td><b>1,34 kW</b><br><span>1.152 kcal/h</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Tabla fabricante original -->
+    <div style="font-size:0.68rem; color:#90a4ae; letter-spacing:1.5px; text-transform:uppercase; padding:0 2px;">Datos de fábrica — T° ambiente 32°C (kcal/h)</div>
+    <div style="overflow-x:auto; border-radius:10px; border:1px solid #1e3a5f;">
+      <table class="tec-table">
+        <thead>
+          <tr>
+            <th>T° evap.</th>
+            <th class="col-20">MT 2.0</th>
+            <th class="col-30">MT 3.0</th>
+            <th class="col-50">MT 5.0</th>
+            <th class="col-2x20">2×MT 2.0</th>
+            <th class="col-2x30">2×MT 3.0</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>+10°C</td><td>6.278</td><td>9.503</td><td>15.996</td><td>12.556</td><td>19.006</td></tr>
+          <tr><td>+5°C</td> <td>5.074</td><td>7.912</td><td>13.244</td><td>10.148</td><td>15.824</td></tr>
+          <tr><td>0°C</td>  <td>3.956</td><td>6.407</td><td>10.836</td><td>7.912</td> <td>12.814</td></tr>
+          <tr><td>−5°C</td> <td>3.010</td><td>4.988</td><td>8.729</td> <td>6.020</td> <td>9.976</td></tr>
+          <tr><td>−10°C</td><td>2.219</td><td>3.741</td><td>6.837</td> <td>4.438</td> <td>7.482</td></tr>
+          <tr><td>−15°C</td><td>1.522</td><td>2.752</td><td>5.117</td> <td>3.044</td> <td>5.504</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Evaporador -->
+    <div style="font-size:0.68rem; color:#90a4ae; letter-spacing:1.5px; text-transform:uppercase; padding:0 2px;">Evaporador — −7°C evap. / DT 8°C / T° cámara ≈ 0°C</div>
+    <div style="overflow-x:auto; border-radius:10px; border:1px solid #1e3a5f;">
+      <table class="tec-table">
+        <thead>
+          <tr><th>Modelo</th><th>Cap. W</th><th>Sup. m²</th><th>Forzadores</th><th>Ø mm</th><th>Caudal m³/h</th><th>Res. evap.</th><th>Res. bandeja</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>MT 2.0</td><td><b>3.200</b></td><td>13,1</td><td>2 × Ø250</td><td>—</td><td>2.100</td><td>4×650W</td><td>800W</td></tr>
+          <tr><td>MT 3.0</td><td><b>5.500</b></td><td>22,7</td><td>3 × Ø250</td><td>—</td><td>3.000</td><td>4×650W</td><td>1.300W</td></tr>
+          <tr><td>MT 5.0</td><td><b>7.800</b></td><td>32,6</td><td>5 × Ø250</td><td>—</td><td>4.200</td><td>4×1.720W</td><td>2.000W</td></tr>
+          <tr><td>2×MT 2.0</td><td><b>6.400</b></td><td>26,2</td><td>4 × Ø250</td><td>—</td><td>4.200</td><td>8×650W</td><td>1.600W</td></tr>
+          <tr><td>2×MT 3.0</td><td><b>11.000</b></td><td>45,4</td><td>6 × Ø250</td><td>—</td><td>6.000</td><td>8×650W</td><td>2.600W</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Precios -->
+    <div style="font-size:0.68rem; color:#90a4ae; letter-spacing:1.5px; text-transform:uppercase; padding:0 2px;">Precios de lista — más IVA 10,5%</div>
+    <div style="overflow-x:auto; border-radius:10px; border:1px solid #1e3a5f;">
+      <table class="tec-table">
+        <thead>
+          <tr><th>Modelo</th><th>HP</th><th>Contado USD</th><th>Financiado USD</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>MT 2.0</td>  <td>2</td><td>U$S 4.000</td><td>U$S 4.500</td></tr>
+          <tr><td>MT 3.0</td>  <td>3</td><td>U$S 5.300</td><td>U$S 6.000</td></tr>
+          <tr><td>MT 5.0</td>  <td>5</td><td>U$S 6.500</td><td>U$S 7.300</td></tr>
+          <tr><td>2×MT 2.0</td><td>4</td><td>U$S 8.000</td><td>U$S 9.000</td></tr>
+          <tr><td>2×MT 3.0</td><td>6</td><td>U$S 10.600</td><td>U$S 12.000</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div style="font-size:0.68rem; color:#546e7a; line-height:1.7; background:#16213e; border:1px solid #1e3a5f; border-radius:8px; padding:11px 14px;">
+      ⚠ Valores a −12°C y −18°C son extrapolados fuera del rango nominal del fabricante.<br>
+      Para esas temperaturas se recomiendan compresores de baja temperatura (LT).<br>
+      Incluye materiales y gas hasta 3m de la cámara. No incluye flete ni instalación.
+    </div>
+
+  </div><!-- /tab4 -->
+
+</div>
+
+<!-- ══ DOCUMENTO IMPRIMIBLE (PDF cámara) ══ -->
+<style>
+  #pdf-camara { display: none; }
+  @media print {
+    @page { size: A4; margin: 0; }
+    body > *:not(#pdf-camara) { display: none !important; }
+    #pdf-camara { display: block !important; }
+  }
+  #pdf-camara * { margin: 0; padding: 0; box-sizing: border-box; }
+  #pdf-camara { font-family: 'Segoe UI','Helvetica Neue',Arial,sans-serif; color: #1f2430;
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+    --ac:#4d4f9e; --ac2:#6b6ec9; --ink:#1f2430; --mut:#6b7280; --pan:#f5f6fb; --ln:#e6e7f1; }
+  #pdf-camara .page { width:210mm; height:297mm; position:relative; overflow:hidden; page-break-after:always;
+    background:#fff; color:#1f2430; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  #pdf-camara .page:last-child { page-break-after:auto; }
+  #pdf-camara .pad { padding:16mm 15mm; }
+  #pdf-camara .hbar { display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid var(--ln); padding-bottom:6mm; }
+  #pdf-camara .hbar img { height:13mm; }
+  #pdf-camara .htag { text-align:right; font-size:8.5pt; letter-spacing:2px; text-transform:uppercase; color:var(--mut); }
+  #pdf-camara .htag b { display:block; font-size:11pt; letter-spacing:1px; color:var(--ac); margin-top:1mm; }
+  #pdf-camara .hero { display:flex; gap:8mm; margin-top:8mm; align-items:center; }
+  #pdf-camara .hero-l { flex:1; }
+  #pdf-camara .eyebrow { font-size:9pt; letter-spacing:3px; text-transform:uppercase; color:var(--ac); font-weight:600; }
+  #pdf-camara h1 { font-size:30pt; font-weight:600; line-height:1.05; margin:2mm 0 3mm; }
+  #pdf-camara .lead { font-size:11pt; color:var(--mut); line-height:1.55; }
+  #pdf-camara .hero-img { width:82mm; height:60mm; object-fit:cover; border-radius:12px; border:1px solid var(--ln); }
+  #pdf-camara .specs { display:grid; grid-template-columns:repeat(4,1fr); gap:5mm; margin-top:10mm; }
+  #pdf-camara .spec { background:var(--pan); border:1px solid var(--ln); border-radius:12px; padding:5mm 4mm; text-align:center; }
+  #pdf-camara .spec-ic { color:var(--ac); width:9mm; height:9mm; margin:0 auto 2.5mm; }
+  #pdf-camara .spec-ic svg { width:100%; height:100%; }
+  #pdf-camara .spec-v { font-size:13pt; font-weight:600; }
+  #pdf-camara .spec-l { font-size:8.5pt; color:var(--mut); margin-top:1mm; }
+  #pdf-camara .cols { display:flex; gap:10mm; margin-top:11mm; }
+  #pdf-camara .col { flex:1; }
+  #pdf-camara .col h3 { font-size:9.5pt; letter-spacing:2px; text-transform:uppercase; color:var(--ink); font-weight:600; margin-bottom:4mm; padding-bottom:2mm; border-bottom:2px solid var(--ac); }
+  #pdf-camara .col ul { list-style:none; }
+  #pdf-camara .col li { display:flex; align-items:center; gap:3mm; font-size:10.5pt; padding:2mm 0; color:#374151; }
+  #pdf-camara .chk { color:var(--ac); width:5mm; height:5mm; flex:none; }
+  #pdf-camara .chk svg { width:100%; height:100%; }
+  #pdf-camara .dot { width:2.2mm; height:2.2mm; border-radius:50%; background:var(--ac2); flex:none; margin-left:1.4mm; }
+  #pdf-camara .foot { position:absolute; left:0; bottom:0; width:100%; height:11mm; background:var(--ac); display:flex; align-items:center; justify-content:center; gap:3mm; color:#fff; font-size:8.5pt; letter-spacing:1px; }
+  #pdf-camara .foot img { height:6mm; border-radius:2px; }
+  #pdf-camara .sec-eyebrow { font-size:9pt; letter-spacing:3px; text-transform:uppercase; color:var(--ac); font-weight:600; margin-top:8mm; }
+  #pdf-camara .sec-title { font-size:20pt; font-weight:600; margin:1mm 0 6mm; }
+  #pdf-camara .prices { display:flex; gap:6mm; }
+  #pdf-camara .pc { flex:1; border-radius:14px; padding:7mm 6mm; }
+  #pdf-camara .pc.main { background:var(--ac); color:#fff; }
+  #pdf-camara .pc.alt { background:#fff; border:1.5px solid var(--ln); }
+  #pdf-camara .pc .plab { font-size:9pt; letter-spacing:2px; text-transform:uppercase; opacity:.9; }
+  #pdf-camara .pc.alt .plab { color:var(--mut); }
+  #pdf-camara .pc .pval { font-size:27pt; font-weight:700; margin:2mm 0 0; line-height:1; }
+  #pdf-camara .pc.alt .pval { color:var(--ac); }
+  #pdf-camara .pc .piva { font-size:9.5pt; opacity:.85; margin-top:1mm; }
+  #pdf-camara .pc .pterm { font-size:8.5pt; line-height:1.5; margin-top:5mm; padding-top:4mm; border-top:1px solid rgba(255,255,255,.3); }
+  #pdf-camara .pc.alt .pterm { border-top:1px solid var(--ln); color:var(--mut); }
+  #pdf-camara .pc .pterm b { font-weight:600; }
+  #pdf-camara .noinc { margin-top:9mm; }
+  #pdf-camara .noinc .lbl { font-size:9.5pt; letter-spacing:2px; text-transform:uppercase; color:var(--mut); margin-bottom:3mm; }
+  #pdf-camara .chip { display:inline-block; background:var(--pan); border:1px solid var(--ln); border-radius:20px; padding:2mm 5mm; font-size:9.5pt; margin-right:3mm; color:#374151; }
+  #pdf-camara .infogrid { display:flex; gap:6mm; margin-top:9mm; }
+  #pdf-camara .info { flex:1; background:var(--pan); border:1px solid var(--ln); border-radius:12px; padding:5mm; display:flex; gap:4mm; align-items:center; }
+  #pdf-camara .info .ic { color:var(--ac); width:8mm; height:8mm; flex:none; }
+  #pdf-camara .info .ic svg { width:100%; height:100%; }
+  #pdf-camara .info .v { font-size:13pt; font-weight:600; }
+  #pdf-camara .info .l { font-size:8.5pt; color:var(--mut); }
+  #pdf-camara .garantia { margin-top:8mm; }
+  #pdf-camara .garantia h4 { font-size:9.5pt; letter-spacing:2px; text-transform:uppercase; color:var(--ink); margin-bottom:2mm; }
+  #pdf-camara .garantia p { font-size:9pt; color:var(--mut); line-height:1.6; text-align:justify; }
+  #pdf-camara .contact { position:absolute; left:0; bottom:0; width:100%; padding:7mm 15mm; border-top:1px solid var(--ln); display:flex; justify-content:space-between; align-items:flex-end; }
+  #pdf-camara .contact .co b { color:var(--ac); font-size:11pt; }
+  #pdf-camara .contact .co div { font-size:8.5pt; color:var(--mut); line-height:1.6; margin-top:1mm; }
+  #pdf-camara .contact .fl { text-align:right; font-size:8pt; color:var(--mut); }
+  #pdf-camara .contact .fl img { height:8mm; border-radius:2px; display:block; margin:0 0 1mm auto; }
+</style>
+<div id="pdf-camara"></div>
+
+<script>
+  // ── Tablas de precios — regresión lineal sobre Lista FRIDER Nro 151 ──
+  // Fórmula: Precio = base + porM2 × M²   (sin IVA 10,5%)
+  const PRECIOS = {
+    '60-no':  { base: 1_019_718, porM2:  93_553 },  // 60mm Sin piso  (Cód 22)
+    '60-si':  { base: 1_044_668, porM2:  89_132 },  // 60mm Con piso  (Cód 16)
+    '100-no': { base: 1_076_030, porM2: 131_347 },  // 100mm Sin piso (Cód 19)
+    '100-si': { base: 1_317_866, porM2: 120_641 },  // 100mm Con piso (Cód 13)
+  };
+
+  const MIN_MM = 1200;
+
+  let espesor    = '60';
+  let piso       = 'no';
+  let puertas    = 1;
+  let dolarVenta = null;
+
+  // Diferencial de puerta (intercepto a 0 m² de la regresión por alto)
+  const PUERTA_DIFF = { '60': 923_000, '100': 1_782_000 };
+
+  // ── Medidas estándar del catálogo (mm) ───────────────────────
+  const STD_ANCHOS = [1750, 2360, 2930, 3540, 4110, 4720];
+  const STD_LARGOS = [2360, 2930, 3540, 4110, 4720];
+  const STD_ALTOS  = {
+    '60-no':  [2200, 2540, 3000],
+    '60-si':  [2240, 2580, 3040],
+    '100-no': [2240, 2580, 3040],
+    '100-si': [2280, 2620, 3080],
+  };
+
+  function renderChips() {
+    const altos = STD_ALTOS[`${espesor}-${piso}`];
+    _chips('ancho', STD_ANCHOS);
+    _chips('largo', STD_LARGOS);
+    _chips('alto',  altos);
+  }
+
+  function _chips(dim, valores) {
+    const container = document.getElementById(`chips-${dim}`);
+    const current   = parseFloat(document.getElementById(dim).value) || 0;
+    container.innerHTML = '';
+    valores.forEach(v => {
+      const btn = document.createElement('button');
+      btn.className   = 'chip' + (v === current ? ' sel' : '');
+      btn.textContent = (v / 10).toFixed(0);  // mostrar en cm para ser compacto
+      btn.title       = `${v} mm`;
+      btn.type        = 'button';
+      btn.onclick     = () => setChip(dim, v);
+      container.appendChild(btn);
+    });
+  }
+
+  function setChip(dim, valor) {
+    document.getElementById(dim).value = valor;
+    renderChips();
+    calcular();
+  }
+
+  function onDimInput(dim) {
+    renderChips();
+    calcular();
+  }
+
+  // ── Dólar BNA vendedor ───────────────────────────────────────
+  // Valor por defecto: $1490 (BNA vendedor conocido)
+  dolarVenta = 1490;
+
+  async function fetchDolar() {
+    const el     = document.getElementById('dolar-val');
+    const status = document.getElementById('dolar-status');
+    el.textContent = 'Cargando…';
+    status.textContent = '';
+    try {
+      const r = await fetch('https://api.bluelytics.com.ar/v2/latest');
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      const d = await r.json();
+      dolarVenta = d.oficial.value_sell;
+      el.textContent = formatPeso(dolarVenta);
+      const now = new Date();
+      status.textContent = 'BNA vendedor · ' + now.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+      calcular();
+    } catch (e) {
+      try {
+        const r2 = await fetch('https://dolarapi.com/v1/dolares/oficial');
+        if (!r2.ok) throw new Error();
+        const d2 = await r2.json();
+        dolarVenta = d2.venta;
+        el.textContent = formatPeso(dolarVenta);
+        const now = new Date();
+        status.textContent = 'BNA vendedor · ' + now.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+        calcular();
+      } catch {
+        dolarVenta = 1490;
+        el.textContent = formatPeso(dolarVenta);
+        status.textContent = 'sin conexión · valor por defecto';
+        calcular();
+      }
+    }
+  }
+
+  // ── Selectores ───────────────────────────────────────────────
+  function setOpt(tipo, btn) {
+    if      (tipo === 'espesor') espesor = btn.dataset.value;
+    else if (tipo === 'piso')    piso    = btn.dataset.value;
+    else if (tipo === 'puertas') puertas = parseInt(btn.dataset.value);
+    btn.parentElement.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    // Si el alto actual no existe en la nueva familia, limpiarlo
+    const altos = STD_ALTOS[`${espesor}-${piso}`];
+    const altoActual = parseFloat(document.getElementById('alto').value) || 0;
+    if (altoActual > 0 && altos.includes(altoActual) === false && STD_ALTOS['60-no'].concat(STD_ALTOS['60-si'], STD_ALTOS['100-no'], STD_ALTOS['100-si']).includes(altoActual)) {
+      document.getElementById('alto').value = '';
+    }
+    renderChips();
+    calcular();
+  }
+
+  // ── Cálculo ──────────────────────────────────────────────────
+  function calcular() {
+    const ancho = parseFloat(document.getElementById('ancho').value) || 0;
+    const largo = parseFloat(document.getElementById('largo').value) || 0;
+    const alto  = parseFloat(document.getElementById('alto').value)  || 0;
+
+    const todosCargados = ancho > 0 && largo > 0 && alto > 0;
+    const bajoMin = todosCargados && (ancho < MIN_MM || largo < MIN_MM || alto < MIN_MM);
+
+    // Solo marcar rojo y mostrar aviso cuando los 3 están cargados
+    document.getElementById('ancho').classList.toggle('invalid', todosCargados && ancho < MIN_MM);
+    document.getElementById('largo').classList.toggle('invalid', todosCargados && largo < MIN_MM);
+    document.getElementById('alto').classList.toggle('invalid',  todosCargados && alto  < MIN_MM);
+    document.getElementById('warn-min').style.display = bajoMin ? 'block' : 'none';
+
+    if (!todosCargados || bajoMin) {
+      document.getElementById('res-m2').textContent      = '—';
+      document.getElementById('res-ars').textContent     = '—';
+      document.getElementById('res-usd').textContent     = '—';
+      document.getElementById('formula-detail').textContent = bajoMin
+        ? '⚠ Dimensiones mínimas: 1200 × 1200 × 1200 mm'
+        : 'Ingresá las dimensiones para ver el cálculo.';
+      return;
+    }
+
+    // M² (dimensiones en mm → dividir por 1.000.000)
+    let m2 = (ancho * largo + 2 * ancho * alto + 2 * largo * alto) / 1_000_000;
+    if (piso === 'si') m2 += (ancho * largo) / 1_000_000;
+
+    const key    = `${espesor}-${piso}`;
+    const tabla  = PRECIOS[key];
+    const precio = tabla.base + tabla.porM2 * m2 + (puertas - 1) * PUERTA_DIFF[espesor];
+
+    const m3  = (ancho * largo * alto) / 1_000_000_000;
+    const kg  = Math.round(m3 * 400);
+
+    document.getElementById('res-m2').textContent  = m2.toFixed(2);
+    document.getElementById('res-ars').textContent = formatPeso(Math.round(precio));
+    document.getElementById('res-kg').textContent  = kg.toLocaleString('es-AR');
+
+    if (dolarVenta) {
+      const usd = precio / dolarVenta;
+      precioUSD = usd;
+      document.getElementById('res-usd').textContent = 'U$S ' + Math.round(usd).toLocaleString('es-AR');
+    } else {
+      precioUSD = null;
+      document.getElementById('res-usd').textContent = 'S/D';
+    }
+    document.getElementById('wa-section').classList.toggle('visible', !!dolarVenta);
+    actualizarWA();
+
+    // Detalle
+    const pisoTexto = piso === 'si'
+      ? ` + ${f(ancho)}×${f(largo)} (piso)` : '';
+    const usdLinea = dolarVenta
+      ? `\nUSD = ${formatPeso(Math.round(precio))} ÷ ${formatPeso(dolarVenta)} = <span class="usd">U$S ${Math.round(precio / dolarVenta).toLocaleString('es-AR')}</span>`
+      : '';
+
+    const puertaLinea = puertas > 1
+      ? `<br>+ ${puertas - 1} puerta${puertas > 2 ? 's' : ''} adicional${puertas > 2 ? 'es' : ''}: ${formatPeso((puertas-1) * PUERTA_DIFF[espesor])}`
+      : '';
+    document.getElementById('formula-detail').innerHTML =
+      `Panel <span>${espesor} mm</span> · <span>${piso === 'si' ? 'Con piso' : 'Sin piso'}</span> · <span>${puertas} puerta${puertas > 1 ? 's' : ''}</span><br>` +
+      `M² = (${f(ancho)}×${f(largo)} + 2×${f(ancho)}×${f(alto)} + 2×${f(largo)}×${f(alto)}${pisoTexto}) ÷ 1.000.000<br>` +
+      `M² = <span>${m2.toFixed(2)}</span><br>` +
+      `ARS = ${formatPeso(tabla.base)} + ${formatPeso(tabla.porM2)} × ${m2.toFixed(2)}${puertaLinea} = <span>${formatPeso(Math.round(precio))}</span>` +
+      usdLinea;
+  }
+
+  // ── WhatsApp ─────────────────────────────────────────────────
+  let precioUSD = null;
+
+  function actualizarWA() {
+    if (!precioUSD) return;
+    const mc = parseFloat(document.getElementById('margen-contado').value)    || 40;
+    const mf = parseFloat(document.getElementById('margen-financiado').value) || 55;
+
+    const ancho = parseFloat(document.getElementById('ancho').value);
+    const largo = parseFloat(document.getElementById('largo').value);
+    const alto  = parseFloat(document.getElementById('alto').value);
+
+    const contado    = redondear(precioUSD * (1 + mc / 100));
+    const financiado = redondear(contado   * (1 + mf / 100));
+
+    const panelTxt   = espesor === '100' ? '100 mm' : '60 mm';
+    const pisoTxt    = piso    === 'si'  ? 'Con piso' : 'Sin piso';
+    const puertasTxt = puertas === 1 ? '1 puerta batiente' : `${puertas} puertas batientes`;
+    const a = (ancho/10).toFixed(0), l = (largo/10).toFixed(0), h = (alto/10).toFixed(0);
+
+    const m3kg  = (ancho * largo * alto) / 1_000_000_000;
+    const kgRed = Math.round(m3kg * 400 / 100) * 100;
+
+    let m2tot = (ancho * largo + 2 * ancho * alto + 2 * largo * alto) / 1_000_000;
+    if (piso === 'si') m2tot += (ancho * largo) / 1_000_000;
+
+    const texto =
+`*❄️ CÁMARA FRIGORÍFICA*
+
+📐 *Medidas exteriores:*  ${a} × ${l} × ${h} cm
+🔩 *Panel:*  Poliuretano ${panelTxt} · Ext. prepintado / Int. prepintado
+🚪 *${puertasTxt}*
+🏠 *${pisoTxt}*
+❄️ *Capacidad:*  ${kgRed.toLocaleString('es-AR')} kg de hielo
+
+━━━━━━━━━━━━━━━━━━━━━
+
+💵 *PRECIO CONTADO:*  U$S ${fmtUSD(contado)} + IVA (10,5%)
+_Forma de pago:_ Anticipo 50% al pedido con transferencia bancaria dentro de los 7 días de la Nota de Pedido. Saldo 50% con transferencia bancaria previa a la entrega.
+
+💳 *PRECIO FINANCIADO:*  U$S ${fmtUSD(financiado)} + IVA (10,5%)
+_Forma de pago:_ Anticipo 50% al pedido con transferencia bancaria dentro de los 7 días de la Nota de Pedido. Saldo 50% previo a la entrega con cheques electrónicos (verificados y aprobados) a: 30-60-90-120 días.
+
+━━━━━━━━━━━━━━━━━━━━━
+
+⚠️ _Los precios no incluyen flete, instalación ni viáticos._
+📦 _Plazo de entrega: aproximadamente 30 días._
+🛡️ _Garantía: 1 año por defecto de fabricación._
+📅 _Validez de la oferta: 30 días._`;
+
+    document.getElementById('wa-text').textContent = texto;
+    camaraData = { a, l, h, panelTxt, pisoTxt, puertasTxt, kgRed, contado, financiado,
+                   ancho, largo, alto, m2: m2tot, espesor, piso, puertas };
+  }
+
+  function redondear(n) {
+    return Math.ceil(n / 50) * 50;
+  }
+
+  function fmtUSD(n) {
+    return n.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+  }
+
+  function copiarWA() {
+    const txt = document.getElementById('wa-text').textContent;
+    navigator.clipboard.writeText(txt).then(() => {
+      const btn = document.getElementById('btn-copiar');
+      btn.textContent = '✓  Copiado';
+      btn.classList.add('copiado');
+      setTimeout(() => { btn.innerHTML = '📋 &nbsp; Copiar texto'; btn.classList.remove('copiado'); }, 2000);
+    });
+  }
+
+  function limpiar() {
+    ['ancho', 'largo', 'alto'].forEach(id => {
+      document.getElementById(id).value = '';
+      document.getElementById(id).classList.remove('invalid');
+    });
+    document.getElementById('warn-min').style.display = 'none';
+    document.getElementById('res-m2').textContent      = '—';
+    document.getElementById('res-ars').textContent     = '—';
+    document.getElementById('res-usd').textContent     = '—';
+    document.getElementById('res-kg').textContent      = '—';
+    document.getElementById('formula-detail').textContent = 'Ingresá las dimensiones para ver el cálculo.';
+    precioUSD = null;
+    document.getElementById('wa-section').classList.remove('visible');
+    renderChips();
+    document.getElementById('ancho').focus();
+  }
+
+  function f(n) { return n % 1 === 0 ? n.toString() : n.toFixed(0); }
+
+  function formatPeso(n) {
+    return '$' + n.toLocaleString('es-AR', { maximumFractionDigits: 0 });
+  }
+
+  // Iniciar
+  renderChips();
+  fetchDolar();
+
+  // ══════════════════════════════════════════════════════════════
+  // SOLAPA 2 — CÁLCULO DE CARGA FRIGORÍFICA (ASHRAE)
+  // ══════════════════════════════════════════════════════════════
+
+  // ── Datos de materiales ──────────────────────────────────────
+  // U-value efectivo panel PUR (W/m²K): U = 1/(Ri + e/λ + Re)
+  // λ_PUR=0.022, Ri=0.12, Re=0.05
+  const U_PANEL = { '60': 0.345, '100': 0.212 };
+
+  // Propiedades de productos (ASHRAE 2010 Refrigeration)
+  // Cpl=Cp líquido (kJ/kgK), Cps=Cp sólido, Tf=T congelación (°C),
+  // L=calor latente fusión (kJ/kg), Te=T entrada default, Qresp=W/ton (resp.)
+  const PROD = {
+    hielo:   { Cpl:4.186, Cps:2.093, Tf:0,    L:334, Te:-2,  Qresp:0  },
+    carne:   { Cpl:3.52,  Cps:1.68,  Tf:-1.7, L:233, Te:12,  Qresp:0  },
+    pescado: { Cpl:3.60,  Cps:1.76,  Tf:-1.0, L:276, Te:10,  Qresp:0  },
+    lacteos: { Cpl:3.77,  Cps:1.93,  Tf:-0.5, L:247, Te:5,   Qresp:0  },
+    frutas:  { Cpl:3.94,  Cps:1.88,  Tf:-1.5, L:290, Te:20,  Qresp:75 },
+    bebidas: { Cpl:4.00,  Cps:1.90,  Tf:-2.0, L:310, Te:20,  Qresp:0  },
+  };
+
+  // Estado toggles solapa 2
+  const EQ_STATE = { panel:'60', piso:'no', puerta:'batiente' };
+
+  // ── Tabs ─────────────────────────────────────────────────────
+  function switchTab(n) {
+    document.getElementById('tab1').style.display = n===1 ? '' : 'none';
+    document.getElementById('tab2').style.display = n===2 ? 'flex' : 'none';
+    document.getElementById('tab3').style.display = n===3 ? 'flex' : 'none';
+    document.getElementById('tab4').style.display = n===4 ? 'flex' : 'none';
+    document.querySelectorAll('.tab-btn').forEach((b,i) =>
+      b.classList.toggle('active', i+1===n));
+    if (n===3) actualizarStatusPropuesta();
+  }
+
+  let camaraData = null;
+  let selectedEquipoData = null;
+
+  // ── Helpers UI ───────────────────────────────────────────────
+  function toggleEq(id) {
+    const el = document.getElementById(id);
+    el.classList.toggle('hidden');
+  }
+
+  function setEqToggle(key, btn) {
+    EQ_STATE[key] = btn.dataset.val;
+    btn.parentElement.querySelectorAll('button')
+      .forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  }
+
+  function setEqTempChip(btn, val) {
+    document.getElementById('eq-t-int').value = val;
+    document.querySelectorAll('.eq-chip[onclick*="setEqTempChip"]')
+      .forEach(b => b.classList.remove('sel'));
+    btn.classList.add('sel');
+    calcularCarga();
+  }
+
+  function clearTempChips() {
+    document.querySelectorAll('.eq-chip[onclick*="setEqTempChip"]')
+      .forEach(b => b.classList.remove('sel'));
+  }
+
+  function onProdChange() {
+    const tipo = document.getElementById('eq-prod-tipo').value;
+    document.getElementById('eq-prod-tentry').value = PROD[tipo].Te;
+    calcularCarga();
+  }
+
+  function importarDeTab1() {
+    const ids = ['ancho','largo','alto'];
+    ids.forEach(id => {
+      const v = document.getElementById(id).value;
+      if (v) document.getElementById('eq-'+id).value = v;
+    });
+    // panel
+    EQ_STATE.panel = espesor;
+    document.querySelectorAll('#tab2 [data-val]').forEach(b => {
+      if (b.closest('.eq-section') &&
+          (b.dataset.val==='60'||b.dataset.val==='100')) {
+        b.classList.toggle('active', b.dataset.val===espesor);
+      }
+    });
+    // piso
+    EQ_STATE.piso = piso;
+    document.querySelectorAll('#tab2 [data-val="si"],[data-val="no"]').forEach(b => {
+      if (b.closest('.eq-section')) {
+        b.classList.toggle('active',
+          (b.dataset.val==='si' && piso==='si') ||
+          (b.dataset.val==='no' && piso==='no'));
+      }
+    });
+    calcularCarga();
+  }
+
+  // ── Psicrometría ─────────────────────────────────────────────
+  function psat(T) {  // Pa, Magnus
+    return 610.78 * Math.exp(17.27 * T / (T + 237.3));
+  }
+  function humRatio(T, RH) {
+    const Pv = (RH/100) * psat(T);
+    return 0.622 * Pv / (101325 - Pv);          // kg_vapor/kg_aire_seco
+  }
+  function enthalpy(T, RH) {   // kJ/kg aire seco
+    const W = humRatio(T, RH);
+    return 1.006*T + W*(2501 + 1.805*T);
+  }
+  function airDensity(T, RH) { // kg/m³
+    const Pv = (RH/100) * psat(T);
+    const Pd = 101325 - Pv;
+    return Pd/(287.05*(T+273.15)) + Pv/(461.5*(T+273.15));
+  }
+
+  // ── Cálculo principal ─────────────────────────────────────────
+  function calcularCarga() {
+    const A  = parseFloat(document.getElementById('eq-ancho').value)||0;
+    const L  = parseFloat(document.getElementById('eq-largo').value)||0;
+    const H  = parseFloat(document.getElementById('eq-alto').value) ||0;
+    if (!A||!L||!H) return;
+
+    const Tin   = parseFloat(document.getElementById('eq-t-int').value)||0;
+    const Tout  = parseFloat(document.getElementById('eq-t-ext').value)||30;
+    const HRout = parseFloat(document.getElementById('eq-hr-ext').value)||70;
+    const U     = U_PANEL[EQ_STATE.panel];
+    const DT    = Tout - Tin;
+
+    // mm → m
+    const a=A/1000, l=L/1000, h=H/1000;
+
+    // ── 1. Transmisión ───────────────────────────────────────
+    // Paredes + techo (m²)
+    const A_pt = a*l + 2*a*h + 2*l*h;  // techo + 4 paredes (exterior)
+    const A_piso = a*l;
+    const Q_pt   = U * A_pt * DT;
+    const Q_piso = EQ_STATE.piso==='si' ? U * A_piso * DT : 0;
+    const Q_trans = Q_pt + Q_piso;
+
+    // ── 2. Infiltración (ASHRAE gravity flow) ────────────────
+    const Pw = parseFloat(document.getElementById('eq-p-ancho').value)||900;
+    const Ph = parseFloat(document.getElementById('eq-p-alto').value) ||2000;
+    const nAp  = parseFloat(document.getElementById('eq-p-apert').value)||10;
+    const tMin = parseFloat(document.getElementById('eq-p-dur').value) ||2;
+
+    const pw=Pw/1000, ph=Ph/1000;
+    const A_door = pw * ph;
+    const T_avg_K = (Tout + Tin)/2 + 273.15;
+    const v_door  = 0.4 * Math.sqrt(2 * 9.81 * ph * Math.abs(DT) / T_avg_K);
+    const rho_out = airDensity(Tout, HRout);
+    const h_out   = enthalpy(Tout, HRout);
+    const h_in    = enthalpy(Tin,  90);   // interior ~90% HR
+    const Dh      = Math.max(h_out - h_in, 0) * 1000;  // J/kg
+    const mdot    = 0.5 * rho_out * A_door * v_door;    // kg/s por apertura
+    const t_open_s = tMin * 60;
+    // Factor corrección tipo puerta: batiente=1, corrediza=0.7
+    const Kp = EQ_STATE.puerta==='corrediza' ? 0.7 : 1.0;
+    const Q_inf = Kp * nAp * mdot * t_open_s * Dh / 86400; // W promedio diario
+
+    // ── 3. Producto ──────────────────────────────────────────
+    const tipo  = document.getElementById('eq-prod-tipo').value;
+    const kg    = parseFloat(document.getElementById('eq-prod-kg').value)||0;
+    const Tent  = parseFloat(document.getElementById('eq-prod-tentry').value)||0;
+    const Hop   = parseFloat(document.getElementById('eq-prod-hop').value)||16;
+    const prod  = PROD[tipo];
+
+    let Qprod_kJ = 0;
+    if (Tent > prod.Tf && Tin > prod.Tf) {
+      // Solo enfriamiento sensible (sin congelación)
+      Qprod_kJ = kg * prod.Cpl * (Tent - Tin);
+    } else if (Tent > prod.Tf && Tin <= prod.Tf) {
+      // Enfriar hasta congelación + congelar + bajar temperatura
+      Qprod_kJ = kg * (prod.Cpl*(Tent - prod.Tf) + prod.L + prod.Cps*(prod.Tf - Tin));
+    } else {
+      // Producto ya congelado: solo sensible
+      Qprod_kJ = kg * prod.Cps * Math.abs(Tent - Tin);
+    }
+    const Q_resp = prod.Qresp * kg / 1000;       // W (Qresp en W/ton)
+    const Q_prod = Qprod_kJ*1000 / (Hop*3600) + Q_resp;  // W
+
+    // ── 4. Cargas internas ───────────────────────────────────
+    const A_piso_m2 = a * l;
+    const luzVal = document.getElementById('eq-luz').value;
+    const Q_luz  = luzVal!=='' ? parseFloat(luzVal)||0 : 10 * A_piso_m2;
+    const nPers  = parseFloat(document.getElementById('eq-personas').value)||0;
+    const Qpers_unit = Tin >= 0 ? 350 : Tin >= -15 ? 270 : 250;
+    const Q_pers = nPers * Qpers_unit;
+    const Q_mot  = parseFloat(document.getElementById('eq-motores').value)||0;
+    const Q_int  = Q_luz + Q_pers + Q_mot;
+
+    // ── Total ────────────────────────────────────────────────
+    const Q_sub  = Q_trans + Q_inf + Q_prod + Q_int;
+    const Q_seg  = Q_sub * 0.10;
+    const Q_tot  = Q_sub + Q_seg;
+
+    // Actualizar headers de secciones
+    document.getElementById('eq-a-q').textContent =
+      `${(a*100).toFixed(0)}×${(l*100).toFixed(0)}×${(h*100).toFixed(0)} cm · ${EQ_STATE.panel}mm`;
+    document.getElementById('eq-b-q').textContent = `${fmtW(Q_inf)}`;
+    document.getElementById('eq-c-q').textContent = `${fmtW(Q_prod)}`;
+    document.getElementById('eq-d-q').textContent = `${fmtW(Q_int)}`;
+
+    // ── Mostrar resultados ───────────────────────────────────
+    const box = document.getElementById('carga-result-box');
+    box.style.display = 'flex';
+
+    document.getElementById('carga-breakdown').innerHTML = `
+      <div class="carga-row"><span>Transmisión paredes+techo</span><span class="val">${fmtW(Q_pt)}</span></div>
+      ${Q_piso>0?`<div class="carga-row sub"><span>· Piso</span><span class="val">${fmtW(Q_piso)}</span></div>`:''}
+      <div class="carga-row sep"><span>Infiltración por puerta</span><span class="val">${fmtW(Q_inf)}</span></div>
+      <div class="carga-row"><span>Producto (${kg} kg/día · ${tipo})</span><span class="val">${fmtW(Q_prod)}</span></div>
+      ${Q_resp>0?`<div class="carga-row sub"><span>· Calor de respiración</span><span class="val">${fmtW(Q_resp)}</span></div>`:''}
+      <div class="carga-row sep"><span>Iluminación</span><span class="val">${fmtW(Q_luz)}</span></div>
+      ${Q_pers>0?`<div class="carga-row sub"><span>· Personas (${nPers} × ${Qpers_unit} W)</span><span class="val">${fmtW(Q_pers)}</span></div>`:''}
+      ${Q_mot>0?`<div class="carga-row sub"><span>· Motores extra</span><span class="val">${fmtW(Q_mot)}</span></div>`:''}
+      <div class="carga-row sep"><span>Subtotal</span><span class="val">${fmtW(Q_sub)}</span></div>
+      <div class="carga-row"><span>Factor seguridad (+10%)</span><span class="val">${fmtW(Q_seg)}</span></div>
+      <div class="carga-row total-row"><span>CARGA TOTAL</span><span class="val">${fmtW(Q_tot)}</span></div>`;
+
+    const kw   = Q_tot/1000;
+    const kcal = Q_tot*0.860;
+    document.getElementById('carga-kw').textContent   = kw.toFixed(2);
+    document.getElementById('carga-kcal').textContent = Math.round(kcal).toLocaleString('es-AR');
+
+    // Capacidad de diseño recomendada (+10% margen)
+    const kw_recom = kw * 1.10;
+    document.getElementById('carga-recom').innerHTML =
+      `Capacidad de diseño: <span>${kw.toFixed(2)} kW</span> · con 10% margen: <span>${kw_recom.toFixed(2)} kW</span><br>` +
+      `<span style="font-size:.7rem;color:#546e7a">` +
+      `U panel ${EQ_STATE.panel}mm = ${U.toFixed(3)} W/m²K · ΔT = ${DT.toFixed(0)}°C · Producto: ${Qprod_kJ.toFixed(0)} kJ/día` +
+      `</span>`;
+
+    // Selección de equipo
+    document.getElementById('eq-selector').innerHTML = renderEquipos(Tin, kw_recom);
+  }
+
+  // ── Catálogo Copeland (kcal/h por T_evap) ──────────────────
+  const EQ_CAT = {
+    'MT 2.0': { hp:2, pc:4000, pf:4500, d:{'-15':1522,'-10':2219,'-5':3010,'0':3956,'5':5074,'10':6278}},
+    'MT 3.0': { hp:3, pc:5300, pf:6000, d:{'-15':2752,'-10':3741,'-5':4988,'0':6407,'5':7912,'10':9503}},
+    'MT 5.0': { hp:5, pc:6500, pf:7300, d:{'-15':5117,'-10':6837,'-5':8729,'0':10836,'5':13244,'10':15996}},
+  };
+
+  function interpEq(d, x) {
+    const pts = Object.entries(d).map(([k,v])=>[+k,v]).sort((a,b)=>a[0]-b[0]);
+    if (x <= pts[0][0]) {
+      const s = (pts[1][1]-pts[0][1])/(pts[1][0]-pts[0][0]);
+      return pts[0][1] + s*(x-pts[0][0]);
+    }
+    const last = pts.length-1;
+    if (x >= pts[last][0]) {
+      const s = (pts[last][1]-pts[last-1][1])/(pts[last][0]-pts[last-1][0]);
+      return pts[last][1] + s*(x-pts[last][0]);
+    }
+    for (let i=0; i<last; i++) {
+      if (x >= pts[i][0] && x <= pts[i+1][0]) {
+        const t = (x-pts[i][0])/(pts[i+1][0]-pts[i][0]);
+        return pts[i][1] + t*(pts[i+1][1]-pts[i][1]);
+      }
+    }
+  }
+
+  function renderEquipos(T_room, kw_recom) {
+    const T_evap = T_room - 8;
+    const rangMin = kw_recom * 0.75;
+    const rangMax = kw_recom * 1.25;
+    const opciones = [];
+
+    for (const [nombre, eq] of Object.entries(EQ_CAT)) {
+      for (const n of [1, 2, 3]) {
+        const kcal = interpEq(eq.d, T_evap) * n;
+        const kw   = kcal * 1.163 / 1000;
+        if (kw <= 0) continue;
+        const diff = (kw - kw_recom) / kw_recom * 100;
+        if (kw >= rangMin && kw <= rangMax) {
+          opciones.push({ label: n===1 ? nombre : `${n}×${nombre}`, hp: eq.hp*n, kw, diff, pc: eq.pc*n, pf: eq.pf*n });
+        }
+      }
+    }
+
+    opciones.sort((a,b) => a.kw - b.kw);
+
+    if (!opciones.length) {
+      return `<div style="background:#16213e;border:1px solid #1e3a5f;border-radius:10px;padding:14px;font-size:.78rem;color:#90a4ae;">
+        Sin coincidencias en el catálogo Copeland MT para ±25% de <b>${kw_recom.toFixed(2)} kW</b> a ${T_room}°C.<br>
+        <span style="color:#546e7a;font-size:.7rem">Puede requerir equipos de baja temperatura (LT) o mayor capacidad.</span>
+      </div>`;
+    }
+
+    let html = `<div style="font-size:.68rem;color:#90a4ae;letter-spacing:1.5px;text-transform:uppercase;padding:2px 0 8px">Selección de equipo — dentro de ±25% de ${kw_recom.toFixed(2)} kW</div>`;
+    html += `<div style="display:flex;flex-direction:column;gap:8px;">`;
+
+    for (const op of opciones) {
+      const over  = op.diff > 0;
+      const pct   = Math.abs(op.diff).toFixed(0);
+      const badge = over
+        ? `<span style="background:#1b5e20;color:#a5d6a7;border-radius:5px;padding:2px 7px;font-size:.65rem;font-weight:700">+${pct}% sobredimensionado</span>`
+        : `<span style="background:#311b92;color:#b39ddb;border-radius:5px;padding:2px 7px;font-size:.65rem;font-weight:700">−${pct}% subdimensionado</span>`;
+      const note  = over
+        ? `<div style="font-size:.68rem;color:#78909c;margin-top:3px">Mayor reserva térmica, ideal para productos con alta carga de ingreso o aperturas frecuentes.</div>`
+        : `<div style="font-size:.68rem;color:#78909c;margin-top:3px">Funciona más horas por día; puede ser suficiente para carga estable y pocas aperturas.</div>`;
+
+      const dataStr = JSON.stringify({label:op.label, hp:op.hp, kw:op.kw, pc:op.pc, pf:op.pf, T_room}).replace(/"/g,'&quot;');
+      html += `<div style="background:#16213e;border:1px solid #1e3a5f;border-radius:10px;padding:13px 15px;display:flex;flex-direction:column;gap:5px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;">
+          <div>
+            <span style="font-size:.95rem;font-weight:800;color:#e0e0e0">${op.label}</span>
+            <span style="font-size:.72rem;color:#546e7a;margin-left:6px">${op.hp} HP · 380V/3F/50Hz</span>
+          </div>
+          ${badge}
+        </div>
+        <div style="display:flex;gap:16px;font-size:.8rem;color:#4fc3f7;font-weight:700;margin-top:2px;flex-wrap:wrap;">
+          <span>${op.kw.toFixed(2)} kW</span>
+          <span style="color:#546e7a">·</span>
+          <span style="color:#a5d6a7">U$S ${op.pc.toLocaleString()} contado</span>
+          <span style="color:#546e7a">·</span>
+          <span style="color:#90a4ae">U$S ${op.pf.toLocaleString()} financiado</span>
+        </div>
+        ${note}
+        <button onclick='selectEquipo(${dataStr})' style="margin-top:6px;background:#0f3460;border:1px solid #4fc3f7;border-radius:7px;color:#4fc3f7;font-size:.72rem;font-weight:700;letter-spacing:1px;padding:7px 14px;cursor:pointer;text-transform:uppercase;align-self:flex-start;">📋 Cotizar este equipo</button>
+      </div>`;
+    }
+
+    html += `</div>`;
+    return html;
+  }
+
+  function fmtW(w) {
+    if (w >= 1000) return (w/1000).toFixed(2) + ' kW';
+    return Math.round(w) + ' W';
+  }
+
+  // ── Cotización equipo ─────────────────────────────────────────
+  function selectEquipo(data) {
+    selectedEquipoData = data;
+    const kcal = Math.round(data.kw * 860);
+    const texto =
+`🔧 *EQUIPO DE FRÍO — COPELAND ${data.label}*
+
+⚡ *Potencia:*  ${data.hp} HP · 380V / 3F / 50Hz
+❄️ *Capacidad:*  ${data.kw.toFixed(2)} kW · ${kcal.toLocaleString('es-AR')} kcal/h
+   _(a ${data.T_room}°C en cámara · DT = 8°C · T° ambiente 32°C)_
+
+━━━━━━━━━━━━━━━━━━━━━
+
+💵 *PRECIO CONTADO:*  U$S ${fmtUSD(data.pc)} + IVA (10,5%)
+_Forma de pago:_ Anticipo 50% al pedido con transferencia bancaria dentro de los 7 días de la Nota de Pedido. Saldo 50% con transferencia bancaria previa a la entrega.
+
+💳 *PRECIO FINANCIADO:*  U$S ${fmtUSD(data.pf)} + IVA (10,5%)
+_Forma de pago:_ Anticipo 50% al pedido con transferencia bancaria dentro de los 7 días de la Nota de Pedido. Saldo 50% previo a la entrega con cheques electrónicos (verificados y aprobados) a: 30-60-90-120 días.
+
+━━━━━━━━━━━━━━━━━━━━━
+
+⚠️ _Los precios no incluyen flete, instalación ni viáticos._
+📦 _Plazo de entrega: aproximadamente 30 días._
+🛡️ _Garantía: 1 año por defecto de fabricación._
+📅 _Validez de la oferta: 30 días._`;
+
+    document.getElementById('eq-quote-text').value = texto;
+    const box = document.getElementById('eq-quote-box');
+    box.style.display = 'flex';
+    box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  function copiarEqQuote() {
+    const txt = document.getElementById('eq-quote-text').value;
+    navigator.clipboard.writeText(txt).then(() => {
+      const btn = document.getElementById('btn-copiar-eq');
+      btn.textContent = '✓  Copiado';
+      setTimeout(() => { btn.innerHTML = '📋 &nbsp; Copiar texto'; }, 2000);
+    });
+  }
+
+  // ── Propuesta integral ────────────────────────────────────────
+  function actualizarStatusPropuesta() {
+    const ok1 = !!camaraData;
+    const ok2 = !!selectedEquipoData;
+    const el = document.getElementById('prop-status');
+    el.style.display = '';
+    el.innerHTML =
+      `${ok1 ? '✅' : '⬜'} Cámara: ${ok1 ? `<span style="color:#4fc3f7">${camaraData.a}×${camaraData.l}×${camaraData.h} cm · ${camaraData.panelTxt} · U$S ${fmtUSD(camaraData.contado)} contado</span>` : '<span style="color:#546e7a">no calculada — ir a ❄️ Cámara</span>'}<br>` +
+      `${ok2 ? '✅' : '⬜'} Equipo: ${ok2 ? `<span style="color:#4fc3f7">${selectedEquipoData.label} · ${selectedEquipoData.kw.toFixed(2)} kW · U$S ${fmtUSD(selectedEquipoData.pc)} contado</span>` : '<span style="color:#546e7a">no seleccionado — ir a ⚙️ Equipo y hacer clic en "Cotizar"</span>'}`;
+  }
+
+  function generarPropuesta() {
+    actualizarStatusPropuesta();
+    if (!camaraData)        { alert('Primero generá la cotización de la cámara en la solapa ❄️ Cámara.'); return; }
+    if (!selectedEquipoData) { alert('Primero seleccioná un equipo en la solapa ⚙️ Equipo (botón "Cotizar este equipo").'); return; }
+
+    const c = camaraData, e = selectedEquipoData;
+    const totalC = c.contado + e.pc;
+    const totalF = c.financiado + e.pf;
+    const kcal   = Math.round(e.kw * 860);
+
+    const texto =
+`❄️ *PROPUESTA INTEGRAL — CÁMARA FRIGORÍFICA + EQUIPO DE FRÍO*
+
+━━━━━━━━━━━━━━━━━━━━━
+
+📦 *CÁMARA FRIGORÍFICA*
+
+📐 *Medidas exteriores:*  ${c.a} × ${c.l} × ${c.h} cm
+🔩 *Panel:*  Poliuretano ${c.panelTxt} · Ext. prepintado / Int. prepintado
+🚪 *${c.puertasTxt}*
+🏠 *${c.pisoTxt}*
+❄️ *Capacidad:*  ${c.kgRed.toLocaleString('es-AR')} kg de hielo
+
+━━━━━━━━━━━━━━━━━━━━━
+
+🔧 *EQUIPO DE FRÍO*
+
+🏭 *Modelo:*  ${e.label} · Unidad condensadora + evaporador
+⚡ *Potencia:*  ${e.hp} HP · 380V / 3F / 50Hz
+❄️ *Capacidad:*  ${e.kw.toFixed(2)} kW · ${kcal.toLocaleString('es-AR')} kcal/h
+   _(a ${e.T_room}°C en cámara · DT = 8°C · T° ambiente 32°C)_
+
+━━━━━━━━━━━━━━━━━━━━━
+
+💵 *PRECIO CONTADO*
+   Cámara frigorífica:      U$S ${fmtUSD(c.contado)}
+   ${e.label}:  U$S ${fmtUSD(e.pc)}
+   ─────────────────────────────────────
+   *TOTAL CONTADO:           U$S ${fmtUSD(totalC)} + IVA (10,5%)*
+
+_Forma de pago:_ Anticipo 50% al pedido con transferencia bancaria dentro de los 7 días de la Nota de Pedido. Saldo 50% con transferencia bancaria previa a la entrega.
+
+━━━━━━━━━━━━━━━━━━━━━
+
+💳 *PRECIO FINANCIADO*
+   Cámara frigorífica:      U$S ${fmtUSD(c.financiado)}
+   ${e.label}:  U$S ${fmtUSD(e.pf)}
+   ─────────────────────────────────────
+   *TOTAL FINANCIADO:        U$S ${fmtUSD(totalF)} + IVA (10,5%)*
+
+_Forma de pago:_ Anticipo 50% al pedido con transferencia bancaria dentro de los 7 días de la Nota de Pedido. Saldo 50% previo a la entrega con cheques electrónicos (verificados y aprobados) a: 30-60-90-120 días.
+
+━━━━━━━━━━━━━━━━━━━━━
+
+⚠️ _Los precios no incluyen flete, instalación ni viáticos._
+📦 _Plazo de entrega: aproximadamente 30 días._
+🛡️ _Garantía: 1 año por defecto de fabricación._
+📅 _Validez de la oferta: 30 días._`;
+
+    document.getElementById('prop-text').value = texto;
+    const box = document.getElementById('prop-box');
+    box.style.display = 'flex';
+    box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  function copiarProp() {
+    const txt = document.getElementById('prop-text').value;
+    navigator.clipboard.writeText(txt).then(() => {
+      const btn = document.getElementById('btn-copiar-prop');
+      btn.textContent = '✓  Copiado';
+      setTimeout(() => { btn.innerHTML = '📋 &nbsp; Copiar texto'; }, 2000);
+    });
+  }
+
+  // ── PDF cámara (estilo Polair, vía impresión del navegador) ──────
+  function generarPDFCamara() {
+    if (!camaraData) { alert('Primero completá las dimensiones de la cámara para generar el PDF.'); return; }
+    const c = camaraData;
+    const img = window.PDF_IMG || {};
+    const tipo = c.espesor === '100' ? 'Baja temperatura' : 'Media temperatura';
+    const temp = c.espesor === '100' ? '–22 °C' : '–10 °C';
+    const pmap = { 1:'Una puerta batiente', 2:'Dos puertas batientes', 3:'Tres puertas batientes' };
+    const incluye = [ pmap[c.puertas] || c.puertasTxt, 'Iluminación interior LED' ];
+    if (c.piso === 'si') incluye.push('Piso aislado');
+    const opc = ['Puerta corrediza','Puerta batiente adicional','Tronera en panel o puerta',
+      'Cortina de PVC cristal','Tabique divisorio','Piso rejilla flotante','Piso reforzado fenólico PRFV'];
+
+    const ic = p => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
+    const I = {
+      ruler:'<path d="M3 17l14-14 4 4-14 14z"/><path d="M7 9l2 2M10 6l2 2M13 9l2 2M16 6l2 2"/>',
+      layers:'<path d="M12 3l9 5-9 5-9-5 9-5z"/><path d="M3 13l9 5 9-5"/>',
+      thermo:'<path d="M14 14.76V5a2 2 0 0 0-4 0v9.76a4 4 0 1 0 4 0z"/>',
+      snow:'<path d="M12 2v20M4 7l16 10M20 7L4 17"/>',
+      check:'<path d="M20 6L9 17l-5-5"/>',
+      clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+      shield:'<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6l8-3z"/>'
+    };
+    const specs = [[I.ruler, `${c.largo} × ${c.ancho} × ${c.alto}`, 'Medidas ext. (mm)'],
+      [I.layers, `${Math.round(c.m2)} m²`, 'Superficie de panel'],
+      [I.thermo, temp, 'Temperatura de trabajo'],
+      [I.snow, `${c.espesor} mm`, 'Aislación poliuretano']];
+    const specHtml = specs.map(s => `<div class="spec"><div class="spec-ic">${ic(s[0])}</div><div class="spec-v">${s[1]}</div><div class="spec-l">${s[2]}</div></div>`).join('');
+    const incHtml = incluye.map(x => `<li><span class="chk">${ic(I.check)}</span>${x}</li>`).join('');
+    const opcHtml = opc.map(x => `<li><span class="dot"></span>${x}</li>`).join('');
+    const chips = ['Flete','Instalación','Viáticos del instalador'].map(x => `<span class="chip">${x}</span>`).join('');
+
+    const pag1 = `<div class="page"><div class="pad">
+      <div class="hbar"><img src="${img.logo||''}"><div class="htag">Cotización<b>Información técnica</b></div></div>
+      <div class="hero"><div class="hero-l">
+        <div class="eyebrow">Cámara frigorífica · ${tipo}</div>
+        <h1>Cámara<br>Frigorífica</h1>
+        <div class="lead">Construcción en paneles de poliuretano de ${c.espesor} mm, revestimiento prepintado en ambas caras. Diseñada a medida para tu operación de frío.</div>
+      </div><img class="hero-img" src="${img.foto1||''}"></div>
+      <div class="specs">${specHtml}</div>
+      <div class="cols"><div class="col"><h3>Incluye</h3><ul>${incHtml}</ul></div><div class="col"><h3>Opcionales</h3><ul>${opcHtml}</ul></div></div>
+      <div class="foot"><img src="${img.flag||''}">INDUSTRIA ARGENTINA</div>
+    </div></div>`;
+
+    const fpC = 'Anticipo 50% al pedido (transferencia, dentro de 7 días de la Nota de Pedido). Saldo 50% por transferencia previo a la entrega.';
+    const fpF = 'Anticipo 50% al pedido (transferencia). Saldo 50% con cheques electrónicos a 30 · 60 · 90 · 120 días.';
+
+    const pag2 = `<div class="page"><div class="pad">
+      <div class="hbar"><img src="${img.logo||''}"><div class="htag">Propuesta<b>Económica</b></div></div>
+      <div class="sec-eyebrow">Inversión</div><div class="sec-title">Precios y condiciones</div>
+      <div class="prices">
+        <div class="pc main"><div class="plab">Precio contado</div><div class="pval">U$S ${fmtUSD(c.contado)}</div><div class="piva">+ IVA 10,5%</div><div class="pterm"><b>Forma de pago.</b> ${fpC}</div></div>
+        <div class="pc alt"><div class="plab">Precio financiado</div><div class="pval">U$S ${fmtUSD(c.financiado)}</div><div class="piva">+ IVA 10,5%</div><div class="pterm"><b>Forma de pago.</b> ${fpF}</div></div>
+      </div>
+      <div class="noinc"><div class="lbl">Los precios no incluyen</div>${chips}</div>
+      <div class="infogrid">
+        <div class="info"><div class="ic">${ic(I.clock)}</div><div><div class="v">≈ 30 días</div><div class="l">Plazo de entrega</div></div></div>
+        <div class="info"><div class="ic">${ic(I.shield)}</div><div><div class="v">1 año</div><div class="l">Garantía de fabricación</div></div></div>
+      </div>
+      <div class="garantia"><h4>Garantía</h4><p>Todos los componentes tienen garantía por defecto de fabricación, rotura o error de montaje por el término de un año desde la entrega, excepto los componentes eléctricos y electromecánicos. Los viáticos del servicio técnico no están incluidos.</p></div>
+      <div class="contact"><div class="co"><b>REFRIGERACIÓN POLAIR S.R.L.</b><div>Bolivia 854/56 · 2000 · Rosario · Santa Fe · Argentina<br>0054-341-459 2000 · ventas@polair.com.ar · www.refrigeracionpolair.com</div></div><div class="fl"><img src="${img.flag||''}">Industria Argentina</div></div>
+    </div></div>`;
+
+    document.getElementById('pdf-camara').innerHTML = pag1 + pag2;
+    setTimeout(() => window.print(), 60);
+  }
+</script>
+<script>window.PDF_IMG={"logo": "data:image/png;base64,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", "foto1": "data:image/jpeg;base64,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", "foto2": "data:image/jpeg;base64,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", "flag": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAkGBwgHBgkIBwgKCgkLDRYPDQwMDRsUFRAWIB0iIiAdHx8kKDQsJCYxJx8fLT0tMTU3Ojo6Iys/RD84QzQ5Ojf/2wBDAQoKCg0MDRoPDxo3JR8lNzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzf/wAARCAAoACgDASIAAhEBAxEB/8QAGQAAAwEBAQAAAAAAAAAAAAAAAAUGAwQH/8QALRAAAQMDAgMGBwEAAAAAAAAAAQIDBAAFERIhEzFRBhUiIzJBFDNhY3GR0YH/xAAXAQADAQAAAAAAAAAAAAAAAAABAwQC/8QAJhEAAgIBAwIGAwAAAAAAAAAAAQIAAxEEEhMFMSEiQVGB0WFxof/aAAwDAQACEQMRAD8A9qmSmYbC35CwhCBkknlU+i4XW9eZA0Q4RPhfeSSpwdUp6fU1w9pW517u7EGOwtcFlYVIIIAVvyp4lmUlISlggAYABG1NVBjJMksubeVAOB+O85e6ZmdXfsnV04SMVku43Sy+O4hEuED4n2EkKbHVSen1Fd/Dl5+Ur9ihTEpaSlTBKSMEEjcUdomORx2B/sZxJTMxhDzCwtCxkEHnRUh2YbnWS7P2+SwtEJ1alR1KIIG/popbrtOJVTZyIGIxHlhHmzSfVxjmm686Dp542qK7VSLnY54lQXtEZ/ZwaAdKuu9YM3u9vICkSwQftp/lNTTtYu4ESO/qVdFnGynPx9x9x3visb5zyp+jOkaueN6he875nV8QnPXhJ/lZSL7e2EFS5YGPtp/lTaTpdlJbLg5mbet0kZ2MPgfcp76PPhFPq4wopD2Ufud8mmZPe1xmdmxoAyr3O1FMddjFZbRaLqxYARn3lZcGoktIhSi2VPJVpbURlQGM4HvjI/dSDtinW2U4i3ZeaSArQ4CMA5xhWMHly9qKKKOydoLtPXcPOJm/OmMLZZdhaHX18NoKUBrVgnA6nAJ/ytWOzc+6OhdyUGWM/LQd1fk0UVvnf08IgaCnOWyf3LKFEZhR0MR0BCEDAAooopMtn//Z"};</script>
+</body>
+</html>
