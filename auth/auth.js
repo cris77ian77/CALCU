@@ -151,6 +151,28 @@ export async function completarPerfil(uid, email, datos) {
     ...datos,
     creadoEn: new Date().toISOString(),
   }, { merge: true }); // merge: true preserva campos existentes (ej: rol)
+  _webhookNuevoLead(email, datos);
+}
+
+// ── Webhook al bot de WhatsApp (fire-and-forget) ──────────────
+function _webhookNuevoLead(email, datos) {
+  const calientes = ['venta_negocio', 'distribucion_hielo'];
+  const temperatura = calientes.includes(datos.perfil) ? '🔥 Caliente' : '🧊 Frío';
+  fetch('https://178-104-6-115.nip.io/webhook/nuevo-lead', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Webhook-Secret': 'fb1c745712a07a9ec390591c6af421cf04a1d79cf6702175',
+    },
+    keepalive: true,
+    body: JSON.stringify({
+      nombre:    `${datos.nombre || ''} ${datos.apellido || ''}`.trim(),
+      telefono:  datos.telefono,
+      email,
+      provincia: datos.provincia,
+      temperatura,
+    }),
+  }).catch(() => {});
 }
 
 // ── Observador de estado de sesión ────────────────────────────
