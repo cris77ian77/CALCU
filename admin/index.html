@@ -99,9 +99,8 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: #f0f4f8; colo
   background: #fff; border-radius: .75rem; padding: 1.1rem 1.25rem;
   box-shadow: 0 1px 6px rgba(0,0,0,.07); border-left: 4px solid #0ea5e9;
 }
-.stat-card.hot  { border-color: #ef4444; }
-.stat-card.warm { border-color: #f59e0b; }
-.stat-card.cold { border-color: #64748b; }
+.stat-card.bot-ok   { border-color: #16a34a; }
+.stat-card.bot-pend { border-color: #64748b; }
 .stat-card .sc-label { font-size: .72rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: .4px; }
 .stat-card .sc-val   { font-size: 2rem; font-weight: 800; color: #0d3b66; line-height: 1.1; margin-top: .25rem; }
 .stat-card .sc-sub   { font-size: .75rem; color: #94a3b8; margin-top: .2rem; }
@@ -169,13 +168,6 @@ tr:hover td { background: #f8fafc; }
 .bp-negocio  { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
 .bp-distrib  { background: #fefce8; color: #854d0e; border: 1px solid #fde68a; }
 
-.badge-temp {
-  display: inline-flex; align-items: center; gap: .3rem;
-  border-radius: 20px; padding: 3px 10px; font-size: .75rem; font-weight: 700;
-}
-.bt-hot  { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
-.bt-warm { background: #fffbeb; color: #d97706; border: 1px solid #fde68a; }
-.bt-cold { background: #f1f5f9; color: #64748b; border: 1px solid #cbd5e1; }
 
 /* ── Botón ver detalle ─────────────────────────────────────── */
 .btn-ver {
@@ -396,15 +388,15 @@ tr:hover td { background: #f8fafc; }
         <div class="sc-val" id="st-total">—</div>
         <div class="sc-sub">registrados</div>
       </div>
-      <div class="stat-card hot">
-        <div class="sc-label">🔥 Leads calientes</div>
-        <div class="sc-val" id="st-hot">—</div>
-        <div class="sc-sub">visita ≤ 7 días</div>
+      <div class="stat-card bot-ok">
+        <div class="sc-label">🤖 Bot contactados</div>
+        <div class="sc-val" id="st-bot-ok">—</div>
+        <div class="sc-sub">enviados</div>
       </div>
-      <div class="stat-card warm">
-        <div class="sc-label">🌡️ Leads tibios</div>
-        <div class="sc-val" id="st-warm">—</div>
-        <div class="sc-sub">visita 8-30 días</div>
+      <div class="stat-card bot-pend">
+        <div class="sc-label">⏳ Pendientes</div>
+        <div class="sc-val" id="st-bot-pend">—</div>
+        <div class="sc-sub">por contactar</div>
       </div>
       <div class="stat-card cold">
         <div class="sc-label">Sesiones totales</div>
@@ -428,11 +420,10 @@ tr:hover td { background: #f8fafc; }
         <div class="search-box">
           🔍 <input type="text" id="search-input" placeholder="Buscar por nombre, email o provincia…">
         </div>
-        <select class="filter-select" id="filter-temp">
+        <select class="filter-select" id="filter-bot">
           <option value="">Todos los leads</option>
-          <option value="caliente">🔥 Calientes</option>
-          <option value="tibio">🌡️ Tibios</option>
-          <option value="frio">🧊 Fríos</option>
+          <option value="contactado">🤖 Contactados</option>
+          <option value="pendiente">⏳ Pendientes</option>
         </select>
         <select class="filter-select" id="filter-perfil">
           <option value="">Todos los perfiles</option>
@@ -452,13 +443,14 @@ tr:hover td { background: #f8fafc; }
           <thead>
             <tr>
               <th data-col="nombre">Nombre <span class="sort-icon">↕</span></th>
+              <th>Teléfono</th>
               <th>Perfil</th>
               <th data-col="provincia">Provincia <span class="sort-icon">↕</span></th>
               <th data-col="creadoEn">Registro <span class="sort-icon">↕</span></th>
               <th data-col="ultimaVisita">Última visita <span class="sort-icon">↕</span></th>
               <th data-col="sesiones">Sesiones <span class="sort-icon">↕</span></th>
               <th data-col="clicksTotal">Contacto <span class="sort-icon">↕</span></th>
-              <th data-col="temp">Temperatura <span class="sort-icon">↕</span></th>
+              <th data-col="botContactado">Bot WS <span class="sort-icon">↕</span></th>
               <th></th>
             </tr>
           </thead>
@@ -476,6 +468,29 @@ tr:hover td { background: #f8fafc; }
         <button class="range-btn" data-days="7">7 días</button>
         <button class="range-btn active" data-days="30">30 días</button>
         <button class="range-btn" data-days="90">90 días</button>
+      </div>
+
+      <!-- 0. Campaña Bot -->
+      <div class="stat-section">
+        <h3>🤖 Campaña Bot WhatsApp</h3>
+        <div class="stats-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:1rem">
+          <div class="stat-card bot-ok">
+            <div class="sc-label">Contactados</div>
+            <div class="sc-val" id="bot-st-cont">—</div>
+            <div class="sc-sub">mensajes enviados</div>
+          </div>
+          <div class="stat-card bot-pend">
+            <div class="sc-label">Pendientes</div>
+            <div class="sc-val" id="bot-st-pend">—</div>
+            <div class="sc-sub">por contactar</div>
+          </div>
+          <div class="stat-card">
+            <div class="sc-label">Avance campaña</div>
+            <div class="sc-val" id="bot-st-pct">—</div>
+            <div class="sc-sub">del total de leads</div>
+          </div>
+        </div>
+        <div class="chart-canvas-wrap"><canvas id="chart-bot"></canvas></div>
       </div>
 
       <!-- 1. Entradas por día -->
@@ -717,7 +732,9 @@ async function loadData() {
         ultimaVisita,
         recalcTotal,
         maqTop,
-        temperatura:    calcTemp(ultimaVisita, sess.length),
+        botContactado:   u.botContactado === true,
+        botContactadoEn: u.botContactadoEn ?? null,
+        botPlantilla:    u.botPlantilla   ?? null,
         clicksCalendly:       clk.calendly,
         clicksWhatsapp:       clk.whatsapp,
         clicksAcompanamiento: clk.acompanamiento,
@@ -738,51 +755,42 @@ async function loadData() {
   }
 }
 
-function calcTemp(ultimaVisita, sesiones) {
-  if (!ultimaVisita) return 'frio';
-  const days = (Date.now() - ultimaVisita.getTime()) / (1000 * 60 * 60 * 24);
-  if (days <= 7  || sesiones >= 6) return 'caliente';
-  if (days <= 30 || sesiones >= 3) return 'tibio';
-  return 'frio';
-}
-
 // ── STATS ─────────────────────────────────────────────────────
 function updateStats() {
-  const hot  = allUsers.filter(u => u.temperatura === 'caliente').length;
-  const warm = allUsers.filter(u => u.temperatura === 'tibio').length;
+  const botOk   = allUsers.filter(u => u.botContactado === true).length;
+  const botPend = allUsers.length - botOk;
   $('#st-total').textContent    = allUsers.length;
-  $('#st-hot').textContent      = hot;
-  $('#st-warm').textContent     = warm;
+  $('#st-bot-ok').textContent   = botOk;
+  $('#st-bot-pend').textContent = botPend;
   $('#st-sessions').textContent = allSessions.length;
 }
 
 // ── RENDER TABLE ──────────────────────────────────────────────
 function getFilteredUsers() {
   const q    = $('#search-input').value.toLowerCase().trim();
-  const temp = $('#filter-temp').value;
+  const bot  = $('#filter-bot').value;
   const perf = $('#filter-perfil').value;
 
   return allUsers
     .filter(u => {
-      if (temp && u.temperatura !== temp) return false;
+      if (bot === 'contactado' && !u.botContactado) return false;
+      if (bot === 'pendiente'  &&  u.botContactado) return false;
       if (perf && u.perfil !== perf) return false;
       if (q) {
-        const hay = [u.nombre, u.apellido, u.email, u.provincia].join(' ').toLowerCase();
+        const hay = [u.nombre, u.apellido, u.email, u.provincia, u.telefono].join(' ').toLowerCase();
         if (!hay.includes(q)) return false;
       }
       return true;
     })
     .sort((a, b) => {
       let va = a[sortCol], vb = b[sortCol];
-      if (sortCol === 'nombre') { va = (a.nombre + a.apellido).toLowerCase(); vb = (b.nombre + b.apellido).toLowerCase(); }
-      if (sortCol === 'temp')   { va = tempOrder(a.temperatura); vb = tempOrder(b.temperatura); }
+      if (sortCol === 'nombre')        { va = (a.nombre + a.apellido).toLowerCase(); vb = (b.nombre + b.apellido).toLowerCase(); }
+      if (sortCol === 'botContactado') { va = a.botContactado ? 0 : 1; vb = b.botContactado ? 0 : 1; }
       if (va == null) va = sortDir === 1 ? Infinity : -Infinity;
       if (vb == null) vb = sortDir === 1 ? Infinity : -Infinity;
       return va < vb ? -sortDir : va > vb ? sortDir : 0;
     });
 }
-
-function tempOrder(t) { return t === 'caliente' ? 0 : t === 'tibio' ? 1 : 2; }
 
 function renderTable() {
   const rows  = getFilteredUsers();
@@ -806,13 +814,14 @@ function renderTable() {
         <div class="td-name">${esc([u.nombre, u.apellido].filter(Boolean).join(' ') || u.email)}</div>
         <div class="td-email">${esc(u.email)}</div>
       </td>
+      <td style="color:#475569;font-size:.82rem">${esc(u.telefono || '—')}</td>
       <td>${badgePerfil(u.perfil)}</td>
       <td>${esc(u.provincia || '—')}</td>
       <td>${fmtDate(u.creadoEn)}</td>
       <td>${fmtDate(u.ultimaVisita) || '<span style="color:#94a3b8">Sin visitas</span>'}</td>
       <td style="font-weight:700;color:#0d3b66">${u.sesiones}</td>
       <td>${badgeContacto(u.clicksCalendly, u.clicksWhatsapp, u.clicksAcompanamiento)}</td>
-      <td>${badgeTemp(u.temperatura)}</td>
+      <td>${badgeBot(u)}</td>
       <td><button class="btn-ver" data-uid="${u.uid}">Ver →</button></td>
     </tr>
   `).join('');
@@ -852,7 +861,7 @@ document.querySelectorAll('th[data-col]').forEach(th => {
 
 // ── FILTROS ───────────────────────────────────────────────────
 $('#search-input').addEventListener('input', renderTable);
-$('#filter-temp').addEventListener('change', renderTable);
+$('#filter-bot').addEventListener('change', renderTable);
 $('#filter-perfil').addEventListener('change', renderTable);
 $('#btn-refresh').addEventListener('click', loadData);
 
@@ -893,7 +902,7 @@ function openDrawer(uid) {
       <div class="info-item"><div class="ik">Sesiones totales</div><div class="iv" style="font-size:1.2rem;font-weight:800;color:#0d3b66">${u.sesiones}</div></div>
       <div class="info-item"><div class="ik">Recálculos totales</div><div class="iv" style="font-size:1.2rem;font-weight:800;color:#0d3b66">${u.recalcTotal}</div></div>
       <div class="info-item"><div class="ik">Máquina favorita</div><div class="iv">${esc(u.maqTop)}</div></div>
-      <div class="info-item"><div class="ik">Temperatura</div><div class="iv">${badgeTemp(u.temperatura)}</div></div>
+      <div class="info-item"><div class="ik">Bot WhatsApp</div><div class="iv">${badgeBot(u)}${u.botContactadoEn ? `<div style="font-size:.75rem;color:#64748b;margin-top:.2rem">${fmtDateTime(new Date(u.botContactadoEn))}</div>` : ''}</div></div>
       <div class="info-item"><div class="ik">Origen (utm_source)</div><div class="iv">${esc(u.utm?.utm_source || 'Directo')}</div></div>
       <div class="info-item"><div class="ik">Campaña</div><div class="iv">${esc(u.utm?.utm_campaign || '—')}</div></div>
       <div class="info-item"><div class="ik">📅 Clicks Calendly</div><div class="iv" style="font-size:1.2rem;font-weight:800;color:#0d3b66">${u.clicksCalendly}</div></div>
@@ -964,7 +973,6 @@ $('#btn-export').addEventListener('click', () => {
   const rows = getFilteredUsers();
   if (rows.length === 0) { toast('No hay datos para exportar.'); return; }
 
-  const tempLabel = { caliente: '🔥 Caliente', tibio: '🌡️ Tibio', frio: '🧊 Frío' };
   const perfLabel = {
     consumo_propio: 'Consumo propio', venta_negocio: 'Venta en negocio',
     distribucion_hielo: 'Distribución de hielo',
@@ -973,7 +981,8 @@ $('#btn-export').addEventListener('click', () => {
   // Hoja 1: resumen usuarios
   const wsData = [
     ['Nombre', 'Apellido', 'Email', 'Teléfono', 'Perfil', 'Provincia', 'CUIT',
-     'Fecha registro', 'Última visita', 'Sesiones', 'Recálculos', 'Máq. favorita', 'Temperatura',
+     'Fecha registro', 'Última visita', 'Sesiones', 'Recálculos', 'Máq. favorita',
+     'Bot contactado', 'Bot fecha envío', 'Bot plantilla',
      'Origen', 'Medio', 'Campaña'],
     ...rows.map(u => [
       u.nombre, u.apellido, u.email, u.telefono || '',
@@ -982,7 +991,9 @@ $('#btn-export').addEventListener('click', () => {
       fmtDateExcel(u.creadoEn),
       fmtDateExcel(u.ultimaVisita),
       u.sesiones, u.recalcTotal, u.maqTop,
-      tempLabel[u.temperatura] || u.temperatura,
+      u.botContactado ? 'Sí' : 'No',
+      u.botContactadoEn ? fmtDateExcel(u.botContactadoEn) : '',
+      u.botPlantilla || '',
       u.utm?.utm_source   || 'Directo',
       u.utm?.utm_medium   || '—',
       u.utm?.utm_campaign || '—',
@@ -1054,14 +1065,11 @@ function badgePerfil(p) {
   return `<span class="badge-perfil ${cls[p]||''}">${esc(lbl[p]||p||'—')}</span>`;
 }
 
-function badgeTemp(t) {
-  const cfg = {
-    caliente: ['bt-hot',  '🔥 Caliente'],
-    tibio:    ['bt-warm', '🌡️ Tibio'],
-    frio:     ['bt-cold', '🧊 Frío'],
-  };
-  const [cls, lbl] = cfg[t] || ['bt-cold', '🧊 Frío'];
-  return `<span class="badge-temp ${cls}">${lbl}</span>`;
+function badgeBot(u) {
+  if (u.botContactado === true) {
+    return `<span style="background:#f0fdf4;color:#166534;border:1px solid #bbf7d0;border-radius:20px;padding:2px 9px;font-size:.72rem;font-weight:700;white-space:nowrap">✓ Enviado</span>`;
+  }
+  return `<span style="background:#f1f5f9;color:#94a3b8;border:1px solid #e2e8f0;border-radius:20px;padding:2px 9px;font-size:.72rem;font-weight:700">Pendiente</span>`;
 }
 
 function badgeContacto(cal, wsp, acomp) {
@@ -1090,7 +1098,7 @@ document.querySelectorAll('.nav-tab-btn').forEach(btn => {
 
 // ── Range selector ────────────────────────────────────────────
 let statsDays = 30;
-let chartDaily = null, chartProvincias = null, chartPerfiles = null, chartRetencion = null;
+let chartDaily = null, chartProvincias = null, chartPerfiles = null, chartRetencion = null, chartBot = null;
 
 document.querySelectorAll('.range-btn').forEach(btn => {
   btn.addEventListener('click', () => {
@@ -1114,6 +1122,7 @@ function renderEstadisticas() {
       ?? (c.timestamp ? new Date(c.timestamp).getTime() : 0);
     return ts >= cutoff;
   });
+  renderBotChart();
   renderDailyChart(sessInRange, clicksInRange);
   renderProvinciasChart();
   renderPerfilesChart(sessInRange);
@@ -1121,6 +1130,59 @@ function renderEstadisticas() {
 }
 
 function killChart(ref) { if (ref) ref.destroy(); return null; }
+
+// ── Bot campaign chart ────────────────────────────────────────
+function renderBotChart() {
+  const total       = allUsers.length;
+  const contactados = allUsers.filter(u => u.botContactado === true);
+  const pendientes  = total - contactados.length;
+  const pct         = total > 0 ? Math.round(contactados.length / total * 100) : 0;
+
+  document.getElementById('bot-st-cont').textContent = contactados.length;
+  document.getElementById('bot-st-pend').textContent = pendientes;
+  document.getElementById('bot-st-pct').textContent  = pct + '%';
+
+  const byDate = {};
+  contactados.forEach(u => {
+    if (!u.botContactadoEn) return;
+    const d   = new Date(u.botContactadoEn);
+    const key = d.toLocaleDateString('es-AR', { day:'2-digit', month:'2-digit', year:'2-digit' });
+    byDate[key] = (byDate[key] || 0) + 1;
+  });
+  const sorted = Object.entries(byDate).sort((a, b) => {
+    const parse = s => { const [d,m,y] = s.split('/').map(Number); return new Date(2000+y,m-1,d).getTime(); };
+    return parse(a[0]) - parse(b[0]);
+  });
+  const labels = sorted.map(([k]) => k);
+  const values = sorted.map(([, v]) => v);
+  const acum   = values.reduce((acc, v, i) => { acc.push((acc[i-1]||0)+v); return acc; }, []);
+
+  chartBot = killChart(chartBot);
+  if (!labels.length) return;
+
+  chartBot = new Chart(document.getElementById('chart-bot'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        { type: 'bar',  label: 'Enviados ese día', data: values,
+          backgroundColor: 'rgba(37,211,102,0.75)', borderColor: '#16a34a',
+          borderWidth: 1, borderRadius: 4, order: 2 },
+        { type: 'line', label: 'Acumulado', data: acum,
+          borderColor: '#0d3b66', backgroundColor: 'rgba(13,59,102,.08)',
+          borderWidth: 2, pointRadius: 3, tension: 0.3, fill: false, order: 1 },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: 'top', labels: { font: { size: 11 }, boxWidth: 14 } } },
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { size: 11 } } },
+        y: { beginAtZero: true, ticks: { stepSize: 1, font: { size: 11 } } }
+      }
+    }
+  });
+}
 
 // ── 1. Entradas por día ───────────────────────────────────────
 function renderDailyChart(sessInRange, clicksInRange) {
