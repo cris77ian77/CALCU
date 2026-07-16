@@ -149,6 +149,7 @@ export async function completarPerfil(uid, email, datos) {
   await setDoc(doc(db, 'usuarios', uid), {
     email,
     ...datos,
+    botContactado: false,
     creadoEn: new Date().toISOString(),
   }, { merge: true }); // merge: true preserva campos existentes (ej: rol)
 }
