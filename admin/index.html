@@ -382,21 +382,16 @@ tr:hover td { background: #f8fafc; }
   <div class="admin-main">
 
     <!-- Stats -->
-    <div class="stats-grid" id="stats-grid">
+    <div class="stats-grid" id="stats-grid" style="grid-template-columns:repeat(3,1fr)">
       <div class="stat-card">
         <div class="sc-label">Total usuarios</div>
         <div class="sc-val" id="st-total">—</div>
         <div class="sc-sub">registrados</div>
       </div>
-      <div class="stat-card bot-ok">
-        <div class="sc-label">🤖 Bot contactados</div>
-        <div class="sc-val" id="st-bot-ok">—</div>
-        <div class="sc-sub">enviados</div>
-      </div>
       <div class="stat-card bot-pend">
         <div class="sc-label">⏳ Pendientes</div>
         <div class="sc-val" id="st-bot-pend">—</div>
-        <div class="sc-sub">por contactar</div>
+        <div class="sc-sub">sin contactar</div>
       </div>
       <div class="stat-card">
         <div class="sc-label">Sesiones totales</div>
@@ -406,11 +401,16 @@ tr:hover td { background: #f8fafc; }
     </div>
 
     <!-- Bot campaign cards -->
-    <div class="stats-grid" style="grid-template-columns:repeat(3,1fr);margin-top:-.75rem;margin-bottom:1.5rem">
+    <div class="stats-grid" style="grid-template-columns:repeat(4,1fr);margin-top:-.75rem;margin-bottom:1.5rem">
       <div class="stat-card bot-ok">
         <div class="sc-label">🤖 Contactados bot</div>
         <div class="sc-val" id="bot-st-cont">—</div>
         <div class="sc-sub">mensajes enviados</div>
+      </div>
+      <div class="stat-card" style="border-color:#f59e0b">
+        <div class="sc-label">✗ Descartados bot</div>
+        <div class="sc-val" id="bot-st-desc">—</div>
+        <div class="sc-sub">número inválido o extranjero</div>
       </div>
       <div class="stat-card bot-pend">
         <div class="sc-label">⏳ Pendientes bot</div>
@@ -420,7 +420,7 @@ tr:hover td { background: #f8fafc; }
       <div class="stat-card">
         <div class="sc-label">📈 Avance campaña</div>
         <div class="sc-val" id="bot-st-pct">—</div>
-        <div class="sc-sub">del total de leads</div>
+        <div class="sc-sub">contactados + descartados</div>
       </div>
     </div>
 
@@ -760,14 +760,15 @@ function getBotEstado(u) {
 }
 
 function updateStats() {
-  const botEnviados   = allUsers.filter(u => getBotEstado(u) === 'enviado').length;
-  const botPendientes = allUsers.filter(u => getBotEstado(u) === 'pendiente').length;
-  const pct           = allUsers.length > 0 ? Math.round(botEnviados / allUsers.length * 100) : 0;
-  $('#st-total').textContent     = allUsers.length;
-  $('#st-bot-ok').textContent    = botEnviados;
-  $('#st-bot-pend').textContent  = botPendientes;
-  $('#st-sessions').textContent  = allSessions.length;
+  const botEnviados    = allUsers.filter(u => getBotEstado(u) === 'enviado').length;
+  const botDescartados = allUsers.filter(u => getBotEstado(u).startsWith('descartado_')).length;
+  const botPendientes  = allUsers.length - botEnviados - botDescartados;
+  const pct            = allUsers.length > 0 ? Math.round((botEnviados + botDescartados) / allUsers.length * 100) : 0;
+  $('#st-total').textContent    = allUsers.length;
+  $('#st-bot-pend').textContent = botPendientes;
+  $('#st-sessions').textContent = allSessions.length;
   document.getElementById('bot-st-cont').textContent = botEnviados;
+  document.getElementById('bot-st-desc').textContent = botDescartados;
   document.getElementById('bot-st-pend').textContent = botPendientes;
   document.getElementById('bot-st-pct').textContent  = pct + '%';
 }
