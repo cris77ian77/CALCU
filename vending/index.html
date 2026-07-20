@@ -246,6 +246,18 @@ header p  { font-size: 13px; opacity: .8; margin-top: 2px; }
 .locacion-field { grid-column: span 2; }
 @media(max-width: 500px) { .locacion-field { grid-column: span 1; } }
 
+/* ── PRESET BUTTONS ── */
+.preset-row { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; flex-wrap: wrap; }
+.preset-label { font-size: 12px; font-weight: 700; color: #555; margin-right: 2px; }
+.preset-btn {
+  padding: 8px 18px; border: 2px solid #d0d7e3; border-radius: 20px; cursor: pointer;
+  background: #fafbfc; font-size: 13px; font-weight: 700; color: #555; transition: all .2s;
+}
+.preset-btn:hover { border-color: #1a6fa8; color: #1a6fa8; }
+.preset-btn.pesimista.selected  { border-color: #c0392b; background: #c0392b; color: white; }
+.preset-btn.conservadora.selected { border-color: #e67e22; background: #e67e22; color: white; }
+.preset-btn.optimista.selected  { border-color: #27ae60; background: #27ae60; color: white; }
+
 /* ── CAPACITY SLIDERS ── */
 .months-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; }
 @media(max-width: 800px) { .months-grid { grid-template-columns: repeat(3,1fr); } }
@@ -548,6 +560,12 @@ thead th.mes0-col { background: #7d4e00 !important; border-right: 2px solid #e8c
   <!-- ── UTILIZACIÓN ── -->
   <div class="card">
     <h2>📊 Utilización de Capacidad por Mes (%)</h2>
+    <div class="preset-row">
+      <span class="preset-label">Escenario:</span>
+      <button class="preset-btn pesimista"    id="preset-pesimista"    onclick="applyPreset(0.33)">📉 Pesimista (33%)</button>
+      <button class="preset-btn conservadora" id="preset-conservadora" onclick="applyPreset(0.66)">📊 Conservadora (66%)</button>
+      <button class="preset-btn optimista selected" id="preset-optimista"    onclick="applyPreset(1.0)">📈 Optimista (100%)</button>
+    </div>
     <div class="months-grid" id="sliders-container"></div>
   </div>
 
@@ -624,6 +642,7 @@ let pagoMode     = 'contado';
 let locacionMode = 'fijo';
 let currency     = 'USD';
 let utilArr      = null;
+let presetScale  = 1.0;
 
 let chartIngresos = null;
 let chartFlujo    = null;
@@ -755,8 +774,26 @@ function computeDefaultUtil() {
   );
 }
 
+function applyPreset(scale) {
+  presetScale = scale;
+  document.getElementById('preset-pesimista').classList.toggle('selected',    scale === 0.33);
+  document.getElementById('preset-conservadora').classList.toggle('selected', scale === 0.66);
+  document.getElementById('preset-optimista').classList.toggle('selected',    scale === 1.0);
+  const base = computeDefaultUtil();
+  utilArr = base.map(v => Math.min(100, Math.round(v * scale)));
+  for (let i = 0; i < 12; i++) {
+    const pct = utilArr[i];
+    const mvEl = document.getElementById('mv'+i);
+    const slEl = document.getElementById('sl'+i);
+    if (mvEl) mvEl.textContent = pct + '%';
+    if (slEl) { slEl.value = pct; slEl.style.setProperty('--pct', pct+'%'); }
+  }
+  recalc();
+}
+
 function initSliders() {
-  utilArr = computeDefaultUtil();
+  const base = computeDefaultUtil();
+  utilArr = base.map(v => Math.min(100, Math.round(v * presetScale)));
   const c = document.getElementById('sliders-container');
   c.innerHTML = '';
   const ini = getInicio();
