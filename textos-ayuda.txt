@@ -1,0 +1,450 @@
+===========================================================
+TEXTOS DE AYUDA — simple/index.html
+Editá los textos entre las líneas de guiones y devolvélos.
+No cambies las líneas KEY: ni los separadores ===
+===========================================================
+
+
+KEY: seleccion-maquina
+TÍTULO: 🏭 Selección de Máquina
+----------------------------------------------------------
+La máquina de hielo es el corazón de tu fábrica. Elegir el modelo correcto es la decisión más importante porque determina tu capacidad de producción diaria y condiciona todos los números del modelo.
+
+Polair ofrece dos líneas:
+
+▸ Roll Ice (fabricación nacional argentina): máquinas construidas en Rosario por Polair. Más de 500 unidades instaladas en todo el país. Son la opción preferida para quien quiere respaldo local, servicio técnico rápido y garantía de repuestos.
+
+▸ GL · Línea Global (importadas): traídas desde China según especificaciones de Polair para alta producción con menor inversión inicial. Ideales cuando el volumen de producción es lo más importante y ya tenés experiencia en el rubro.
+
+El tamaño que elegís define: cuántos kg producís por día, cuánta energía consumís, cuántas horas de trabajo requiere la operación y cuántos empleados necesitás.
+===========================================================
+
+
+KEY: camara-section
+TÍTULO: 🏠 Cámara Frigorífica
+----------------------------------------------------------
+La cámara frigorífica te permite almacenar el hielo producido y desacoplar la producción de la demanda diaria.
+
+¿Por qué es importante?
+Sin cámara, necesitás vender o entregar todo el hielo el mismo día que lo producís. Esto te obliga a ajustar la producción a la demanda diaria, lo que es difícil de gestionar.
+
+Con cámara, podés producir a máxima capacidad cuando la máquina es más eficiente y vender según el ritmo de tu negocio. En temporada alta podés acumular stock; en temporada baja producís menos pero tenés inventario.
+
+Cada opción de cámara incluye: la estructura prefabricada aislada + el equipo frigorífico completo (compresor, evaporador, controles). Son unidades llave en mano.
+
+Si empezás sin cámara (opción "Sin cámara"), podés agregarla después sin modificar la máquina.
+===========================================================
+
+
+KEY: forma-pago
+TÍTULO: 💳 Forma de Pago
+----------------------------------------------------------
+Polair ofrece dos formas de acceder al equipo:
+
+💵 CONTADO
+Precio más bajo. Se paga en dos desembolsos:
+• 50% al hacer el pedido (anticipo)
+• 50% contra entrega de la máquina instalada
+
+Es la mejor opción si tenés el capital disponible o acceso a financiamiento propio (crédito bancario, socio inversor, etc.).
+
+📋 FINANCIADO
+El precio es mayor (aproximadamente 12-15% más que contado) para compensar el costo financiero. Se paga:
+• 40% de anticipo
+• 60% restante en hasta 12 cheques diferidos en pesos
+
+Los cheques van a fecha futura (1 por mes) al tipo de cambio que resulte de multiplicar el valor en USD por el dólar del momento del cobro. Esto implica que si el dólar sube, pagás más en pesos por las cuotas restantes.
+
+El modelo calcula automáticamente el impacto de cada opción en el flujo de fondos.
+===========================================================
+
+
+KEY: supuestos
+TÍTULO: ⚙ Supuestos del Modelo
+----------------------------------------------------------
+Esta sección contiene las variables clave que determinan los resultados de la proyección.
+
+Son llamados "supuestos" porque representan estimaciones sobre cómo va a operar tu negocio. No hay valores perfectos — dependen de tu mercado, tu ubicación y tu operación.
+
+La calculadora actualiza todos los números en tiempo real cada vez que modificás un valor. Podés experimentar con distintos escenarios para ver cómo cambian las métricas: ¿qué pasa si el dólar sube? ¿Si el precio del hielo baja? ¿Si el alquiler es más caro?
+
+Cada campo tiene su botón ℹ️ con una explicación detallada.
+===========================================================
+
+
+KEY: dolar
+TÍTULO: Dólar de referencia (ARS/$)
+----------------------------------------------------------
+Es el tipo de cambio que usamos para convertir entre dólares y pesos argentinos.
+
+Se obtiene automáticamente del Banco Nación Argentina (BNA), tipo vendedor — el mismo que usa Polair para calcular los precios en pesos.
+
+¿Para qué sirve en el modelo?
+• Convierte todos los costos y precios de USD a ARS cuando activás la vista en pesos
+• Calcula el equivalente en pesos de cada cuota del financiamiento
+• Muestra el precio del hielo y los costos en pesos junto a los valores en dólares
+
+Todos los supuestos están en USD porque el dólar es más estable que el peso y facilita la comparación. Pero cuando el modelo dice "sueldo de empleado USD 1.000", eso equivale hoy a ~$1.500.000 pesos — ese número cambia si el dólar cambia.
+===========================================================
+
+
+KEY: maquina-precio
+TÍTULO: Precio de la máquina (USD)
+----------------------------------------------------------
+Este campo se completa automáticamente según el modelo de máquina y la forma de pago que seleccionaste.
+
+• Contado: precio de lista al contado
+• Financiado: precio de lista financiado (mayor por el costo financiero)
+
+No podés modificarlo manualmente — refleja el precio de catálogo de Polair.
+
+Si querés comparar el impacto de distintas máquinas en tu flujo de fondos, simplemente hacé click en otro modelo en la grilla de arriba y todos los números se actualizan automáticamente.
+===========================================================
+
+
+KEY: camara-precio
+TÍTULO: Precio de la cámara (USD)
+----------------------------------------------------------
+Al igual que el precio de la máquina, este campo se completa automáticamente según la cámara frigorífica que hayas seleccionado arriba.
+
+Incluye tanto la estructura de la cámara como el equipo frigorífico (compresor + evaporador).
+
+Si seleccionás "Sin cámara", el valor es 0 y no se agrega ningún costo de inversión por este concepto.
+===========================================================
+
+
+KEY: alquiler
+TÍTULO: Alquiler mensual (USD)
+----------------------------------------------------------
+El costo mensual del espacio donde instalás la máquina: un local, galpón, espacio dentro de un mercado, depósito, etc.
+
+Es un COSTO FIJO: se paga todos los meses independientemente de cuánto produzcas o vendas. Incluso si un mes no vendés nada, el alquiler hay que pagarlo.
+
+Casos comunes:
+• Si alquilás un espacio → ingresá el valor mensual del contrato en USD
+• Si usás un espacio propio → podés poner 0 o un valor estimado de mercado para calcular el costo de oportunidad real
+• Si el dueño del local te cobra un porcentaje de tus ventas → ponelo en 0 acá y sumalo a "Otros costos variables"
+
+El impacto del alquiler en la rentabilidad es muy grande. Una diferencia de USD 500/mes en el alquiler puede cambiar completamente el payback.
+===========================================================
+
+
+KEY: precioKwh
+TÍTULO: Precio de electricidad (USD/kWh)
+----------------------------------------------------------
+El costo de cada kilowatt-hora de energía eléctrica, expresado en dólares.
+
+La electricidad es el PRINCIPAL COSTO VARIABLE de una fábrica de hielo — en muchos casos supera el 40% del total de costos operativos.
+
+¿Cómo calcularlo?
+1. Buscá en tu factura de luz el precio por kWh en pesos (suele estar en la sección "Energía")
+2. Dividí ese valor por el dólar de referencia
+
+Ejemplo: si el kWh cuesta $250 pesos y el dólar está a $1.500, el precio en USD es 250/1500 = USD 0,167/kWh.
+
+El hint debajo del campo te muestra automáticamente cuánto consumiría la máquina al 100% de utilización y cuánto costaría ese consumo por mes.
+
+Importante: las tarifas eléctricas en Argentina varían mucho según la provincia, si sos usuario residencial o comercial, y si tenés tarifa industrial. Vale la pena verificar tu categoría.
+===========================================================
+
+
+KEY: sueldoEmpleado
+TÍTULO: Sueldo por empleado (USD/mes)
+----------------------------------------------------------
+El costo mensual de cada empleado que trabaja en la operación, incluyendo salario bruto + cargas sociales (aproximadamente 25-30% adicional sobre el salario).
+
+El modelo calcula automáticamente cuántos empleados necesitás según:
+• Las horas de trabajo que requiere la máquina elegida (embolsado + ventas)
+• La utilización del mes (si solo trabajás al 50%, el personal también se reduce proporcionalmente)
+
+Esto aparece en el campo "Personal (según utilización)" en la tabla.
+
+Casos especiales:
+• Si vos mismo operás la fábrica sin sueldo formal → podés poner 0 o el valor de tu tiempo estimado
+• Si el negocio lo maneja familia → ídem
+• Si tenés empleados con sueldo en pesos → convertí el costo total mensual en pesos a USD usando el dólar de referencia
+===========================================================
+
+
+KEY: precioHielo
+TÍTULO: Precio de venta del hielo (USD/kg)
+----------------------------------------------------------
+El precio promedio al que vendés cada kilogramo de hielo a tus clientes.
+
+Es el principal determinante de tus ingresos — una diferencia de USD 0,05/kg en el precio de venta cambia dramáticamente la rentabilidad.
+
+Precios de referencia (Argentina, 2025):
+• Venta mayorista a distribuidores: USD 0,25–0,35/kg
+• Venta a negocios (almacenes, kioscos, restaurantes): USD 0,40–0,55/kg
+• Venta directa al consumidor (bolsas 2kg): USD 0,60–0,80/kg
+
+El hint debajo del campo muestra el equivalente en pesos al tipo de cambio ingresado, que es como el cliente final percibe el precio.
+
+Si vendés a distintos tipos de clientes con distintos precios, usá un promedio ponderado según el volumen de cada canal.
+===========================================================
+
+
+KEY: pctOtros
+TÍTULO: Otros costos variables (% sobre ingresos)
+----------------------------------------------------------
+Un porcentaje de tus ingresos mensuales que representa costos variables menores que no vale la pena detallar uno por uno.
+
+Se calcula como porcentaje de los ingresos porque si vendés más, estos costos también suben proporcionalmente.
+
+¿Qué incluye? Típicamente:
+• Bolsas de polietileno para empacar el hielo
+• Agua (insumo principal de la producción)
+• Mantenimiento preventivo y pequeñas reparaciones
+• Combustible para distribución
+• Materiales de limpieza e higiene
+• Gastos de oficina y administración menores
+
+Un valor típico es entre 3% y 8% dependiendo del tipo de operación:
+• 3-4%: operación muy eficiente, bajo costo de distribución
+• 5-6%: operación estándar (valor por defecto)
+• 7-8%: alto costo de packaging o distribución significativa
+===========================================================
+
+
+KEY: mesInicio
+TÍTULO: Mes de inicio de operaciones
+----------------------------------------------------------
+El mes en que tu máquina ya está instalada y empezás a vender hielo.
+
+¿Por qué importa este dato?
+El hielo tiene ESTACIONALIDAD MARCADA en Argentina: la demanda en verano (diciembre-febrero) puede ser 2 o 3 veces mayor que en invierno (junio-agosto).
+
+Empezar en distintos meses tiene un impacto enorme en la proyección:
+• Arrancar en octubre-noviembre: los primeros meses coinciden con la temporada alta → ingreso temprano de caja
+• Arrancar en mayo-junio: los primeros meses son de baja demanda → más tiempo antes de recuperar la inversión
+
+Además, el modelo aplica una CURVA DE ARRANQUE automática los primeros 3 meses:
+• Mes 1: 25% de capacidad (instalación, puesta en marcha, primeros clientes)
+• Mes 2: 50% de capacidad (ramp-up del negocio)
+• Mes 3: 75% de capacidad (ya con clientela establecida)
+
+A partir del mes 4, aplica la capacidad estacional normal que podés ajustar con los sliders.
+===========================================================
+
+
+KEY: utilizacion
+TÍTULO: 📊 Utilización de Capacidad por Mes
+----------------------------------------------------------
+Qué porcentaje de la capacidad máxima de la máquina vas a usar cada mes, expresado en porcentaje.
+
+Ejemplo: una máquina de 1.500 kg/día al 70% de utilización produce 1.050 kg/día, y al 100% produce 1.500 kg/día.
+
+¿Qué determina la utilización?
+• La demanda de tu mercado (estacionalidad del hielo)
+• Tu capacidad de vender y distribuir esa cantidad
+• El tiempo de operación diario real de la máquina
+
+Los valores por defecto combinan:
+1. Estacionalidad del mercado argentino del hielo (valores de enero a diciembre)
+2. Curva de arranque (25%, 50%, 75% los primeros 3 meses desde el inicio)
+
+Podés ajustar cada mes individualmente usando los sliders. Esto te permite construir tu propio escenario según tu conocimiento del mercado local: quizás tu ciudad tiene más turismo en invierno, o vendés a una procesadora que trabaja todo el año parejo.
+
+Mové los sliders hacia arriba para escenarios optimistas, hacia abajo para conservadores.
+===========================================================
+
+
+KEY: kpi-inversion
+TÍTULO: Inversión Total
+----------------------------------------------------------
+El monto total que necesitás para poner en marcha la fábrica: máquina + cámara frigorífica.
+
+Este número cambia según la forma de pago:
+• Contado: es el precio total que pagás entre el anticipo y el saldo
+• Financiado: el mismo total, pero el subtítulo muestra cuánto desembolsás en el Mes 0 (el anticipo)
+
+¿Por qué lo mostramos en rojo?
+Porque es un egreso de dinero — una salida de caja que necesitás tener disponible antes de empezar a generar ingresos.
+
+Este valor es la base para calcular el ROI y el Payback.
+===========================================================
+
+
+KEY: kpi-ingresos
+TÍTULO: Ingresos Anuales
+----------------------------------------------------------
+La suma de todos los ingresos por venta de hielo durante los 12 meses proyectados.
+
+Cómo se calcula:
+Para cada mes → producción (kg) × precio de venta (USD/kg)
+Luego se suman los 12 meses.
+
+La producción de cada mes depende de:
+• La capacidad de la máquina elegida (kg/día)
+• Los 30 días del mes
+• El porcentaje de utilización del slider de ese mes
+
+El subtítulo muestra la producción total en kg, que te da una idea del volumen físico del negocio independientemente del precio.
+===========================================================
+
+
+KEY: kpi-resultado
+TÍTULO: Resultado Operativo (EBITDA)
+----------------------------------------------------------
+Los ingresos totales menos todos los costos operativos durante los 12 meses.
+
+Qué costos resta:
+✓ Energía eléctrica
+✓ Personal (según utilización)
+✓ Alquiler (todos los meses)
+✓ Otros costos variables (bolsas, agua, etc.)
+
+Qué NO resta:
+✗ La inversión en la máquina/cámara
+✗ Las cuotas del financiamiento
+
+Es el equivalente al EBITDA (Earnings Before Interest, Taxes, Depreciation and Amortization) — mide cuánto genera la operación antes de considerar cómo se financió.
+
+Un resultado operativo positivo significa que el negocio cubre todos sus costos operativos y genera excedente. Si es negativo, la operación pierde dinero incluso antes de considerar la inversión.
+===========================================================
+
+
+KEY: kpi-flujo
+TÍTULO: Flujo Neto 12 meses
+----------------------------------------------------------
+El dinero real que queda después de pagar todos los costos operativos Y las cuotas del financiamiento (si aplica).
+
+En modo Contado: es igual al Resultado Operativo (no hay cuotas).
+
+En modo Financiado: es el Resultado Operativo menos las 12 cuotas mensuales del financiamiento.
+
+NO incluye la inversión inicial del Mes 0 (eso se refleja en el Flujo Acumulado).
+
+Este número responde la pregunta: "al final del primer año, ¿cuánta plata generó el negocio mes a mes?" Si es positivo, el negocio genera caja mes a mes. Si es negativo, necesitás capital de trabajo adicional para sostenerlo.
+===========================================================
+
+
+KEY: kpi-roi
+TÍTULO: ROI Anual (Retorno sobre Inversión)
+----------------------------------------------------------
+Qué porcentaje del dinero que invertiste en el Mes 0 recuperás durante el primer año de operación.
+
+Fórmula:
+ROI = Flujo Neto 12m ÷ Desembolso Mes 0 × 100
+
+Ejemplo:
+• Anticipo pagado en Mes 0: USD 20.000
+• Flujo Neto del año: USD 9.000
+• ROI = 9.000 / 20.000 × 100 = 45%
+
+Interpretación:
+• ROI > 100%: recuperaste toda la inversión inicial y más en el primer año
+• ROI 50-100%: muy buen negocio, recupero rápido
+• ROI 20-50%: negocio rentable, recupero en 2-3 años
+• ROI < 20%: rentable pero lento, necesitás analizar el escenario a más largo plazo
+• ROI negativo: el negocio no cubre sus costos en este escenario
+===========================================================
+
+
+KEY: kpi-payback
+TÍTULO: Payback (Período de Recupero)
+----------------------------------------------------------
+En qué mes exacto recuperás la inversión inicial, sumando los flujos mensuales de forma acumulada.
+
+Cómo se calcula:
+Empezamos con -inversión en el Mes 0, y sumamos el flujo neto de cada mes siguiente. El Payback es el mes en que esa suma acumulada llega a cero (o positivo).
+
+Ejemplo:
+• Mes 0: -USD 20.000 (inversión)
+• Mes 1: +USD 2.500 (flujo) → acumulado: -17.500
+• Mes 2: +USD 2.800 → acumulado: -14.700
+• ... (siguiendo sumando)
+• Mes 8: +USD 3.200 → acumulado: +400 ← ¡Payback en Mes 8!
+
+Si el modelo muestra ">12 meses", no significa que el negocio sea malo — solo que el recupero es más lento y necesitás analizar a un horizonte de 24 o 36 meses.
+
+El gráfico "Flujo Acumulado" muestra visualmente el punto exacto de recupero.
+===========================================================
+
+
+KEY: kpi-acumulado
+TÍTULO: Acumulado Final (Mes 12)
+----------------------------------------------------------
+El resultado neto de todo el período al final de los 12 meses, considerando la inversión inicial.
+
+Se calcula sumando:
+• Mes 0: -inversión (negativo, es un egreso)
+• Meses 1 a 12: +flujo neto de cada mes
+
+Si es positivo: recuperaste la inversión y generaste ganancia adicional durante el año.
+Si es negativo: todavía no recuperaste la inversión, pero esto no necesariamente significa que el negocio sea malo — podés estar muy cerca del recupero.
+
+Es el valor que muestra la línea del gráfico "Flujo Acumulado" en el último punto (Mes 12).
+===========================================================
+
+
+KEY: tabla
+TÍTULO: 💰 Flujo de Fondos Mensual
+----------------------------------------------------------
+La tabla detalla todos los números del negocio mes a mes durante los 12 meses proyectados.
+
+Columna Mes 0: el mes previo al inicio de operaciones, donde se registra la inversión inicial.
+Columna TOTAL: la suma o promedio de los 12 meses, según el concepto.
+
+La tabla se divide en secciones:
+▸ Utilización y Producción: qué porcentaje de capacidad usás y cuánto kg producís
+▸ Ingresos: cuánto facturás cada mes
+▸ Egresos Variables: costos que suben y bajan con la producción (energía, personal, otros)
+▸ Egresos Fijos: costos que pagás siempre (alquiler)
+▸ Resultado Operativo: ingresos menos todos los costos
+▸ Financiamiento: cuotas mensuales (solo en modo Financiado)
+▸ Inversión / Acumulado: la inversión inicial y cómo evoluciona el acumulado
+
+Los números en rojo son egresos o resultados negativos. Los números en negro o verde son positivos.
+===========================================================
+
+
+KEY: chart-stacked
+TÍTULO: 💰 Gráfico: Ingresos · Costos · Resultado
+----------------------------------------------------------
+Barras apiladas que muestran la composición del resultado de cada mes.
+
+Cómo leerlo:
+• Gris (Costos Fijos): la parte del costo que es igual todos los meses (alquiler)
+• Naranja (Costos Variables): energía + personal + otros — sube y baja con la producción
+• Verde/Rojo (Resultado): lo que sobra (o falta) después de todos los costos
+
+Cuando las barras de costos superan la barra de ingresos, el resultado es negativo (rojo). Cuando los ingresos superan los costos, el resultado es positivo (verde).
+
+En los meses de arranque (baja utilización), es normal que el resultado sea negativo o muy pequeño — la operación todavía no alcanzó el punto de equilibrio.
+===========================================================
+
+
+KEY: chart-flujo
+TÍTULO: 📊 Gráfico: Resultado Operativo Mensual
+----------------------------------------------------------
+Barras individuales que muestran el resultado operativo mes a mes.
+
+Es la misma información que la columna "Resultado Operativo" de la tabla, pero visualizada como gráfico.
+
+Verde: mes con resultado positivo (el negocio generó caja).
+Rojo: mes con resultado negativo (los costos superaron los ingresos).
+
+Sirve para identificar rápidamente:
+• Los meses de temporada alta donde el negocio es más rentable
+• Los meses críticos donde la operación puede dar pérdida
+• La estacionalidad general del negocio
+===========================================================
+
+
+KEY: chart-acum
+TÍTULO: 📉 Gráfico: Flujo Acumulado
+----------------------------------------------------------
+La línea muestra cómo evoluciona el dinero acumulado a lo largo del tiempo, desde la inversión inicial hasta el mes 12.
+
+Cómo leerlo:
+• El primer punto (Mes 0) siempre está en negativo — es la inversión que acabás de hacer
+• La línea va subiendo mes a mes a medida que el negocio genera flujo positivo
+• El punto donde la línea cruza el eje 0 (la línea horizontal gris) es el PAYBACK — el momento en que recuperás la inversión
+• El último punto (Mes 12) muestra el Acumulado Final
+
+Zona roja/bajo cero: todavía no recuperaste la inversión.
+Zona verde/sobre cero: ya recuperaste la inversión y estás generando ganancia neta.
+
+Si la línea nunca cruza el eje 0 en los 12 meses, el indicador Payback muestra ">12 meses".
+===========================================================
