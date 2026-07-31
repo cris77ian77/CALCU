@@ -430,6 +430,7 @@ tr:hover td { background: #f8fafc; }
     <div class="nav-tabs">
       <button class="nav-tab-btn active" data-tab="usuarios">👥 Usuarios</button>
       <button class="nav-tab-btn" data-tab="estadisticas">📊 Estadísticas</button>
+      <button class="nav-tab-btn" data-tab="campanas">📋 Campañas</button>
     </div>
 
     <!-- ── Tab: Usuarios ──────────────────────────────────────── -->
@@ -543,6 +544,81 @@ tr:hover td { background: #f8fafc; }
 
     </div><!-- /tab-estadisticas -->
 
+    <!-- ── Tab: Campañas ─────────────────────────────────────── -->
+    <div id="tab-campanas" class="tab-panel">
+      <div style="margin-top:1rem">
+
+        <!-- Import card -->
+        <div class="stat-section" id="camp-import-card">
+          <h3>📥 Importar contactos</h3>
+          <p style="font-size:.84rem;color:#64748b;margin:0 0 1rem">Pegá el contenido del HTML de consultas. Se filtran automáticamente los leads de <strong>Máquinas de Hielo</strong> que tienen WhatsApp.</p>
+          <div style="display:flex;gap:.75rem;align-items:flex-start;flex-wrap:wrap">
+            <label style="flex:1;min-width:200px">
+              <span style="font-size:.75rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.3px;display:block;margin-bottom:.4rem">Archivo HTML</span>
+              <input type="file" id="camp-file" accept=".html" style="font-size:.84rem;width:100%">
+            </label>
+            <button id="camp-parse-btn" onclick="campParse()" style="margin-top:1.4rem;padding:.65rem 1.25rem;background:#0d3b66;color:#fff;border:none;border-radius:.5rem;font-size:.88rem;font-weight:700;cursor:pointer">Analizar archivo</button>
+          </div>
+          <div id="camp-preview" style="margin-top:1.25rem;display:none">
+            <div id="camp-preview-info" style="font-size:.88rem;font-weight:700;color:#0d3b66;margin-bottom:.75rem"></div>
+            <div style="overflow-x:auto;max-height:320px;overflow-y:auto;border:1px solid #e2e8f0;border-radius:.5rem">
+              <table style="width:100%;border-collapse:collapse;font-size:.82rem">
+                <thead style="position:sticky;top:0;background:#f8fafc">
+                  <tr>
+                    <th style="padding:.5rem .75rem;text-align:left;color:#64748b;font-size:.72rem;text-transform:uppercase;border-bottom:2px solid #e2e8f0">Contacto</th>
+                    <th style="padding:.5rem .75rem;text-align:left;color:#64748b;font-size:.72rem;text-transform:uppercase;border-bottom:2px solid #e2e8f0">WhatsApp</th>
+                    <th style="padding:.5rem .75rem;text-align:left;color:#64748b;font-size:.72rem;text-transform:uppercase;border-bottom:2px solid #e2e8f0">Modelo</th>
+                    <th style="padding:.5rem .75rem;text-align:left;color:#64748b;font-size:.72rem;text-transform:uppercase;border-bottom:2px solid #e2e8f0">Ubicación</th>
+                    <th style="padding:.5rem .75rem;text-align:left;color:#64748b;font-size:.72rem;text-transform:uppercase;border-bottom:2px solid #e2e8f0">Fecha</th>
+                  </tr>
+                </thead>
+                <tbody id="camp-preview-tbody"></tbody>
+              </table>
+            </div>
+            <div style="margin-top:.85rem;display:flex;align-items:center;gap:.75rem;flex-wrap:wrap">
+              <input type="text" id="camp-nombre" placeholder="Nombre de la campaña (ej: Julio 2026 Roll Ice)" style="flex:1;min-width:220px;padding:.6rem .85rem;border:1.5px solid #cbd5e1;border-radius:.5rem;font-size:.88rem">
+              <button id="camp-import-btn" onclick="campImport()" style="padding:.65rem 1.35rem;background:#16a34a;color:#fff;border:none;border-radius:.5rem;font-size:.88rem;font-weight:700;cursor:pointer">✓ Importar a Firestore</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Leads table -->
+        <div class="stat-section">
+          <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:.85rem;flex-wrap:wrap">
+            <h3 style="margin:0;flex:1">📋 Leads importados</h3>
+            <select id="camp-filter-campana" onchange="campRender()" style="padding:.38rem .75rem;border:1px solid #cbd5e1;border-radius:.4rem;font-size:.82rem">
+              <option value="">Todas las campañas</option>
+            </select>
+            <select id="camp-filter-estado" onchange="campRender()" style="padding:.38rem .75rem;border:1px solid #cbd5e1;border-radius:.4rem;font-size:.82rem">
+              <option value="">Todos los estados</option>
+              <option value="pendiente">⏳ Pendiente</option>
+              <option value="enviado">✓ Enviado</option>
+              <option value="descartado">✗ Descartado</option>
+            </select>
+          </div>
+          <div id="camp-leads-info" style="font-size:.82rem;color:#64748b;margin-bottom:.6rem"></div>
+          <div style="overflow-x:auto">
+            <table style="width:100%;border-collapse:collapse;font-size:.82rem">
+              <thead>
+                <tr>
+                  <th style="padding:.6rem .85rem;text-align:left;color:#64748b;font-size:.72rem;text-transform:uppercase;border-bottom:2px solid #e2e8f0">Contacto</th>
+                  <th style="padding:.6rem .85rem;text-align:left;color:#64748b;font-size:.72rem;text-transform:uppercase;border-bottom:2px solid #e2e8f0">WhatsApp</th>
+                  <th style="padding:.6rem .85rem;text-align:left;color:#64748b;font-size:.72rem;text-transform:uppercase;border-bottom:2px solid #e2e8f0">Modelo</th>
+                  <th style="padding:.6rem .85rem;text-align:left;color:#64748b;font-size:.72rem;text-transform:uppercase;border-bottom:2px solid #e2e8f0">Campaña</th>
+                  <th style="padding:.6rem .85rem;text-align:left;color:#64748b;font-size:.72rem;text-transform:uppercase;border-bottom:2px solid #e2e8f0">Estado bot</th>
+                  <th style="padding:.6rem .85rem;text-align:left;color:#64748b;font-size:.72rem;text-transform:uppercase;border-bottom:2px solid #e2e8f0">Importado</th>
+                </tr>
+              </thead>
+              <tbody id="camp-leads-tbody">
+                <tr><td colspan="6" style="padding:2rem;text-align:center;color:#94a3b8">Cargando…</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </div><!-- /tab-campanas -->
+
   </div><!-- /admin-main -->
 </div><!-- /section-panel -->
 
@@ -570,7 +646,7 @@ tr:hover td { background: #f8fafc; }
 import { initializeApp }      from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js';
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged }
                                from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
-import { getFirestore, collection, getDocs, doc, getDoc, query, where, orderBy }
+import { getFirestore, collection, getDocs, doc, getDoc, query, where, orderBy, writeBatch, serverTimestamp }
                                from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
 import { firebaseConfig }      from '../auth/firebase-config.js';
 
@@ -1395,6 +1471,147 @@ function renderRetencionChart(sessInRange) {
       <td style="font-size:.78rem">${fmtDate(u.ultimaVisita) || '—'}</td>
     </tr>`).join('');
 }
+
+// ══ CAMPAÑAS ══════════════════════════════════════════════════
+
+let campParsed = [];   // leads parseados del HTML pendiente de importar
+let campLeads  = [];   // leads ya en Firestore
+
+// ── Tab hook ──────────────────────────────────────────────────
+document.querySelector('[data-tab="campanas"]').addEventListener('click', campLoad);
+
+// ── Parsear archivo HTML ───────────────────────────────────────
+function campParse() {
+  const file = document.getElementById('camp-file').files[0];
+  if (!file) { showToast('Seleccioná un archivo HTML primero'); return; }
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const match = e.target.result.match(/const DATA\s*=\s*(\[[\s\S]*?\]);/);
+      if (!match) { showToast('No se encontró DATA en el archivo'); return; }
+      const all = JSON.parse(match[1]);
+      campParsed = all.filter(r => r.familia === 'Maquinas de Hielo (Roll Ice)' && r.wa && r.wa.trim() !== '');
+      campShowPreview();
+    } catch(err) {
+      showToast('Error al leer el archivo: ' + err.message);
+    }
+  };
+  reader.readAsText(file);
+}
+
+function campShowPreview() {
+  const preview = document.getElementById('camp-preview');
+  const info    = document.getElementById('camp-preview-info');
+  const tbody   = document.getElementById('camp-preview-tbody');
+  if (!campParsed.length) {
+    showToast('No se encontraron leads de Máquinas de Hielo con WhatsApp');
+    return;
+  }
+  info.textContent = `${campParsed.length} leads encontrados con WhatsApp · Máquinas de Hielo`;
+  tbody.innerHTML = campParsed.map(r => `
+    <tr>
+      <td style="padding:.5rem .75rem;border-bottom:1px solid #f1f5f9;font-weight:600;color:#0d3b66">${escHtml(r.contacto)}</td>
+      <td style="padding:.5rem .75rem;border-bottom:1px solid #f1f5f9"><a href="https://wa.me/${r.wa}" target="_blank" style="color:#16a34a;font-weight:700">${escHtml(r.telefono||r.wa)} 💬</a></td>
+      <td style="padding:.5rem .75rem;border-bottom:1px solid #f1f5f9;color:#475569">${escHtml(r.modelo||'—')}</td>
+      <td style="padding:.5rem .75rem;border-bottom:1px solid #f1f5f9;color:#475569">${escHtml(r.ubicacion||'—')}</td>
+      <td style="padding:.5rem .75rem;border-bottom:1px solid #f1f5f9;color:#94a3b8;font-size:.78rem">${escHtml(r.fecha||'—')}</td>
+    </tr>`).join('');
+  preview.style.display = 'block';
+}
+
+// ── Importar a Firestore ───────────────────────────────────────
+async function campImport() {
+  if (!campParsed.length) { showToast('Primero analizá un archivo'); return; }
+  const nombre = document.getElementById('camp-nombre').value.trim();
+  if (!nombre) { showToast('Ingresá un nombre para la campaña'); return; }
+  const btn = document.getElementById('camp-import-btn');
+  btn.disabled = true; btn.textContent = 'Importando…';
+  try {
+    const BATCH_SIZE = 499;
+    let count = 0;
+    for (let i = 0; i < campParsed.length; i += BATCH_SIZE) {
+      const batch = writeBatch(db);
+      campParsed.slice(i, i + BATCH_SIZE).forEach(r => {
+        const ref = doc(collection(db, 'campana_leads'));
+        batch.set(ref, {
+          sourceId:    r.id || '',
+          contacto:    r.contacto || '',
+          email:       r.email || '',
+          telefono:    r.telefono || '',
+          wa:          r.wa || '',
+          ubicacion:   r.ubicacion || '',
+          modelo:      r.modelo || '',
+          familia:     r.familia || '',
+          fechaConsulta: r.fecha || '',
+          resumen:     r.resumen || '',
+          fuente:      r.fuente || '',
+          campana:     nombre,
+          botEstado:   'pendiente',
+          botContactado: false,
+          importadoEn: serverTimestamp()
+        });
+      });
+      await batch.commit();
+      count += Math.min(BATCH_SIZE, campParsed.length - i);
+    }
+    showToast(`✓ ${count} leads importados a campaña "${nombre}"`);
+    campParsed = [];
+    document.getElementById('camp-preview').style.display = 'none';
+    document.getElementById('camp-file').value = '';
+    document.getElementById('camp-nombre').value = '';
+    await campLoad();
+  } catch(err) {
+    showToast('Error: ' + err.message);
+  } finally {
+    btn.disabled = false; btn.textContent = '✓ Importar a Firestore';
+  }
+}
+
+// ── Cargar leads desde Firestore ──────────────────────────────
+async function campLoad() {
+  try {
+    const snap = await getDocs(collection(db, 'campana_leads'));
+    campLeads = snap.docs.map(d => ({ _id: d.id, ...d.data() }));
+    // Poblar filtro de campañas
+    const campanas = [...new Set(campLeads.map(l => l.campana).filter(Boolean))].sort();
+    const sel = document.getElementById('camp-filter-campana');
+    sel.innerHTML = '<option value="">Todas las campañas</option>' +
+      campanas.map(c => `<option value="${escHtml(c)}">${escHtml(c)}</option>`).join('');
+    campRender();
+  } catch(err) {
+    document.getElementById('camp-leads-tbody').innerHTML =
+      `<tr><td colspan="6" style="padding:2rem;text-align:center;color:#dc2626">Error: ${err.message}</td></tr>`;
+  }
+}
+
+// ── Renderizar tabla de leads ──────────────────────────────────
+function campRender() {
+  const filterCamp   = document.getElementById('camp-filter-campana').value;
+  const filterEstado = document.getElementById('camp-filter-estado').value;
+  const filtered = campLeads.filter(l =>
+    (!filterCamp   || l.campana   === filterCamp) &&
+    (!filterEstado || l.botEstado === filterEstado)
+  );
+  document.getElementById('camp-leads-info').textContent =
+    `${filtered.length} leads${filtered.length !== campLeads.length ? ` (de ${campLeads.length} totales)` : ''}`;
+  const estadoBadge = e => {
+    if (e === 'enviado')    return '<span style="color:#16a34a;font-weight:700">✓ Enviado</span>';
+    if (e === 'descartado') return '<span style="color:#dc2626;font-weight:700">✗ Descartado</span>';
+    return '<span style="color:#d97706;font-weight:700">⏳ Pendiente</span>';
+  };
+  document.getElementById('camp-leads-tbody').innerHTML = filtered.length
+    ? filtered.map(l => `<tr>
+        <td style="padding:.6rem .85rem;border-bottom:1px solid #f1f5f9;font-weight:600;color:#0d3b66">${escHtml(l.contacto||'—')}<div style="font-size:.75rem;color:#64748b;font-weight:400">${escHtml(l.email||'')}</div></td>
+        <td style="padding:.6rem .85rem;border-bottom:1px solid #f1f5f9"><a href="https://wa.me/${escHtml(l.wa)}" target="_blank" style="color:#16a34a;font-weight:700">${escHtml(l.telefono||l.wa)} 💬</a></td>
+        <td style="padding:.6rem .85rem;border-bottom:1px solid #f1f5f9;color:#475569">${escHtml(l.modelo||'—')}</td>
+        <td style="padding:.6rem .85rem;border-bottom:1px solid #f1f5f9;color:#475569;font-size:.82rem">${escHtml(l.campana||'—')}</td>
+        <td style="padding:.6rem .85rem;border-bottom:1px solid #f1f5f9">${estadoBadge(l.botEstado)}</td>
+        <td style="padding:.6rem .85rem;border-bottom:1px solid #f1f5f9;color:#94a3b8;font-size:.78rem">${l.importadoEn?.toDate ? fmtDate(l.importadoEn.toDate().toISOString()) : '—'}</td>
+      </tr>`).join('')
+    : '<tr><td colspan="6" style="padding:2rem;text-align:center;color:#94a3b8">Sin leads para este filtro</td></tr>';
+}
+
+function escHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 </script>
 </body>
 </html>
