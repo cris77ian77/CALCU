@@ -491,6 +491,7 @@ tr:hover td { background: #f8fafc; }
         <button class="range-btn" data-days="7">7 días</button>
         <button class="range-btn active" data-days="30">30 días</button>
         <button class="range-btn" data-days="90">90 días</button>
+        <button class="range-btn" data-days="9999">Todo</button>
       </div>
 
       <!-- 1. Entradas por día -->
@@ -499,7 +500,7 @@ tr:hover td { background: #f8fafc; }
         <div class="chart-canvas-wrap"><canvas id="chart-daily"></canvas></div>
         <div class="daily-table-scroll">
           <table class="sdt">
-            <thead><tr><th>Fecha</th><th>Sesiones</th><th>📅</th><th>💬</th><th>🚀</th><th>🤖</th><th>Media 7d</th><th>Var. vs MA</th></tr></thead>
+            <thead><tr><th>Fecha</th><th>Sesiones</th><th>📅</th><th>💬</th><th>🚀</th><th>🤖</th><th>📋 Camp.</th><th>Media 7d</th><th>Var. vs MA</th></tr></thead>
             <tbody id="daily-tbody"></tbody>
           </table>
         </div>
@@ -666,9 +667,10 @@ function toast(msg, ms = 2800) {
 }
 
 // ── Estado global ─────────────────────────────────────────────
-let allUsers    = [];   // filas combinadas (usuario + stats sesiones)
-let allSessions = [];   // todas las sesiones raw
-let allClicks   = [];   // todos los clicks raw a botones de contacto
+let allUsers        = [];   // filas combinadas (usuario + stats sesiones)
+let allSessions     = [];   // todas las sesiones raw
+let allClicks       = [];   // todos los clicks raw a botones de contacto
+let allCampanaLeads = [];   // leads de campañas importadas
 let sortCol     = 'ultimaVisita';
 let sortDir     = -1;   // -1 desc, 1 asc
 
@@ -759,6 +761,15 @@ async function loadData() {
 
     allSessions = sessionsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
     allClicks   = clicksSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+    // 4. Leads de campañas (tolerante)
+    try {
+      const campSnap = await getDocs(collection(db, 'campana_leads'));
+      allCampanaLeads = campSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    } catch(err) {
+      console.warn('[admin] No se pudo leer campana_leads:', err.message);
+      allCampanaLeads = [];
+    }
 
     // Agrupar sesiones por uid
     const sessByUid = {};
@@ -1213,7 +1224,7 @@ function renderEstadisticas() {
       ?? (c.timestamp ? new Date(c.timestamp).getTime() : 0);
     return ts >= cutoff;
   });
-  // Bot sends by day (within selected range)
+  // Bot sends by day — usuarios (within selected range)
   const botByDay = {};
   allUsers.forEach(u => {
     if (getBotEstado(u) !== 'enviado' || !u.botContactadoEn) return;
@@ -1223,7 +1234,17 @@ function renderEstadisticas() {
     botByDay[key] = (botByDay[key] || 0) + 1;
   });
 
-  renderDailyChart(sessInRange, clicksInRange, botByDay);
+  // Bot campañas by day (within selected range)
+  const campBotByDay = {};
+  allCampanaLeads.forEach(l => {
+    if (l.botEstado !== 'enviado' || !l.botContactadoEn) return;
+    const d = l.botContactadoEn?.toDate ? l.botContactadoEn.toDate() : new Date(l.botContactadoEn);
+    if (!d || d.getTime() < cutoff) return;
+    const key = d.toLocaleDateString('es-AR', { day:'2-digit', month:'2-digit', year:'2-digit' });
+    campBotByDay[key] = (campBotByDay[key] || 0) + 1;
+  });
+
+  renderDailyChart(sessInRange, clicksInRange, botByDay, campBotByDay);
   renderProvinciasChart();
   renderPerfilesChart(sessInRange);
   renderRetencionChart(sessInRange);
@@ -1232,7 +1253,7 @@ function renderEstadisticas() {
 function killChart(ref) { if (ref) ref.destroy(); return null; }
 
 // ── 1. Entradas por día ───────────────────────────────────────
-function renderDailyChart(sessInRange, clicksInRange, botByDay = {}) {
+function renderDailyChart(sessInRange, clicksInRange, botByDay = {}, campBotByDay = {}) {
   // Construyo buckets para statsDays + 7 días previos (los 7 extra alimentan la MA del primer día visible)
   const totalDays = statsDays + 7;
   const allKeys = [];
@@ -1256,8 +1277,8 @@ function renderDailyChart(sessInRange, clicksInRange, botByDay = {}) {
   const labels = allKeys.slice(7);
 
   // Clicks dentro del rango visible
-  const cal = {}, wsp = {}, acomp = {}, bot = {};
-  labels.forEach(k => { cal[k] = 0; wsp[k] = 0; acomp[k] = 0; bot[k] = botByDay[k] || 0; });
+  const cal = {}, wsp = {}, acomp = {}, bot = {}, campBot = {};
+  labels.forEach(k => { cal[k] = 0; wsp[k] = 0; acomp[k] = 0; bot[k] = botByDay[k] || 0; campBot[k] = campBotByDay[k] || 0; });
   clicksInRange.forEach(c => {
     const ts = c.timestamp?.toDate?.() ?? (c.timestamp ? new Date(c.timestamp) : null);
     if (!ts) return;
@@ -1267,11 +1288,12 @@ function renderDailyChart(sessInRange, clicksInRange, botByDay = {}) {
     if (c.tipo === 'acompanamiento' && key in acomp) acomp[key]++;
   });
 
-  const sessVals  = labels.map(k => sessAll[k]);
-  const calVals   = labels.map(k => cal[k]);
-  const wspVals   = labels.map(k => wsp[k]);
-  const acompVals = labels.map(k => acomp[k]);
-  const botVals   = labels.map(k => bot[k]);
+  const sessVals    = labels.map(k => sessAll[k]);
+  const calVals     = labels.map(k => cal[k]);
+  const wspVals     = labels.map(k => wsp[k]);
+  const acompVals   = labels.map(k => acomp[k]);
+  const botVals     = labels.map(k => bot[k]);
+  const campBotVals = labels.map(k => campBot[k]);
 
   // Media móvil 7d: para el día visible en posición i (en labels), promedia los 7 anteriores en allKeys[i..i+6]
   const ma7Vals = labels.map((_, i) => {
@@ -1290,7 +1312,8 @@ function renderDailyChart(sessInRange, clicksInRange, botByDay = {}) {
         { type: 'bar',  label: '📅 Calendly',       data: calVals,   backgroundColor: 'rgba(13,59,102,0.85)',  borderColor: '#0d3b66', borderWidth: 1, borderRadius: 4, order: 3 },
         { type: 'bar',  label: '💬 WhatsApp',       data: wspVals,   backgroundColor: 'rgba(37,211,102,0.85)', borderColor: '#16a34a', borderWidth: 1, borderRadius: 4, order: 3 },
         { type: 'bar',  label: '🚀 Acompañamiento', data: acompVals, backgroundColor: 'rgba(0,170,255,0.85)',  borderColor: '#00AAFF', borderWidth: 1, borderRadius: 4, order: 3 },
-        { type: 'bar',  label: '🤖 Bot WS',         data: botVals,   backgroundColor: 'rgba(22,163,74,0.85)',  borderColor: '#15803d', borderWidth: 1, borderRadius: 4, order: 3 },
+        { type: 'bar',  label: '🤖 Bot WS',         data: botVals,     backgroundColor: 'rgba(22,163,74,0.85)',   borderColor: '#15803d', borderWidth: 1, borderRadius: 4, order: 3 },
+        { type: 'bar',  label: '📋 Bot Campañas',   data: campBotVals, backgroundColor: 'rgba(139,92,246,0.85)',  borderColor: '#7c3aed', borderWidth: 1, borderRadius: 4, order: 3 },
         { type: 'line', label: 'Media móvil 7d',     data: ma7Vals,
           borderColor: '#f59e0b', backgroundColor: 'rgba(245,158,11,0.12)',
           borderWidth: 2.5, pointRadius: 3, pointBackgroundColor: '#f59e0b',
@@ -1309,7 +1332,7 @@ function renderDailyChart(sessInRange, clicksInRange, botByDay = {}) {
 
   const tbody = document.getElementById('daily-tbody');
   const rows = labels.map((l, i) => ({
-    label: l, sess: sessVals[i], cal: calVals[i], wsp: wspVals[i], acomp: acompVals[i], bot: botVals[i], ma7: ma7Vals[i]
+    label: l, sess: sessVals[i], cal: calVals[i], wsp: wspVals[i], acomp: acompVals[i], bot: botVals[i], campBot: campBotVals[i], ma7: ma7Vals[i]
   })).reverse();
   tbody.innerHTML = rows.map(row => {
     let varHtml = '<span class="var-neu">—</span>';
@@ -1327,7 +1350,8 @@ function renderDailyChart(sessInRange, clicksInRange, botByDay = {}) {
       <td style="color:#0d3b66;font-weight:600">${row.cal   || ''}</td>
       <td style="color:#16a34a;font-weight:600">${row.wsp   || ''}</td>
       <td style="color:#00AAFF;font-weight:600">${row.acomp || ''}</td>
-      <td style="color:#15803d;font-weight:600">${row.bot   || ''}</td>
+      <td style="color:#15803d;font-weight:600">${row.bot     || ''}</td>
+      <td style="color:#7c3aed;font-weight:600">${row.campBot || ''}</td>
       <td style="color:#b45309;font-weight:600">${row.ma7.toFixed(1)}</td>
       <td>${varHtml}</td>
     </tr>`;
