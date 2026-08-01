@@ -431,6 +431,13 @@ tr:hover td { background: #f8fafc; }
       <button class="nav-tab-btn active" data-tab="usuarios">👥 Usuarios</button>
       <button class="nav-tab-btn" data-tab="estadisticas">📊 Estadísticas</button>
       <button class="nav-tab-btn" data-tab="campanas">📋 Campañas</button>
+      <button class="nav-tab-btn" data-tab="est-campanas">📈 Est. Campañas</button>
+    </div>
+
+    <!-- Sub-nav campañas (visible solo en tabs de campañas) -->
+    <div id="camp-subnav" style="display:none;background:#f8fafc;border-bottom:1px solid #e2e8f0;padding:.55rem 1rem;display:none;align-items:center;gap:.5rem;flex-wrap:wrap">
+      <span style="font-size:.72rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.3px;flex-shrink:0">Campaña:</span>
+      <div id="camp-chips" style="display:flex;gap:.4rem;flex-wrap:wrap"></div>
     </div>
 
     <!-- ── Tab: Usuarios ──────────────────────────────────────── -->
@@ -548,48 +555,9 @@ tr:hover td { background: #f8fafc; }
     <!-- ── Tab: Campañas ─────────────────────────────────────── -->
     <div id="tab-campanas" class="tab-panel">
       <div style="margin-top:1rem">
-
-        <!-- Import card -->
-        <div class="stat-section" id="camp-import-card">
-          <h3>📥 Importar contactos</h3>
-          <p style="font-size:.84rem;color:#64748b;margin:0 0 1rem">Pegá el contenido del HTML de consultas. Se filtran automáticamente los leads de <strong>Máquinas de Hielo</strong> que tienen WhatsApp.</p>
-          <div style="display:flex;gap:.75rem;align-items:flex-start;flex-wrap:wrap">
-            <label style="flex:1;min-width:200px">
-              <span style="font-size:.75rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.3px;display:block;margin-bottom:.4rem">Archivo HTML</span>
-              <input type="file" id="camp-file" accept=".html" style="font-size:.84rem;width:100%">
-            </label>
-            <button id="camp-parse-btn" onclick="campParse()" style="margin-top:1.4rem;padding:.65rem 1.25rem;background:#0d3b66;color:#fff;border:none;border-radius:.5rem;font-size:.88rem;font-weight:700;cursor:pointer">Analizar archivo</button>
-          </div>
-          <div id="camp-preview" style="margin-top:1.25rem;display:none">
-            <div id="camp-preview-info" style="font-size:.88rem;font-weight:700;color:#0d3b66;margin-bottom:.75rem"></div>
-            <div style="overflow-x:auto;max-height:320px;overflow-y:auto;border:1px solid #e2e8f0;border-radius:.5rem">
-              <table style="width:100%;border-collapse:collapse;font-size:.82rem">
-                <thead style="position:sticky;top:0;background:#f8fafc">
-                  <tr>
-                    <th style="padding:.5rem .75rem;text-align:left;color:#64748b;font-size:.72rem;text-transform:uppercase;border-bottom:2px solid #e2e8f0">Contacto</th>
-                    <th style="padding:.5rem .75rem;text-align:left;color:#64748b;font-size:.72rem;text-transform:uppercase;border-bottom:2px solid #e2e8f0">WhatsApp</th>
-                    <th style="padding:.5rem .75rem;text-align:left;color:#64748b;font-size:.72rem;text-transform:uppercase;border-bottom:2px solid #e2e8f0">Modelo</th>
-                    <th style="padding:.5rem .75rem;text-align:left;color:#64748b;font-size:.72rem;text-transform:uppercase;border-bottom:2px solid #e2e8f0">Ubicación</th>
-                    <th style="padding:.5rem .75rem;text-align:left;color:#64748b;font-size:.72rem;text-transform:uppercase;border-bottom:2px solid #e2e8f0">Fecha</th>
-                  </tr>
-                </thead>
-                <tbody id="camp-preview-tbody"></tbody>
-              </table>
-            </div>
-            <div style="margin-top:.85rem;display:flex;align-items:center;gap:.75rem;flex-wrap:wrap">
-              <input type="text" id="camp-nombre" placeholder="Nombre de la campaña (ej: Julio 2026 Roll Ice)" style="flex:1;min-width:220px;padding:.6rem .85rem;border:1.5px solid #cbd5e1;border-radius:.5rem;font-size:.88rem">
-              <button id="camp-import-btn" onclick="campImport()" style="padding:.65rem 1.35rem;background:#16a34a;color:#fff;border:none;border-radius:.5rem;font-size:.88rem;font-weight:700;cursor:pointer">✓ Importar a Firestore</button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Leads table -->
         <div class="stat-section">
           <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:.85rem;flex-wrap:wrap">
-            <h3 style="margin:0;flex:1">📋 Leads importados</h3>
-            <select id="camp-filter-campana" onchange="campRender()" style="padding:.38rem .75rem;border:1px solid #cbd5e1;border-radius:.4rem;font-size:.82rem">
-              <option value="">Todas las campañas</option>
-            </select>
+            <h3 style="margin:0;flex:1">📋 Leads</h3>
             <select id="camp-filter-estado" onchange="campRender()" style="padding:.38rem .75rem;border:1px solid #cbd5e1;border-radius:.4rem;font-size:.82rem">
               <option value="">Todos los estados</option>
               <option value="pendiente">⏳ Pendiente</option>
@@ -616,9 +584,62 @@ tr:hover td { background: #f8fafc; }
             </table>
           </div>
         </div>
-
       </div>
     </div><!-- /tab-campanas -->
+
+    <!-- ── Tab: Estadísticas Campañas ─────────────────────────── -->
+    <div id="tab-est-campanas" class="tab-panel">
+      <div style="margin-top:1rem">
+
+        <!-- Stat cards campañas -->
+        <div class="stats-grid" id="estcamp-cards" style="grid-template-columns:repeat(4,1fr);margin-bottom:1.25rem">
+          <div class="stat-card">
+            <div class="sc-label">📋 Leads totales</div>
+            <div class="sc-val" id="ec-total">—</div>
+            <div class="sc-sub">en la selección</div>
+          </div>
+          <div class="stat-card bot-ok">
+            <div class="sc-label">✓ Contactados</div>
+            <div class="sc-val" id="ec-cont">—</div>
+            <div class="sc-sub">mensajes enviados</div>
+          </div>
+          <div class="stat-card bot-pend">
+            <div class="sc-label">⏳ Faltan contactar</div>
+            <div class="sc-val" id="ec-pend">—</div>
+            <div class="sc-sub">pendientes</div>
+          </div>
+          <div class="stat-card" style="border-color:#7c3aed">
+            <div class="sc-label">📈 Avance</div>
+            <div class="sc-val" id="ec-pct" style="color:#7c3aed">—</div>
+            <div class="sc-sub">% contactados</div>
+          </div>
+        </div>
+
+        <!-- Tabla por campaña -->
+        <div class="stat-section">
+          <h3 style="margin-bottom:.85rem">Detalle por campaña</h3>
+          <div style="overflow-x:auto">
+            <table style="width:100%;border-collapse:collapse;font-size:.84rem">
+              <thead>
+                <tr>
+                  <th style="padding:.6rem .85rem;text-align:left;color:#64748b;font-size:.72rem;text-transform:uppercase;border-bottom:2px solid #e2e8f0">Campaña</th>
+                  <th style="padding:.6rem .85rem;text-align:right;color:#64748b;font-size:.72rem;text-transform:uppercase;border-bottom:2px solid #e2e8f0">Totales</th>
+                  <th style="padding:.6rem .85rem;text-align:right;color:#64748b;font-size:.72rem;text-transform:uppercase;border-bottom:2px solid #e2e8f0">Contactados</th>
+                  <th style="padding:.6rem .85rem;text-align:right;color:#64748b;font-size:.72rem;text-transform:uppercase;border-bottom:2px solid #e2e8f0">Descartados</th>
+                  <th style="padding:.6rem .85rem;text-align:right;color:#64748b;font-size:.72rem;text-transform:uppercase;border-bottom:2px solid #e2e8f0">Pendientes</th>
+                  <th style="padding:.6rem .85rem;text-align:right;color:#64748b;font-size:.72rem;text-transform:uppercase;border-bottom:2px solid #e2e8f0">Avance</th>
+                  <th style="padding:.6rem .85rem;text-align:left;color:#64748b;font-size:.72rem;text-transform:uppercase;border-bottom:2px solid #e2e8f0">Barra</th>
+                </tr>
+              </thead>
+              <tbody id="estcamp-tbody">
+                <tr><td colspan="7" style="padding:2rem;text-align:center;color:#94a3b8">Cargando…</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </div><!-- /tab-est-campanas -->
 
   </div><!-- /admin-main -->
 </div><!-- /section-panel -->
@@ -1200,9 +1221,11 @@ document.querySelectorAll('.nav-tab-btn').forEach(btn => {
     document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
     btn.classList.add('active');
     document.getElementById(`tab-${btn.dataset.tab}`).classList.add('active');
-    if (btn.dataset.tab === 'estadisticas' && allSessions.length > 0) {
-      renderEstadisticas();
-    }
+    const t = btn.dataset.tab;
+    const subnav = document.getElementById('camp-subnav');
+    subnav.style.display = (t === 'campanas' || t === 'est-campanas') ? 'flex' : 'none';
+    if (t === 'estadisticas' && allSessions.length > 0) renderEstadisticas();
+    if (t === 'campanas' || t === 'est-campanas') campLoad();
   });
 });
 
@@ -1221,7 +1244,8 @@ document.querySelectorAll('.range-btn').forEach(btn => {
 
 // ── Render principal ──────────────────────────────────────────
 function renderEstadisticas() {
-  const cutoff = Date.now() - statsDays * 86400000;
+  const effectiveDays = statsDays === 9999 ? computeEffectiveDays() : statsDays;
+  const cutoff = Date.now() - effectiveDays * 86400000;
   const sessInRange = allSessions.filter(s => {
     const ts = s.timestampEntrada?.toDate?.()?.getTime()
       ?? (s.timestampEntrada ? new Date(s.timestampEntrada).getTime() : 0);
@@ -1252,7 +1276,7 @@ function renderEstadisticas() {
     campBotByDay[key] = (campBotByDay[key] || 0) + 1;
   });
 
-  renderDailyChart(sessInRange, clicksInRange, botByDay, campBotByDay);
+  renderDailyChart(sessInRange, clicksInRange, botByDay, campBotByDay, effectiveDays);
   renderProvinciasChart();
   renderPerfilesChart(sessInRange);
   renderRetencionChart(sessInRange);
@@ -1260,10 +1284,19 @@ function renderEstadisticas() {
 
 function killChart(ref) { if (ref) ref.destroy(); return null; }
 
+function computeEffectiveDays() {
+  const tss = allSessions.map(s =>
+    s.timestampEntrada?.toDate?.()?.getTime()
+    ?? (s.timestampEntrada ? new Date(s.timestampEntrada).getTime() : 0)
+  ).filter(t => t > 0);
+  if (!tss.length) return 365;
+  return Math.ceil((Date.now() - Math.min(...tss)) / 86400000) + 1;
+}
+
 // ── 1. Entradas por día ───────────────────────────────────────
-function renderDailyChart(sessInRange, clicksInRange, botByDay = {}, campBotByDay = {}) {
-  // Construyo buckets para statsDays + 7 días previos (los 7 extra alimentan la MA del primer día visible)
-  const totalDays = statsDays + 7;
+function renderDailyChart(sessInRange, clicksInRange, botByDay = {}, campBotByDay = {}, effectiveDays = statsDays) {
+  // Construyo buckets para effectiveDays + 7 días previos (los 7 extra alimentan la MA del primer día visible)
+  const totalDays = effectiveDays + 7;
   const allKeys = [];
   const sessAll = {};
   for (let i = totalDays - 1; i >= 0; i--) {
@@ -1508,9 +1541,72 @@ function renderRetencionChart(sessInRange) {
 
 let campParsed = [];   // leads parseados del HTML pendiente de importar
 let campLeads  = [];   // leads ya en Firestore
+let selectedCampana = '';
 
-// ── Tab hook ──────────────────────────────────────────────────
-document.querySelector('[data-tab="campanas"]').addEventListener('click', campLoad);
+// campLoad is triggered by the tab-switching handler above
+
+function campUpdateSubnav() {
+  const campanas = [...new Set(campLeads.map(l => l.campana).filter(Boolean))].sort();
+  const chips = document.getElementById('camp-chips');
+  chips.innerHTML = [''].concat(campanas).map(c => {
+    const active = selectedCampana === c;
+    const label  = c || 'Todas';
+    return `<button data-camp="${escHtml(c)}"
+      style="padding:.3rem .85rem;border-radius:20px;border:1.5px solid ${active?'#0ea5e9':'#cbd5e1'};
+      background:${active?'#e0f2fe':'#fff'};color:${active?'#0369a1':'#475569'};
+      font-size:.78rem;font-weight:700;cursor:pointer;white-space:nowrap">${escHtml(label)}</button>`;
+  }).join('');
+  chips.querySelectorAll('[data-camp]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      selectedCampana = btn.dataset.camp;
+      campUpdateSubnav();
+      campRender();
+      renderEstCampanas();
+    });
+  });
+}
+
+function renderEstCampanas() {
+  const data = selectedCampana ? campLeads.filter(l => l.campana === selectedCampana) : campLeads;
+  const total = data.length;
+  const cont  = data.filter(l => l.botEstado === 'enviado').length;
+  const desc  = data.filter(l => l.botEstado === 'descartado').length;
+  const pend  = data.filter(l => l.botEstado !== 'enviado' && l.botEstado !== 'descartado').length;
+  const pct   = total ? Math.round(cont / total * 100) : 0;
+
+  document.getElementById('ec-total').textContent = total;
+  document.getElementById('ec-cont').textContent  = cont;
+  document.getElementById('ec-pend').textContent  = pend;
+  document.getElementById('ec-pct').textContent   = pct + '%';
+
+  const campanas = [...new Set(campLeads.map(l => l.campana).filter(Boolean))].sort()
+    .filter(c => !selectedCampana || c === selectedCampana);
+  const tbody = document.getElementById('estcamp-tbody');
+  if (!campanas.length) {
+    tbody.innerHTML = '<tr><td colspan="7" style="padding:1.5rem;text-align:center;color:#94a3b8">Sin campañas cargadas</td></tr>';
+    return;
+  }
+  tbody.innerHTML = campanas.map(c => {
+    const leads = campLeads.filter(l => l.campana === c);
+    const cnt  = leads.filter(l => l.botEstado === 'enviado').length;
+    const dsc  = leads.filter(l => l.botEstado === 'descartado').length;
+    const pd   = leads.filter(l => l.botEstado !== 'enviado' && l.botEstado !== 'descartado').length;
+    const p    = leads.length ? Math.round(cnt / leads.length * 100) : 0;
+    return `<tr>
+      <td style="padding:.6rem .85rem;border-bottom:1px solid #f1f5f9;font-weight:700;color:#0d3b66">${escHtml(c)}</td>
+      <td style="padding:.6rem .85rem;border-bottom:1px solid #f1f5f9;text-align:center;font-weight:700">${leads.length}</td>
+      <td style="padding:.6rem .85rem;border-bottom:1px solid #f1f5f9;text-align:center;color:#16a34a;font-weight:700">${cnt}</td>
+      <td style="padding:.6rem .85rem;border-bottom:1px solid #f1f5f9;text-align:center;color:#dc2626;font-weight:700">${dsc}</td>
+      <td style="padding:.6rem .85rem;border-bottom:1px solid #f1f5f9;text-align:center;color:#d97706;font-weight:700">${pd}</td>
+      <td style="padding:.6rem .85rem;border-bottom:1px solid #f1f5f9;text-align:center;font-weight:700">${p}%</td>
+      <td style="padding:.6rem .85rem;border-bottom:1px solid #f1f5f9;min-width:120px">
+        <div style="height:8px;background:#e2e8f0;border-radius:4px;overflow:hidden">
+          <div style="height:100%;width:${p}%;background:${p>=80?'#16a34a':p>=50?'#f59e0b':'#0ea5e9'};border-radius:4px"></div>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
 
 // ── Parsear archivo HTML ───────────────────────────────────────
 function campParse() {
@@ -1604,12 +1700,9 @@ async function campLoad() {
   try {
     const snap = await getDocs(collection(db, 'campana_leads'));
     campLeads = snap.docs.map(d => ({ _id: d.id, ...d.data() }));
-    // Poblar filtro de campañas
-    const campanas = [...new Set(campLeads.map(l => l.campana).filter(Boolean))].sort();
-    const sel = document.getElementById('camp-filter-campana');
-    sel.innerHTML = '<option value="">Todas las campañas</option>' +
-      campanas.map(c => `<option value="${escHtml(c)}">${escHtml(c)}</option>`).join('');
+    campUpdateSubnav();
     campRender();
+    renderEstCampanas();
   } catch(err) {
     document.getElementById('camp-leads-tbody').innerHTML =
       `<tr><td colspan="6" style="padding:2rem;text-align:center;color:#dc2626">Error: ${err.message}</td></tr>`;
@@ -1618,11 +1711,10 @@ async function campLoad() {
 
 // ── Renderizar tabla de leads ──────────────────────────────────
 function campRender() {
-  const filterCamp   = document.getElementById('camp-filter-campana').value;
   const filterEstado = document.getElementById('camp-filter-estado').value;
   const filtered = campLeads.filter(l =>
-    (!filterCamp   || l.campana   === filterCamp) &&
-    (!filterEstado || l.botEstado === filterEstado)
+    (!selectedCampana || l.campana   === selectedCampana) &&
+    (!filterEstado    || l.botEstado === filterEstado)
   );
   document.getElementById('camp-leads-info').textContent =
     `${filtered.length} leads${filtered.length !== campLeads.length ? ` (de ${campLeads.length} totales)` : ''}`;
