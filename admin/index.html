@@ -647,7 +647,7 @@ tr:hover td { background: #f8fafc; }
 import { initializeApp }      from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js';
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged }
                                from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
-import { getFirestore, collection, getDocs, doc, getDoc, query, where, orderBy, writeBatch, serverTimestamp }
+import { getFirestore, collection, getDocs, doc, getDoc, deleteDoc, query, where, orderBy, writeBatch, serverTimestamp }
                                from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
 import { firebaseConfig }      from '../auth/firebase-config.js';
 
@@ -1055,6 +1055,12 @@ function openDrawer(uid) {
     }
   `;
 
+  // Botón eliminar al pie del drawer
+  const delWrap = document.createElement('div');
+  delWrap.style.cssText = 'padding:1.25rem 1.5rem;border-top:1px solid #f1f5f9;';
+  delWrap.innerHTML = `<button onclick="deleteUser('${uid}')" style="width:100%;padding:.65rem;background:#fff;color:#dc2626;border:1.5px solid #fca5a5;border-radius:.5rem;font-size:.85rem;font-weight:700;cursor:pointer;" onmouseover="this.style.background='#fef2f2'" onmouseout="this.style.background='#fff'">🗑 Eliminar usuario</button>`;
+  $('#drawer').appendChild(delWrap);
+
   $('#drawer-overlay').classList.add('open');
   $('#drawer').classList.add('open');
 }
@@ -1062,6 +1068,8 @@ function openDrawer(uid) {
 function closeDrawer() {
   $('#drawer-overlay').classList.remove('open');
   $('#drawer').classList.remove('open');
+  // Limpiar botón eliminar para evitar duplicados
+  $('#drawer').querySelectorAll('div[style*="border-top"]').forEach(el => el.remove());
 }
 $('#drawer-close').addEventListener('click', closeDrawer);
 $('#drawer-overlay').addEventListener('click', closeDrawer);
@@ -1636,6 +1644,41 @@ function campRender() {
 }
 
 function escHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// ══ ELIMINAR USUARIO ══════════════════════════════════════════
+async function deleteUser(uid) {
+  const u = allUsers.find(u => u.uid === uid);
+  const nombre = u ? (u.nombre || u.email || uid) : uid;
+  if (!confirm(`¿Eliminar a "${nombre}" y todos sus datos?\n\nEsto borra:\n• Su perfil de Firestore\n• Todas sus sesiones\n• Todos sus clicks\n\nNo se puede deshacer.`)) return;
+
+  try {
+    const batch = writeBatch(db);
+
+    // Borrar documento de usuario
+    batch.delete(doc(db, 'usuarios', uid));
+
+    // Borrar sesiones del usuario
+    const sessSnap = await getDocs(query(collection(db, 'sesiones'), where('uid', '==', uid)));
+    sessSnap.docs.forEach(d => batch.delete(d.ref));
+
+    // Borrar clicks del usuario
+    const clickSnap = await getDocs(query(collection(db, 'clicks'), where('uid', '==', uid)));
+    clickSnap.docs.forEach(d => batch.delete(d.ref));
+
+    await batch.commit();
+
+    // Quitar del estado local y re-renderizar
+    allUsers    = allUsers.filter(u => u.uid !== uid);
+    allSessions = allSessions.filter(s => s.uid !== uid);
+    allClicks   = allClicks.filter(c => c.uid !== uid);
+    updateStats();
+    renderTable();
+    closeDrawer();
+    toast(`✓ "${nombre}" eliminado de Firestore. Recordá borrar también la cuenta en Firebase Authentication.`);
+  } catch(e) {
+    toast('Error al eliminar: ' + e.message);
+  }
+}
 </script>
 </body>
 </html>
