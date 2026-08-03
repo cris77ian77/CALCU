@@ -559,9 +559,9 @@ tr:hover td { background: #f8fafc; }
           <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:.85rem;flex-wrap:wrap">
             <h3 style="margin:0;flex:1">📋 Leads</h3>
             <div class="search-box">
-              🔍 <input type="text" id="camp-search" placeholder="Buscar contacto, email, teléfono, modelo…" oninput="campRender()">
+              🔍 <input type="text" id="camp-search" placeholder="Buscar contacto, email, teléfono, modelo…">
             </div>
-            <select id="camp-filter-estado" onchange="campRender()" style="padding:.38rem .75rem;border:1px solid #cbd5e1;border-radius:.4rem;font-size:.82rem">
+            <select id="camp-filter-estado" style="padding:.38rem .75rem;border:1px solid #cbd5e1;border-radius:.4rem;font-size:.82rem">
               <option value="">Todos los estados</option>
               <option value="pendiente">⏳ Pendiente</option>
               <option value="enviado">✓ Enviado</option>
@@ -576,14 +576,15 @@ tr:hover td { background: #f8fafc; }
                   <th style="padding:.6rem .85rem;text-align:left;color:#64748b;font-size:.72rem;text-transform:uppercase;border-bottom:2px solid #e2e8f0">Contacto</th>
                   <th style="padding:.6rem .85rem;text-align:left;color:#64748b;font-size:.72rem;text-transform:uppercase;border-bottom:2px solid #e2e8f0">WhatsApp</th>
                   <th style="padding:.6rem .85rem;text-align:left;color:#64748b;font-size:.72rem;text-transform:uppercase;border-bottom:2px solid #e2e8f0">Modelo</th>
+                  <th onclick="campToggleSort('fechaConsulta')" style="padding:.6rem .85rem;text-align:left;color:#64748b;font-size:.72rem;text-transform:uppercase;border-bottom:2px solid #e2e8f0;cursor:pointer;user-select:none;white-space:nowrap">1er Consulta <span id="camp-sort-icon-fc"></span></th>
                   <th style="padding:.6rem .85rem;text-align:left;color:#64748b;font-size:.72rem;text-transform:uppercase;border-bottom:2px solid #e2e8f0">Campaña</th>
                   <th style="padding:.6rem .85rem;text-align:left;color:#64748b;font-size:.72rem;text-transform:uppercase;border-bottom:2px solid #e2e8f0">Estado bot</th>
-                  <th onclick="campToggleSort('botContactadoEn')" style="padding:.6rem .85rem;text-align:left;color:#64748b;font-size:.72rem;text-transform:uppercase;border-bottom:2px solid #e2e8f0;cursor:pointer;user-select:none;white-space:nowrap">F. Contacto <span id="camp-sort-icon">↕</span></th>
+                  <th onclick="campToggleSort('botContactadoEn')" style="padding:.6rem .85rem;text-align:left;color:#64748b;font-size:.72rem;text-transform:uppercase;border-bottom:2px solid #e2e8f0;cursor:pointer;user-select:none;white-space:nowrap">F. Bot <span id="camp-sort-icon">↕</span></th>
                   <th style="padding:.6rem .85rem;text-align:left;color:#64748b;font-size:.72rem;text-transform:uppercase;border-bottom:2px solid #e2e8f0">Importado</th>
                 </tr>
               </thead>
               <tbody id="camp-leads-tbody">
-                <tr><td colspan="7" style="padding:2rem;text-align:center;color:#94a3b8">Cargando…</td></tr>
+                <tr><td colspan="8" style="padding:2rem;text-align:center;color:#94a3b8">Cargando…</td></tr>
               </tbody>
             </table>
           </div>
@@ -989,6 +990,8 @@ $('#search-input').addEventListener('input', renderTable);
 $('#filter-bot').addEventListener('change', renderTable);
 $('#filter-perfil').addEventListener('change', renderTable);
 $('#btn-refresh').addEventListener('click', loadData);
+document.getElementById('camp-search').addEventListener('input', campRender);
+document.getElementById('camp-filter-estado').addEventListener('change', campRender);
 
 // ── DRAWER ────────────────────────────────────────────────────
 function openDrawer(uid) {
@@ -1590,8 +1593,11 @@ let campSortCol = 'botContactadoEn', campSortDir = -1;
 
 function campToggleSort(col) {
   if (campSortCol === col) campSortDir *= -1; else { campSortCol = col; campSortDir = -1; }
-  const icon = document.getElementById('camp-sort-icon');
-  if (icon) icon.textContent = campSortDir === -1 ? '↓' : '↑';
+  const arrow = campSortDir === -1 ? '↓' : '↑';
+  const ic1 = document.getElementById('camp-sort-icon');
+  const ic2 = document.getElementById('camp-sort-icon-fc');
+  if (ic1) ic1.textContent = campSortCol === 'botContactadoEn' ? arrow : '↕';
+  if (ic2) ic2.textContent = campSortCol === 'fechaConsulta'   ? arrow : '';
   campRender();
 }
 
@@ -1774,7 +1780,7 @@ function campRender() {
       if (selectedCampana && l.campana !== selectedCampana) return false;
       if (filterEstado    && l.botEstado !== filterEstado)  return false;
       if (q) {
-        const hay = [l.contacto, l.email, l.telefono, l.wa, l.modelo, l.ubicacion, l.campana].join(' ').toLowerCase();
+        const hay = [l.contacto, l.email, l.telefono, l.wa, l.modelo, l.ubicacion, l.campana, l.fechaConsulta].join(' ').toLowerCase();
         if (!hay.includes(q)) return false;
       }
       return true;
@@ -1806,12 +1812,13 @@ function campRender() {
         <td style="padding:.6rem .85rem;border-bottom:1px solid #f1f5f9;font-weight:600;color:#0d3b66">${escHtml(l.contacto||'—')}<div style="font-size:.75rem;color:#64748b;font-weight:400">${escHtml(l.email||'')}</div></td>
         <td style="padding:.6rem .85rem;border-bottom:1px solid #f1f5f9"><a href="https://wa.me/${escHtml(l.wa)}" target="_blank" style="color:#16a34a;font-weight:700">${escHtml(l.telefono||l.wa)} 💬</a></td>
         <td style="padding:.6rem .85rem;border-bottom:1px solid #f1f5f9;color:#475569">${escHtml(l.modelo||'—')}</td>
+        <td style="padding:.6rem .85rem;border-bottom:1px solid #f1f5f9;color:#94a3b8;font-size:.8rem">${escHtml(l.fechaConsulta||'—')}</td>
         <td style="padding:.6rem .85rem;border-bottom:1px solid #f1f5f9;color:#475569;font-size:.82rem">${escHtml(l.campana||'—')}</td>
         <td style="padding:.6rem .85rem;border-bottom:1px solid #f1f5f9">${estadoBadge(l.botEstado)}</td>
         <td style="padding:.6rem .85rem;border-bottom:1px solid #f1f5f9;color:#0369a1;font-size:.82rem;font-weight:600">${fmtTs(l.botContactadoEn)}</td>
         <td style="padding:.6rem .85rem;border-bottom:1px solid #f1f5f9;color:#94a3b8;font-size:.78rem">${fmtTs(l.importadoEn)}</td>
       </tr>`).join('')
-    : '<tr><td colspan="7" style="padding:2rem;text-align:center;color:#94a3b8">Sin leads para este filtro</td></tr>';
+    : '<tr><td colspan="8" style="padding:2rem;text-align:center;color:#94a3b8">Sin leads para este filtro</td></tr>';
 }
 
 function escHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
