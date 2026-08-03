@@ -507,7 +507,7 @@ tr:hover td { background: #f8fafc; }
         <div class="chart-canvas-wrap"><canvas id="chart-daily"></canvas></div>
         <div class="daily-table-scroll">
           <table class="sdt">
-            <thead><tr><th>Fecha</th><th>Sesiones</th><th>📅</th><th>💬</th><th>🚀</th><th>🤖</th><th>📋 Camp.</th><th>💬 Resp.</th><th>Media 7d</th><th>Var. vs MA</th></tr></thead>
+            <thead><tr><th>Fecha</th><th>Sesiones</th><th>📅</th><th>💬</th><th>🚀</th><th>🤖 Bot</th><th>Resp.Bot</th><th>%Bot</th><th>📋 Camp.</th><th>Resp.Camp</th><th>%Camp</th><th>Media 7d</th><th>Var. vs MA</th></tr></thead>
             <tbody id="daily-tbody"></tbody>
           </table>
         </div>
@@ -1288,7 +1288,17 @@ function renderEstadisticas() {
     respByDay[key] = (respByDay[key] || 0) + 1;
   });
 
-  renderDailyChart(sessInRange, clicksInRange, botByDay, campBotByDay, effectiveDays, respByDay);
+  // Respondidos bot WS (usuarios) by day
+  const respBotByDay = {};
+  allUsers.forEach(u => {
+    if (!u.botRespondido || !u.botRespondidoEn) return;
+    const d = u.botRespondidoEn?.toDate ? u.botRespondidoEn.toDate() : new Date(u.botRespondidoEn);
+    if (!d || d.getTime() < cutoff) return;
+    const key = d.toLocaleDateString('es-AR', { day:'2-digit', month:'2-digit', year:'2-digit' });
+    respBotByDay[key] = (respBotByDay[key] || 0) + 1;
+  });
+
+  renderDailyChart(sessInRange, clicksInRange, botByDay, campBotByDay, effectiveDays, respByDay, respBotByDay);
   renderProvinciasChart();
   renderPerfilesChart(sessInRange);
   renderRetencionChart(sessInRange);
@@ -1306,7 +1316,7 @@ function computeEffectiveDays() {
 }
 
 // ── 1. Entradas por día ───────────────────────────────────────
-function renderDailyChart(sessInRange, clicksInRange, botByDay = {}, campBotByDay = {}, effectiveDays = statsDays, respByDay = {}) {
+function renderDailyChart(sessInRange, clicksInRange, botByDay = {}, campBotByDay = {}, effectiveDays = statsDays, respByDay = {}, respBotByDay = {}) {
   // Construyo buckets para effectiveDays + 7 días previos (los 7 extra alimentan la MA del primer día visible)
   const totalDays = effectiveDays + 7;
   const allKeys = [];
@@ -1330,8 +1340,8 @@ function renderDailyChart(sessInRange, clicksInRange, botByDay = {}, campBotByDa
   const labels = allKeys.slice(7);
 
   // Clicks dentro del rango visible
-  const cal = {}, wsp = {}, acomp = {}, bot = {}, campBot = {}, resp = {};
-  labels.forEach(k => { cal[k] = 0; wsp[k] = 0; acomp[k] = 0; bot[k] = botByDay[k] || 0; campBot[k] = campBotByDay[k] || 0; resp[k] = respByDay[k] || 0; });
+  const cal = {}, wsp = {}, acomp = {}, bot = {}, campBot = {}, resp = {}, respBot = {};
+  labels.forEach(k => { cal[k] = 0; wsp[k] = 0; acomp[k] = 0; bot[k] = botByDay[k] || 0; campBot[k] = campBotByDay[k] || 0; resp[k] = respByDay[k] || 0; respBot[k] = respBotByDay[k] || 0; });
   clicksInRange.forEach(c => {
     const ts = c.timestamp?.toDate?.() ?? (c.timestamp ? new Date(c.timestamp) : null);
     if (!ts) return;
@@ -1348,6 +1358,9 @@ function renderDailyChart(sessInRange, clicksInRange, botByDay = {}, campBotByDa
   const botVals     = labels.map(k => bot[k]);
   const campBotVals = labels.map(k => campBot[k]);
   const respVals    = labels.map(k => resp[k]);
+  const respBotVals = labels.map(k => respBot[k]);
+  const pctBotVals  = labels.map(k => bot[k] ? Math.round(respBot[k] / bot[k] * 100) : null);
+  const pctCampVals = labels.map(k => campBot[k] ? Math.round(resp[k] / campBot[k] * 100) : null);
 
   // Media móvil 7d: para el día visible en posición i (en labels), promedia los 7 anteriores en allKeys[i..i+6]
   const ma7Vals = labels.map((_, i) => {
@@ -1366,29 +1379,38 @@ function renderDailyChart(sessInRange, clicksInRange, botByDay = {}, campBotByDa
         { type: 'bar',  label: '📅 Calendly',       data: calVals,   backgroundColor: 'rgba(13,59,102,0.85)',  borderColor: '#0d3b66', borderWidth: 1, borderRadius: 4, order: 3 },
         { type: 'bar',  label: '💬 WhatsApp',       data: wspVals,   backgroundColor: 'rgba(37,211,102,0.85)', borderColor: '#16a34a', borderWidth: 1, borderRadius: 4, order: 3 },
         { type: 'bar',  label: '🚀 Acompañamiento', data: acompVals, backgroundColor: 'rgba(0,170,255,0.85)',  borderColor: '#00AAFF', borderWidth: 1, borderRadius: 4, order: 3 },
-        { type: 'bar',  label: '🤖 Bot WS',         data: botVals,     backgroundColor: 'rgba(22,163,74,0.85)',   borderColor: '#15803d', borderWidth: 1, borderRadius: 4, order: 3 },
-        { type: 'bar',  label: '📋 Bot Campañas',   data: campBotVals, backgroundColor: 'rgba(139,92,246,0.85)',  borderColor: '#7c3aed', borderWidth: 1, borderRadius: 4, order: 3 },
-        { type: 'bar',  label: '💬 Respondidos',    data: respVals,    backgroundColor: 'rgba(20,184,166,0.85)',   borderColor: '#0d9488', borderWidth: 1, borderRadius: 4, order: 3 },
-        { type: 'line', label: 'Media móvil 7d',     data: ma7Vals,
+        { type: 'bar',  label: '🤖 Bot WS',          data: botVals,     backgroundColor: 'rgba(22,163,74,0.85)',   borderColor: '#15803d', borderWidth: 1, borderRadius: 4, order: 3, yAxisID: 'y' },
+        { type: 'bar',  label: '💬 Resp.Bot',        data: respBotVals, backgroundColor: 'rgba(22,163,74,0.35)',   borderColor: '#15803d', borderWidth: 1, borderRadius: 4, order: 3, yAxisID: 'y' },
+        { type: 'bar',  label: '📋 Bot Campañas',    data: campBotVals, backgroundColor: 'rgba(139,92,246,0.85)', borderColor: '#7c3aed', borderWidth: 1, borderRadius: 4, order: 3, yAxisID: 'y' },
+        { type: 'bar',  label: '💬 Resp.Camp',       data: respVals,    backgroundColor: 'rgba(20,184,166,0.85)', borderColor: '#0d9488', borderWidth: 1, borderRadius: 4, order: 3, yAxisID: 'y' },
+        { type: 'line', label: '% Resp.Bot',          data: pctBotVals,  borderColor: '#15803d', backgroundColor: 'transparent', borderWidth: 2, borderDash: [5,3], pointRadius: 3, tension: 0.3, fill: false, order: 1, yAxisID: 'y1', spanGaps: true },
+        { type: 'line', label: '% Resp.Camp',         data: pctCampVals, borderColor: '#0d9488', backgroundColor: 'transparent', borderWidth: 2, borderDash: [5,3], pointRadius: 3, tension: 0.3, fill: false, order: 1, yAxisID: 'y1', spanGaps: true },
+        { type: 'line', label: 'Media móvil 7d',      data: ma7Vals,
           borderColor: '#f59e0b', backgroundColor: 'rgba(245,158,11,0.12)',
           borderWidth: 2.5, pointRadius: 3, pointBackgroundColor: '#f59e0b',
-          tension: 0.3, fill: false, order: 0 },
+          tension: 0.3, fill: false, order: 0, yAxisID: 'y' },
       ]
     },
     options: {
       responsive: true, maintainAspectRatio: false,
       plugins: { legend: { position: 'top', labels: { font: { size: 11 }, boxWidth: 14 } } },
       scales: {
-        x: { grid: { display: false }, ticks: { maxTicksLimit: 12, font: { size: 11 } } },
-        y: { beginAtZero: true, ticks: { font: { size: 11 } } }
+        x:  { grid: { display: false }, ticks: { maxTicksLimit: 12, font: { size: 11 } } },
+        y:  { beginAtZero: true, ticks: { font: { size: 11 } }, position: 'left' },
+        y1: { beginAtZero: true, max: 100, position: 'right', grid: { drawOnChartArea: false },
+              ticks: { font: { size: 10 }, callback: v => v + '%' } }
       }
     }
   });
 
   const tbody = document.getElementById('daily-tbody');
   const rows = labels.map((l, i) => ({
-    label: l, sess: sessVals[i], cal: calVals[i], wsp: wspVals[i], acomp: acompVals[i], bot: botVals[i], campBot: campBotVals[i], resp: respVals[i], ma7: ma7Vals[i]
+    label: l, sess: sessVals[i], cal: calVals[i], wsp: wspVals[i], acomp: acompVals[i],
+    bot: botVals[i], respBot: respBotVals[i], pctBot: pctBotVals[i],
+    campBot: campBotVals[i], resp: respVals[i], pctCamp: pctCampVals[i],
+    ma7: ma7Vals[i]
   })).reverse();
+  const pctCell = (v, color) => v !== null ? `<span style="color:${color};font-weight:700">${v}%</span>` : '';
   tbody.innerHTML = rows.map(row => {
     let varHtml = '<span class="var-neu">—</span>';
     if (row.ma7 > 0) {
@@ -1406,8 +1428,11 @@ function renderDailyChart(sessInRange, clicksInRange, botByDay = {}, campBotByDa
       <td style="color:#16a34a;font-weight:600">${row.wsp   || ''}</td>
       <td style="color:#00AAFF;font-weight:600">${row.acomp || ''}</td>
       <td style="color:#15803d;font-weight:600">${row.bot     || ''}</td>
+      <td style="color:#15803d;font-weight:600;opacity:.7">${row.respBot || ''}</td>
+      <td>${pctCell(row.pctBot, '#15803d')}</td>
       <td style="color:#7c3aed;font-weight:600">${row.campBot || ''}</td>
       <td style="color:#0d9488;font-weight:600">${row.resp    || ''}</td>
+      <td>${pctCell(row.pctCamp, '#0d9488')}</td>
       <td style="color:#b45309;font-weight:600">${row.ma7.toFixed(1)}</td>
       <td>${varHtml}</td>
     </tr>`;
