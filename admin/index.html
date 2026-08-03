@@ -573,14 +573,14 @@ tr:hover td { background: #f8fafc; }
             <table style="width:100%;border-collapse:collapse;font-size:.82rem">
               <thead id="camp-thead">
                 <tr>
-                  <th data-sort="contacto"       style="padding:.6rem .85rem;text-align:left;font-size:.72rem;text-transform:uppercase;border-bottom:2px solid #e2e8f0;cursor:pointer;user-select:none;white-space:nowrap">Contacto</th>
-                  <th data-sort="telefono"       style="padding:.6rem .85rem;text-align:left;font-size:.72rem;text-transform:uppercase;border-bottom:2px solid #e2e8f0;cursor:pointer;user-select:none;white-space:nowrap">WhatsApp</th>
-                  <th data-sort="modelo"         style="padding:.6rem .85rem;text-align:left;font-size:.72rem;text-transform:uppercase;border-bottom:2px solid #e2e8f0;cursor:pointer;user-select:none;white-space:nowrap">Modelo</th>
-                  <th data-sort="fechaConsulta"  style="padding:.6rem .85rem;text-align:left;font-size:.72rem;text-transform:uppercase;border-bottom:2px solid #e2e8f0;cursor:pointer;user-select:none;white-space:nowrap">1er Consulta</th>
-                  <th data-sort="campana"        style="padding:.6rem .85rem;text-align:left;font-size:.72rem;text-transform:uppercase;border-bottom:2px solid #e2e8f0;cursor:pointer;user-select:none;white-space:nowrap">Campaña</th>
-                  <th data-sort="botEstado"      style="padding:.6rem .85rem;text-align:left;font-size:.72rem;text-transform:uppercase;border-bottom:2px solid #e2e8f0;cursor:pointer;user-select:none;white-space:nowrap">Estado bot</th>
-                  <th data-sort="botContactadoEn" style="padding:.6rem .85rem;text-align:left;font-size:.72rem;text-transform:uppercase;border-bottom:2px solid #e2e8f0;cursor:pointer;user-select:none;white-space:nowrap">F. Bot</th>
-                  <th data-sort="importadoEn"    style="padding:.6rem .85rem;text-align:left;font-size:.72rem;text-transform:uppercase;border-bottom:2px solid #e2e8f0;cursor:pointer;user-select:none;white-space:nowrap">Importado</th>
+                  <th data-sort="contacto"        data-label="Contacto"     style="padding:.6rem .85rem;text-align:left;font-size:.72rem;text-transform:uppercase;border-bottom:2px solid #e2e8f0;cursor:pointer;user-select:none;white-space:nowrap">Contacto</th>
+                  <th data-sort="telefono"        data-label="WhatsApp"     style="padding:.6rem .85rem;text-align:left;font-size:.72rem;text-transform:uppercase;border-bottom:2px solid #e2e8f0;cursor:pointer;user-select:none;white-space:nowrap">WhatsApp</th>
+                  <th data-sort="modelo"          data-label="Modelo"       style="padding:.6rem .85rem;text-align:left;font-size:.72rem;text-transform:uppercase;border-bottom:2px solid #e2e8f0;cursor:pointer;user-select:none;white-space:nowrap">Modelo</th>
+                  <th data-sort="fechaConsulta"   data-label="1er Consulta" style="padding:.6rem .85rem;text-align:left;font-size:.72rem;text-transform:uppercase;border-bottom:2px solid #e2e8f0;cursor:pointer;user-select:none;white-space:nowrap">1er Consulta</th>
+                  <th data-sort="campana"         data-label="Campaña"      style="padding:.6rem .85rem;text-align:left;font-size:.72rem;text-transform:uppercase;border-bottom:2px solid #e2e8f0;cursor:pointer;user-select:none;white-space:nowrap">Campaña</th>
+                  <th data-sort="botEstado"       data-label="Estado bot"   style="padding:.6rem .85rem;text-align:left;font-size:.72rem;text-transform:uppercase;border-bottom:2px solid #e2e8f0;cursor:pointer;user-select:none;white-space:nowrap">Estado bot</th>
+                  <th data-sort="botContactadoEn" data-label="F. Bot"       style="padding:.6rem .85rem;text-align:left;font-size:.72rem;text-transform:uppercase;border-bottom:2px solid #e2e8f0;cursor:pointer;user-select:none;white-space:nowrap">F. Bot</th>
+                  <th data-sort="importadoEn"     data-label="Importado"    style="padding:.6rem .85rem;text-align:left;font-size:.72rem;text-transform:uppercase;border-bottom:2px solid #e2e8f0;cursor:pointer;user-select:none;white-space:nowrap">Importado</th>
                 </tr>
               </thead>
               <tbody id="camp-leads-tbody">
@@ -1598,12 +1598,11 @@ function campToggleSort(col) {
 }
 function campUpdateSortIcons() {
   document.querySelectorAll('#camp-thead th[data-sort]').forEach(th => {
-    const col = th.dataset.sort;
-    const active = col === campSortCol;
+    const active = th.dataset.sort === campSortCol;
     th.style.color = active ? '#0d3b66' : '#64748b';
-    // strip old arrow, re-append
-    th.innerHTML = th.innerHTML.replace(/\s*[↑↓↕]$/, '');
-    th.innerHTML += active ? (campSortDir === -1 ? ' ↓' : ' ↑') : ' <span style="opacity:.3">↕</span>';
+    th.innerHTML = th.dataset.label + (active
+      ? (campSortDir === -1 ? ' ↓' : ' ↑')
+      : ' <span style="opacity:.3">↕</span>');
   });
 }
 // Wire up all sort headers once DOM is parsed
