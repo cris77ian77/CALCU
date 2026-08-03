@@ -1589,7 +1589,7 @@ function renderRetencionChart(sessInRange) {
 let campParsed = [];   // leads parseados del HTML pendiente de importar
 let campLeads  = [];   // leads ya en Firestore
 let selectedCampana = '';
-let campSortCol = 'botContactadoEn', campSortDir = -1;
+let campSortCol = 'fechaConsulta', campSortDir = -1;
 
 function campToggleSort(col) {
   if (campSortCol === col) campSortDir *= -1; else { campSortCol = col; campSortDir = -1; }
