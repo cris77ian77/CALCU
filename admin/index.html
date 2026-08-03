@@ -558,6 +558,9 @@ tr:hover td { background: #f8fafc; }
         <div class="stat-section">
           <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:.85rem;flex-wrap:wrap">
             <h3 style="margin:0;flex:1">📋 Leads</h3>
+            <div class="search-box">
+              🔍 <input type="text" id="camp-search" placeholder="Buscar contacto, email, teléfono, modelo…" oninput="campRender()">
+            </div>
             <select id="camp-filter-estado" onchange="campRender()" style="padding:.38rem .75rem;border:1px solid #cbd5e1;border-radius:.4rem;font-size:.82rem">
               <option value="">Todos los estados</option>
               <option value="pendiente">⏳ Pendiente</option>
@@ -575,11 +578,12 @@ tr:hover td { background: #f8fafc; }
                   <th style="padding:.6rem .85rem;text-align:left;color:#64748b;font-size:.72rem;text-transform:uppercase;border-bottom:2px solid #e2e8f0">Modelo</th>
                   <th style="padding:.6rem .85rem;text-align:left;color:#64748b;font-size:.72rem;text-transform:uppercase;border-bottom:2px solid #e2e8f0">Campaña</th>
                   <th style="padding:.6rem .85rem;text-align:left;color:#64748b;font-size:.72rem;text-transform:uppercase;border-bottom:2px solid #e2e8f0">Estado bot</th>
+                  <th onclick="campToggleSort('botContactadoEn')" style="padding:.6rem .85rem;text-align:left;color:#64748b;font-size:.72rem;text-transform:uppercase;border-bottom:2px solid #e2e8f0;cursor:pointer;user-select:none;white-space:nowrap">F. Contacto <span id="camp-sort-icon">↕</span></th>
                   <th style="padding:.6rem .85rem;text-align:left;color:#64748b;font-size:.72rem;text-transform:uppercase;border-bottom:2px solid #e2e8f0">Importado</th>
                 </tr>
               </thead>
               <tbody id="camp-leads-tbody">
-                <tr><td colspan="6" style="padding:2rem;text-align:center;color:#94a3b8">Cargando…</td></tr>
+                <tr><td colspan="7" style="padding:2rem;text-align:center;color:#94a3b8">Cargando…</td></tr>
               </tbody>
             </table>
           </div>
@@ -1582,6 +1586,14 @@ function renderRetencionChart(sessInRange) {
 let campParsed = [];   // leads parseados del HTML pendiente de importar
 let campLeads  = [];   // leads ya en Firestore
 let selectedCampana = '';
+let campSortCol = 'botContactadoEn', campSortDir = -1;
+
+function campToggleSort(col) {
+  if (campSortCol === col) campSortDir *= -1; else { campSortCol = col; campSortDir = -1; }
+  const icon = document.getElementById('camp-sort-icon');
+  if (icon) icon.textContent = campSortDir === -1 ? '↓' : '↑';
+  campRender();
+}
 
 // campLoad is triggered by the tab-switching handler above
 
@@ -1756,17 +1768,39 @@ async function campLoad() {
 // ── Renderizar tabla de leads ──────────────────────────────────
 function campRender() {
   const filterEstado = document.getElementById('camp-filter-estado').value;
-  const filtered = campLeads.filter(l =>
-    (!selectedCampana || l.campana   === selectedCampana) &&
-    (!filterEstado    || l.botEstado === filterEstado)
-  );
+  const q = (document.getElementById('camp-search')?.value || '').toLowerCase().trim();
+  const filtered = campLeads
+    .filter(l => {
+      if (selectedCampana && l.campana !== selectedCampana) return false;
+      if (filterEstado    && l.botEstado !== filterEstado)  return false;
+      if (q) {
+        const hay = [l.contacto, l.email, l.telefono, l.wa, l.modelo, l.ubicacion, l.campana].join(' ').toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    })
+    .sort((a, b) => {
+      let va = a[campSortCol], vb = b[campSortCol];
+      if (va?.toDate) va = va.toDate().getTime();
+      if (vb?.toDate) vb = vb.toDate().getTime();
+      va = va ?? 0; vb = vb ?? 0;
+      return (va < vb ? -1 : va > vb ? 1 : 0) * campSortDir;
+    });
+
   document.getElementById('camp-leads-info').textContent =
     `${filtered.length} leads${filtered.length !== campLeads.length ? ` (de ${campLeads.length} totales)` : ''}`;
+
   const estadoBadge = e => {
     if (e === 'enviado')    return '<span style="color:#16a34a;font-weight:700">✓ Enviado</span>';
     if (e === 'descartado') return '<span style="color:#dc2626;font-weight:700">✗ Descartado</span>';
     return '<span style="color:#d97706;font-weight:700">⏳ Pendiente</span>';
   };
+  const fmtTs = ts => {
+    if (!ts) return '—';
+    const d = ts?.toDate ? ts.toDate() : new Date(ts);
+    return isNaN(d) ? '—' : d.toLocaleDateString('es-AR', { day:'2-digit', month:'2-digit', year:'2-digit' });
+  };
+
   document.getElementById('camp-leads-tbody').innerHTML = filtered.length
     ? filtered.map(l => `<tr>
         <td style="padding:.6rem .85rem;border-bottom:1px solid #f1f5f9;font-weight:600;color:#0d3b66">${escHtml(l.contacto||'—')}<div style="font-size:.75rem;color:#64748b;font-weight:400">${escHtml(l.email||'')}</div></td>
@@ -1774,9 +1808,10 @@ function campRender() {
         <td style="padding:.6rem .85rem;border-bottom:1px solid #f1f5f9;color:#475569">${escHtml(l.modelo||'—')}</td>
         <td style="padding:.6rem .85rem;border-bottom:1px solid #f1f5f9;color:#475569;font-size:.82rem">${escHtml(l.campana||'—')}</td>
         <td style="padding:.6rem .85rem;border-bottom:1px solid #f1f5f9">${estadoBadge(l.botEstado)}</td>
-        <td style="padding:.6rem .85rem;border-bottom:1px solid #f1f5f9;color:#94a3b8;font-size:.78rem">${l.importadoEn?.toDate ? fmtDate(l.importadoEn.toDate().toISOString()) : '—'}</td>
+        <td style="padding:.6rem .85rem;border-bottom:1px solid #f1f5f9;color:#0369a1;font-size:.82rem;font-weight:600">${fmtTs(l.botContactadoEn)}</td>
+        <td style="padding:.6rem .85rem;border-bottom:1px solid #f1f5f9;color:#94a3b8;font-size:.78rem">${fmtTs(l.importadoEn)}</td>
       </tr>`).join('')
-    : '<tr><td colspan="6" style="padding:2rem;text-align:center;color:#94a3b8">Sin leads para este filtro</td></tr>';
+    : '<tr><td colspan="7" style="padding:2rem;text-align:center;color:#94a3b8">Sin leads para este filtro</td></tr>';
 }
 
 function escHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
