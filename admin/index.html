@@ -503,11 +503,28 @@ tr:hover td { background: #f8fafc; }
 
       <!-- 1. Entradas por día -->
       <div class="stat-section">
-        <h3>📅 Entradas por día</h3>
+        <div style="display:flex;align-items:center;gap:.65rem;flex-wrap:wrap;margin-bottom:.6rem">
+          <h3 style="margin:0">📅 Entradas por día</h3>
+          <div id="daily-filter-chips" style="display:flex;gap:.35rem;flex-wrap:wrap"></div>
+        </div>
         <div class="chart-canvas-wrap"><canvas id="chart-daily"></canvas></div>
         <div class="daily-table-scroll">
           <table class="sdt">
-            <thead><tr><th>Fecha</th><th>Sesiones</th><th>📅</th><th>💬</th><th>🚀</th><th>🤖 Bot</th><th>Resp.Bot</th><th>%Bot</th><th>📋 Camp.</th><th>Resp.Camp</th><th>%Camp</th><th>Media 7d</th><th>Var. vs MA</th></tr></thead>
+            <thead><tr>
+              <th>Fecha</th>
+              <th data-col="sess">Sesiones</th>
+              <th data-col="cal">📅</th>
+              <th data-col="wsp">💬</th>
+              <th data-col="acomp">🚀</th>
+              <th data-col="bot">🤖 Bot</th>
+              <th data-col="respbot">Resp.Bot</th>
+              <th data-col="pctbot">%Bot</th>
+              <th data-col="camp">📋 Camp.</th>
+              <th data-col="respcamp">Resp.Camp</th>
+              <th data-col="pctcamp">%Camp</th>
+              <th data-col="ma">Media 7d</th>
+              <th data-col="var">Var. vs MA</th>
+            </tr></thead>
             <tbody id="daily-tbody"></tbody>
           </table>
         </div>
@@ -1430,20 +1447,70 @@ function renderDailyChart(sessInRange, clicksInRange, botByDay = {}, campBotByDa
     }
     return `<tr>
       <td>${row.label}</td>
-      <td style="font-weight:700">${row.sess}</td>
-      <td style="color:#0d3b66;font-weight:600">${row.cal   || ''}</td>
-      <td style="color:#16a34a;font-weight:600">${row.wsp   || ''}</td>
-      <td style="color:#00AAFF;font-weight:600">${row.acomp || ''}</td>
-      <td style="color:#15803d;font-weight:600">${row.bot     || ''}</td>
-      <td style="color:#15803d;font-weight:600;opacity:.7">${row.respBot || ''}</td>
-      <td>${pctCell(row.pctBot, '#15803d')}</td>
-      <td style="color:#7c3aed;font-weight:600">${row.campBot || ''}</td>
-      <td style="color:#0d9488;font-weight:600">${row.resp    || ''}</td>
-      <td>${pctCell(row.pctCamp, '#0d9488')}</td>
-      <td style="color:#b45309;font-weight:600">${row.ma7.toFixed(1)}</td>
-      <td>${varHtml}</td>
+      <td data-col="sess"    style="font-weight:700">${row.sess}</td>
+      <td data-col="cal"     style="color:#0d3b66;font-weight:600">${row.cal   || ''}</td>
+      <td data-col="wsp"     style="color:#16a34a;font-weight:600">${row.wsp   || ''}</td>
+      <td data-col="acomp"   style="color:#00AAFF;font-weight:600">${row.acomp || ''}</td>
+      <td data-col="bot"     style="color:#15803d;font-weight:600">${row.bot     || ''}</td>
+      <td data-col="respbot" style="color:#15803d;font-weight:600;opacity:.7">${row.respBot || ''}</td>
+      <td data-col="pctbot">${pctCell(row.pctBot, '#15803d')}</td>
+      <td data-col="camp"    style="color:#7c3aed;font-weight:600">${row.campBot || ''}</td>
+      <td data-col="respcamp" style="color:#0d9488;font-weight:600">${row.resp    || ''}</td>
+      <td data-col="pctcamp">${pctCell(row.pctCamp, '#0d9488')}</td>
+      <td data-col="ma"      style="color:#b45309;font-weight:600">${row.ma7.toFixed(1)}</td>
+      <td data-col="var">${varHtml}</td>
     </tr>`;
   }).join('');
+
+  // Render filter chips and re-apply active filter to newly created chart
+  renderDailyFilterChips();
+  _applyDailyFilterToChart();
+}
+
+// ── Filtros "Entradas por día" ────────────────────────────────
+const DAILY_FILTERS = {
+  calc:    { label: 'Solo calculadora', dsIdx: new Set([0,2,3,10]),       cols: new Set(['sess','wsp','acomp','ma','var']),                    showY1: false },
+  botcalc: { label: 'Bot calculadora',  dsIdx: new Set([4,5,8,10]),       cols: new Set(['bot','respbot','pctbot','ma','var']),                 showY1: true  },
+  camp:    { label: 'Solo campañas',    dsIdx: new Set([6,7,9]),          cols: new Set(['camp','respcamp','pctcamp','ma','var']),              showY1: true  },
+  wpcal:   { label: 'WP + Calendly',   dsIdx: new Set([1,2,10]),         cols: new Set(['cal','wsp','ma','var']),                             showY1: false },
+  todos:   { label: 'Todos',           dsIdx: new Set([0,1,2,3,4,5,6,7,8,9,10]), cols: new Set(['sess','cal','wsp','acomp','bot','respbot','pctbot','camp','respcamp','pctcamp','ma','var']), showY1: true },
+};
+let activeDailyFilter = 'calc';
+
+function renderDailyFilterChips() {
+  const container = document.getElementById('daily-filter-chips');
+  if (!container) return;
+  container.innerHTML = Object.entries(DAILY_FILTERS).map(([key, f]) => {
+    const active = key === activeDailyFilter;
+    return `<button data-dfilter="${key}"
+      style="padding:.22rem .65rem;border-radius:20px;border:1.5px solid ${active?'#0ea5e9':'#cbd5e1'};
+      background:${active?'#e0f2fe':'#fff'};color:${active?'#0369a1':'#475569'};
+      font-size:.75rem;font-weight:700;cursor:pointer;white-space:nowrap">${f.label}</button>`;
+  }).join('');
+  container.querySelectorAll('[data-dfilter]').forEach(btn => {
+    btn.addEventListener('click', () => applyDailyFilter(btn.dataset.dfilter));
+  });
+}
+
+function _applyDailyFilterToChart() {
+  if (!chartDaily) return;
+  const f = DAILY_FILTERS[activeDailyFilter];
+  chartDaily.data.datasets.forEach((ds, i) => { ds.hidden = !f.dsIdx.has(i); });
+  chartDaily.options.scales.y1.display = f.showY1;
+  chartDaily.update('none');
+}
+
+function applyDailyFilter(name) {
+  activeDailyFilter = name;
+  renderDailyFilterChips();
+  _applyDailyFilterToChart();
+  // Show/hide table columns
+  const f = DAILY_FILTERS[name];
+  const ALL_COLS = ['sess','cal','wsp','acomp','bot','respbot','pctbot','camp','respcamp','pctcamp','ma','var'];
+  ALL_COLS.forEach(col => {
+    const show = f.cols.has(col);
+    document.querySelectorAll(`[data-col="${col}"]`).forEach(el => { el.style.display = show ? '' : 'none'; });
+  });
 }
 
 // ── 2. Usuarios por provincia ─────────────────────────────────
