@@ -335,7 +335,7 @@ tr:hover td { background: #f8fafc; }
 <div id="section-login">
   <div class="login-card">
     <div class="logo">
-      <h1>🧊 Panel de Administración</h1>
+      <h1>Panel de Administración</h1>
       <p>Fábrica de Hielo · Simulador</p>
       <span class="badge-admin">🔐 Acceso Restringido</span>
     </div>
@@ -371,7 +371,7 @@ tr:hover td { background: #f8fafc; }
   <!-- Header -->
   <div class="admin-header">
     <div>
-      <h1>🧊 Panel de Administración</h1>
+      <h1>Panel de Administración</h1>
       <p>Fábrica de Hielo · Simulador de Flujo de Fondos</p>
     </div>
     <span class="admin-badge">⚙️ Admin</span>
@@ -975,8 +975,9 @@ function renderTable() {
   });
 
   // Actualizar iconos de sort
-  document.querySelectorAll('th[data-col]').forEach(th => {
+  document.querySelectorAll('#users-table th[data-col]').forEach(th => {
     const icon = th.querySelector('.sort-icon');
+    if (!icon) return;
     if (th.dataset.col === sortCol) {
       th.classList.add('sorted');
       icon.textContent = sortDir === -1 ? '↓' : '↑';
@@ -994,7 +995,7 @@ function showLoading(show = true) {
 }
 
 // ── SORT ──────────────────────────────────────────────────────
-document.querySelectorAll('th[data-col]').forEach(th => {
+document.querySelectorAll('#users-table th[data-col]').forEach(th => {
   th.addEventListener('click', () => {
     if (sortCol === th.dataset.col) sortDir *= -1;
     else { sortCol = th.dataset.col; sortDir = -1; }
@@ -1462,9 +1463,8 @@ function renderDailyChart(sessInRange, clicksInRange, botByDay = {}, campBotByDa
     </tr>`;
   }).join('');
 
-  // Render filter chips and re-apply active filter to newly created chart
-  renderDailyFilterChips();
-  _applyDailyFilterToChart();
+  // Re-apply active filter (chips + chart datasets + table columns)
+  applyDailyFilter(activeDailyFilter);
 }
 
 // ── Filtros "Entradas por día" ────────────────────────────────
@@ -1495,9 +1495,11 @@ function renderDailyFilterChips() {
 function _applyDailyFilterToChart() {
   if (!chartDaily) return;
   const f = DAILY_FILTERS[activeDailyFilter];
-  chartDaily.data.datasets.forEach((ds, i) => { ds.hidden = !f.dsIdx.has(i); });
+  chartDaily.data.datasets.forEach((_, i) => {
+    chartDaily.getDatasetMeta(i).hidden = !f.dsIdx.has(i);
+  });
   chartDaily.options.scales.y1.display = f.showY1;
-  chartDaily.update('none');
+  chartDaily.update();
 }
 
 function applyDailyFilter(name) {
