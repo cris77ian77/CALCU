@@ -24,6 +24,10 @@ y la pantalla del comercio se actualiza sola cuando el pago se acredita.
 No hace falta ningún hardware de Mercado Pago (Point): el QR es simplemente
 el link de pago de una preferencia de Checkout Pro.
 
+Si esta pantalla corre en una Raspberry Pi montada en una expendedora
+automática, ver `../raspberry/README.md` para accionar el relé que
+entrega el producto apenas se aprueba el pago.
+
 ## Configuración (una sola vez)
 
 Requiere el CLI de Firebase (`npm i -g firebase-tools`) y una cuenta de

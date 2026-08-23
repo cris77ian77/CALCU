@@ -107,6 +107,7 @@ exports.crearCobro = onCall({ secrets: [MP_ACCESS_TOKEN], region: REGION }, asyn
     monto: montoNum,
     descripcion: desc,
     estado: 'pendiente',
+    dispensado: false, // lo marca en true el script de la Raspberry al accionar el relé
     preferenceId: pref.id,
     initPoint: pref.init_point,
     creadoEn: admin.firestore.FieldValue.serverTimestamp(),
