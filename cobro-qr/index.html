@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Cobrar con QR · Mercado Pago</title>
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: #f0f4f8;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+    color: #1e293b;
+  }
+
+  #widget {
+    background: #fff;
+    border-radius: 1rem;
+    box-shadow: 0 4px 24px rgba(0,0,0,.10);
+    width: 100%;
+    max-width: 480px;
+    overflow: hidden;
+  }
+
+  header {
+    background: linear-gradient(135deg, #0ea5e9 0%, #0369a1 100%);
+    padding: 2rem 2rem 1.5rem;
+    text-align: center;
+    color: #fff;
+  }
+  header h1 { font-size: 1.5rem; font-weight: 700; letter-spacing: -.5px; }
+  header p { font-size: .875rem; opacity: .85; margin-top: .25rem; }
+
+  main { padding: 2rem; }
+
+  .campo { margin-bottom: 1.1rem; }
+  .campo label {
+    display: block;
+    font-size: .8rem;
+    font-weight: 600;
+    color: #475569;
+    margin-bottom: .35rem;
+  }
+  .campo input {
+    width: 100%;
+    padding: .75rem .9rem;
+    border: 1.5px solid #e2e8f0;
+    border-radius: .6rem;
+    font-size: 1rem;
+    outline: none;
+    transition: border-color .15s;
+  }
+  .campo input:focus { border-color: #0ea5e9; }
+  .campo .prefijo-wrap { position: relative; }
+  .campo .prefijo {
+    position: absolute; left: .9rem; top: 50%; transform: translateY(-50%);
+    color: #64748b; font-weight: 600; pointer-events: none;
+  }
+  .campo .prefijo-wrap input { padding-left: 2.1rem; }
+
+  .montos-rapidos { display: flex; gap: .5rem; flex-wrap: wrap; margin-bottom: 1.3rem; }
+  .montos-rapidos button {
+    flex: 1 1 auto;
+    padding: .5rem .3rem;
+    border: 1.5px solid #e2e8f0;
+    background: #f8fafc;
+    border-radius: .5rem;
+    font-size: .85rem;
+    font-weight: 600;
+    color: #334155;
+    cursor: pointer;
+    transition: background .15s, border-color .15s;
+  }
+  .montos-rapidos button:hover { background: #e0f2fe; border-color: #0ea5e9; }
+
+  button.principal {
+    width: 100%;
+    padding: .9rem;
+    border: none;
+    border-radius: .6rem;
+    background: #0369a1;
+    color: #fff;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background .15s, opacity .15s;
+  }
+  button.principal:hover { background: #075985; }
+  button.principal:disabled { opacity: .6; cursor: not-allowed; }
+
+  button.secundario {
+    width: 100%;
+    padding: .8rem;
+    border: 1.5px solid #cbd5e1;
+    border-radius: .6rem;
+    background: #fff;
+    color: #334155;
+    font-size: .95rem;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: .8rem;
+  }
+  button.secundario:hover { background: #f1f5f9; }
+
+  .error {
+    background: #fef2f2;
+    color: #b91c1c;
+    border: 1px solid #fecaca;
+    padding: .6rem .8rem;
+    border-radius: .5rem;
+    font-size: .85rem;
+    margin-bottom: 1rem;
+    display: none;
+  }
+  .error.visible { display: block; }
+
+  /* ── Pantalla de QR ────────────────────────────────────────── */
+  #pantalla-qr { display: none; text-align: center; }
+  #pantalla-qr .monto {
+    font-size: 2rem;
+    font-weight: 800;
+    color: #0369a1;
+    margin-bottom: .2rem;
+  }
+  #pantalla-qr .descripcion { color: #64748b; font-size: .9rem; margin-bottom: 1.3rem; }
+
+  #qr-caja {
+    display: inline-block;
+    padding: 1rem;
+    background: #fff;
+    border: 1.5px solid #e2e8f0;
+    border-radius: .8rem;
+    margin-bottom: 1.2rem;
+  }
+  #qr-caja img, #qr-caja canvas { display: block; }
+
+  .estado-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: .4rem;
+    padding: .5rem 1rem;
+    border-radius: 999px;
+    font-size: .85rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+  }
+  .estado-pill.pendiente { background: #fef9c3; color: #854d0e; }
+  .estado-pill.aprobado  { background: #dcfce7; color: #15803d; }
+  .estado-pill.rechazado,
+  .estado-pill.cancelado { background: #fee2e2; color: #b91c1c; }
+
+  .estado-pill .punto {
+    width: .5rem; height: .5rem; border-radius: 50%;
+    background: currentColor;
+    animation: pulso 1.2s infinite;
+  }
+  .estado-pill.aprobado .punto,
+  .estado-pill.rechazado .punto,
+  .estado-pill.cancelado .punto { animation: none; }
+
+  @keyframes pulso {
+    0%, 100% { opacity: 1; }
+    50% { opacity: .3; }
+  }
+
+  .link-pago {
+    display: block;
+    font-size: .8rem;
+    color: #0369a1;
+    text-decoration: underline;
+    margin-bottom: 1.2rem;
+    word-break: break-all;
+  }
+
+  #cargando { text-align: center; padding: 2rem 0; display: none; }
+  .spinner {
+    width: 2.2rem; height: 2.2rem;
+    border: 3px solid #e2e8f0;
+    border-top-color: #0ea5e9;
+    border-radius: 50%;
+    margin: 0 auto 1rem;
+    animation: girar .8s linear infinite;
+  }
+  @keyframes girar { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+  <div id="widget">
+    <header>
+      <h1>Cobrar con QR</h1>
+      <p>Mercado Pago · Portal de Hielo</p>
+    </header>
+
+    <main>
+      <div class="error" id="error-msg"></div>
+
+      <!-- Paso 1: formulario -->
+      <section id="pantalla-form">
+        <div class="campo">
+          <label for="monto">Monto a cobrar</label>
+          <div class="prefijo-wrap">
+            <span class="prefijo">$</span>
+            <input type="number" id="monto" inputmode="decimal" min="1" step="0.01" placeholder="0,00" />
+          </div>
+        </div>
+
+        <div class="montos-rapidos" id="montos-rapidos">
+          <button type="button" data-monto="1000">$1.000</button>
+          <button type="button" data-monto="2000">$2.000</button>
+          <button type="button" data-monto="5000">$5.000</button>
+          <button type="button" data-monto="10000">$10.000</button>
+        </div>
+
+        <div class="campo">
+          <label for="descripcion">Concepto (opcional)</label>
+          <input type="text" id="descripcion" maxlength="200" placeholder="Ej: Bolsa de hielo x5kg" />
+        </div>
+
+        <button class="principal" id="btn-generar">Generar QR</button>
+      </section>
+
+      <!-- Cargando -->
+      <section id="cargando">
+        <div class="spinner"></div>
+        <p>Generando el cobro…</p>
+      </section>
+
+      <!-- Paso 2: QR + estado -->
+      <section id="pantalla-qr">
+        <div class="monto" id="qr-monto"></div>
+        <div class="descripcion" id="qr-descripcion"></div>
+
+        <div id="estado-pill" class="estado-pill pendiente">
+          <span class="punto"></span>
+          <span id="estado-texto">Esperando pago…</span>
+        </div>
+
+        <div id="qr-caja"></div>
+
+        <a id="qr-link" class="link-pago" href="#" target="_blank" rel="noopener">Abrir link de pago</a>
+
+        <button class="secundario" id="btn-nuevo">Nuevo cobro</button>
+      </section>
+    </main>
+  </div>
+
+<script type="module">
+  import { firebaseConfig } from '../auth/firebase-config.js';
+  import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js';
+  import { getFunctions, httpsCallable } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-functions.js';
+  import { getFirestore, doc, onSnapshot } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
+
+  const app = initializeApp(firebaseConfig);
+  const fns = getFunctions(app, 'us-central1'); // misma región que en functions/index.js
+  const db = getFirestore(app);
+  const crearCobro = httpsCallable(fns, 'crearCobro');
+
+  const $ = (id) => document.getElementById(id);
+  const pantallaForm = $('pantalla-form');
+  const pantallaQR = $('pantalla-qr');
+  const cargando = $('cargando');
+  const errorMsg = $('error-msg');
+
+  let unsub = null;
+
+  $('montos-rapidos').addEventListener('click', (e) => {
+    const btn = e.target.closest('button[data-monto]');
+    if (!btn) return;
+    $('monto').value = btn.dataset.monto;
+  });
+
+  function mostrarError(msg) {
+    errorMsg.textContent = msg;
+    errorMsg.classList.add('visible');
+  }
+  function ocultarError() {
+    errorMsg.classList.remove('visible');
+  }
+
+  $('btn-generar').addEventListener('click', async () => {
+    ocultarError();
+    const monto = parseFloat($('monto').value);
+    const descripcion = $('descripcion').value.trim();
+
+    if (!monto || monto <= 0) {
+      mostrarError('Ingresá un monto válido, mayor a 0.');
+      return;
+    }
+
+    pantallaForm.style.display = 'none';
+    cargando.style.display = 'block';
+
+    try {
+      const { data } = await crearCobro({ monto, descripcion });
+      abrirPantallaQR(data.cobroId, data.initPoint, monto, descripcion);
+    } catch (err) {
+      console.error(err);
+      cargando.style.display = 'none';
+      pantallaForm.style.display = 'block';
+      mostrarError(err?.message || 'No se pudo generar el cobro. Intentá de nuevo.');
+    }
+  });
+
+  function abrirPantallaQR(cobroId, initPoint, monto, descripcion) {
+    cargando.style.display = 'none';
+    pantallaQR.style.display = 'block';
+
+    $('qr-monto').textContent = '$' + monto.toLocaleString('es-AR', { minimumFractionDigits: 2 });
+    $('qr-descripcion').textContent = descripcion || 'Cobro Portal de Hielo';
+    $('qr-link').href = initPoint;
+
+    const caja = $('qr-caja');
+    caja.innerHTML = '';
+    new QRCode(caja, {
+      text: initPoint,
+      width: 220,
+      height: 220,
+      correctLevel: QRCode.CorrectLevel.M,
+    });
+
+    actualizarEstado('pendiente');
+
+    if (unsub) unsub();
+    unsub = onSnapshot(doc(db, 'cobros', cobroId), (snap) => {
+      const data = snap.data();
+      if (!data) return;
+      actualizarEstado(data.estado);
+    });
+  }
+
+  function actualizarEstado(estado) {
+    const pill = $('estado-pill');
+    const texto = $('estado-texto');
+    pill.className = 'estado-pill ' + estado;
+
+    const textos = {
+      pendiente: 'Esperando pago…',
+      aprobado: '✔ Pago aprobado',
+      rechazado: '✕ Pago rechazado',
+      cancelado: 'Cobro cancelado',
+      reembolsado: 'Pago reembolsado',
+      contracargo: 'Contracargo',
+    };
+    texto.textContent = textos[estado] || estado;
+  }
+
+  $('btn-nuevo').addEventListener('click', () => {
+    if (unsub) { unsub(); unsub = null; }
+    pantallaQR.style.display = 'none';
+    pantallaForm.style.display = 'block';
+    $('monto').value = '';
+    $('descripcion').value = '';
+    ocultarError();
+  });
+</script>
+</body>
+</html>
