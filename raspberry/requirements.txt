@@ -1,0 +1,5 @@
+firebase-admin>=6.5.0
+# Solo instala en la Raspberry real (ARM); en una PC de escritorio (x86_64)
+# pip la salta sola gracias al marcador de abajo, y dispensar.py corre en
+# modo simulado sin ella — ver "Probar en tu PC" en README.md.
+RPi.GPIO>=0.7.1; platform_machine == "armv6l" or platform_machine == "armv7l" or platform_machine == "aarch64"
