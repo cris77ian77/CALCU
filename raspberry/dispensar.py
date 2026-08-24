@@ -38,7 +38,44 @@ import sys
 import time
 from pathlib import Path
 
-import RPi.GPIO as GPIO
+try:
+    import RPi.GPIO as GPIO
+    SIMULADO = False
+except (ImportError, RuntimeError):
+    # No estamos en una Raspberry Pi real (ej. probando en tu PC): usamos
+    # un reemplazo que solo imprime los pulsos por consola, para poder
+    # correr y probar todo el flujo (Firestore + Mercado Pago + cálculo
+    # de pulsos) sin tener el hardware a mano.
+    SIMULADO = True
+
+    class GPIO:  # noqa: N801 — mismo nombre para no tocar el resto del archivo
+        BCM = OUT = HIGH = LOW = None
+        _estado = {}
+
+        @classmethod
+        def setmode(cls, _modo):
+            pass
+
+        @classmethod
+        def setup(cls, pin, _modo, initial=None):
+            cls._estado[pin] = initial
+
+        @classmethod
+        def output(cls, pin, valor):
+            anterior = cls._estado.get(pin)
+            if valor != anterior:
+                nivel = 'ALTO' if valor == cls.HIGH else 'BAJO'
+                logging.getLogger("dispensar").info("  · [SIMULADO] pin %s → %s", pin, nivel)
+            cls._estado[pin] = valor
+
+        @classmethod
+        def cleanup(cls):
+            pass
+
+    # HIGH/LOW simulados con valores distintos (True/False) para que las
+    # comparaciones de arriba funcionen igual que con RPi.GPIO real.
+    GPIO.HIGH, GPIO.LOW = True, False
+
 import firebase_admin
 from firebase_admin import credentials, firestore
 from google.cloud.firestore_v1.base_query import FieldFilter
@@ -170,6 +207,9 @@ def escuchar_cobros(db):
 # ── Main ─────────────────────────────────────────────────────
 def main():
     log.info("Iniciando dispensador…")
+    if SIMULADO:
+        log.warning("RPi.GPIO no disponible — corriendo en MODO SIMULADO "
+                    "(los pulsos se imprimen por consola, no mueven pines reales).")
     inicializar_pulso()
     db = inicializar_firestore()
     watch = escuchar_cobros(db)

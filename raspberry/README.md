@@ -4,6 +4,42 @@ Script que corre en la Raspberry Pi (la misma que muestra el QR en modo
 kiosco) y le carga crédito a la Pukui cuando un cobro se aprueba en
 Mercado Pago.
 
+## Probar en tu PC antes de tener la Raspberry
+
+`dispensar.py` detecta solo si `RPi.GPIO` está disponible; si no lo
+está (porque no estás en una Raspberry) usa un reemplazo que imprime
+los pulsos por consola en vez de mover pines reales — así se puede
+probar el flujo completo (Firestore + Mercado Pago + cálculo de
+pulsos) desde cualquier PC, sin hardware:
+
+```bash
+cd raspberry
+python3 -m venv venv
+source venv/bin/activate   # en Windows: venv\Scripts\activate
+pip install -r requirements.txt
+#   ↑ en una PC (no Raspberry), pip salta solo la instalación de
+#   RPi.GPIO (requirements.txt ya lo marca solo para ARM) — no
+#   hace falta hacer nada especial para que ande en simulado.
+
+# Poné tu service-account.json (ver paso 3 más abajo) y corré:
+python3 dispensar.py
+```
+
+Vas a ver en la consola algo como:
+
+```
+[WARNING] RPi.GPIO no disponible — corriendo en MODO SIMULADO...
+[INFO] Cargando crédito: 3 pulsos ($100.00 c/u).
+[INFO]   · [SIMULADO] pin 17 → BAJO
+[INFO]   · [SIMULADO] pin 17 → ALTO
+```
+
+Generá un cobro real desde `cobro-qr/index.html` (podés abrirlo en tu
+mismo navegador, en paralelo) y pagalo con credenciales de **test** de
+Mercado Pago — vas a ver los pulsos simulados en la consola apenas se
+apruebe. Cuando pases esto mismo a la Raspberry con `RPi.GPIO`
+instalado, el script detecta el hardware real solo y deja de simular.
+
 ## Cómo entiende la Pukui el pago
 
 La máquina no tiene ningún periférico de pago propio para QR — según nos
