@@ -1,23 +1,54 @@
 # Dispensador — Raspberry Pi
 
 Script que corre en la Raspberry Pi (la misma que muestra el QR en modo
-kiosco) y acciona un relé conectado al motor/traba de la expendedora
-cuando un cobro se aprueba en Mercado Pago.
+kiosco) y le carga crédito a la Pukui cuando un cobro se aprueba en
+Mercado Pago.
 
-No hace falta ESP32 ni ningún otro controlador: usa los pines GPIO de la
-propia Raspberry.
+## Cómo entiende la Pukui el pago
+
+La máquina no tiene ningún periférico de pago propio para QR — según nos
+confirmó el fabricante, la entrada que sí tiene disponible es el
+**"impulse point"** del validador de monedas (12V, tipo "impulse"): un
+cable que la máquina espera ver cerrado brevemente una vez por cada
+"moneda" — la placa cuenta esos pulsos como crédito, igual que si el
+cliente hubiera metido monedas de verdad. El cliente elige el producto
+con los botones que la máquina ya tiene; nosotros solo simulamos las
+monedas.
+
+No hace falta ESP32 ni ningún otro controlador aparte: la Raspberry
+manda esos pulsos con sus propios pines GPIO.
+
+## ⚠️ Datos pendientes de confirmar con el fabricante
+
+Antes de conectar esto a la máquina real hacen falta tres datos que
+**todavía no tenemos** — están como placeholders en `dispensar.py`,
+marcados `TODO CONFIRMAR`:
+
+1. **`VALOR_POR_PULSO_CENTAVOS`** — cuánto crédito representa 1 pulso
+   (y si es configurable en el menú de la máquina).
+2. **`PULSO_MS` / `PAUSA_ENTRE_PULSOS_MS`** — duración de cada pulso y
+   la pausa entre uno y otro que la placa necesita para contarlos bien.
+3. **Tipo de señal del "impulse point"**: si es un **contacto seco**
+   (la máquina no pone voltaje, espera que vos cierres el circuito — ahí
+   alcanza con un relé común) o una **salida activa a 12V** (la máquina
+   ya tiene tensión en ese cable y espera que la lleves a GND — ahí hace
+   falta un optoacoplador para no conectar 12V directo a un GPIO de
+   3.3V y quemarlo).
 
 ## Wiring
 
-- Módulo relé (1 canal, 5V, tipo "active-low" — son los más comunes)
-  conectado a: `5V`, `GND` y el pin `GPIO17` (BCM) de la Raspberry.
-- La salida del relé (COM + NO, "normalmente abierto") va en serie con el
-  cableado del motor/solenoide que dispara la entrega del producto —
-  como si el relé fuera un interruptor que el script aprieta por vos.
-- Si tu módulo de relé es "active-high" (se activa con 3.3V en vez de con
-  GND), poné `RELAY_ACTIVO_EN_BAJO = False` en `dispensar.py`.
-- Si usás otro pin GPIO, cambiá `RELAY_PIN` en `dispensar.py` (usa
-  numeración BCM, no la física de la placa).
+Con un **optoacoplador** (recomendado — aísla los 3.3V de la Raspberry
+de los 12V de la máquina, funciona para los dos casos de arriba):
+
+- Lado de la Raspberry: `GPIO17` (BCM) + `GND` manejan el LED del
+  optoacoplador (con su resistencia limitadora, según el módulo).
+  Ver también `PULSO_ACTIVO_EN_BAJO` en `dispensar.py` — si el módulo
+  es "active-high", ponelo en `False`.
+- Lado de la máquina: la salida del optoacoplador (fototransistor) se
+  conecta en lugar de donde iría el contacto del validador de monedas
+  original, en el "impulse point" de 12V.
+- Si usás otro pin GPIO, cambiá `PULSO_PIN` en `dispensar.py` (numeración
+  BCM, no la física de la placa).
 
 ## Instalación
 
@@ -39,13 +70,17 @@ deactivate
 #    ~/CALCU/raspberry/service-account.json
 #    (NUNCA subir este archivo a git — ya está en .gitignore)
 
-# 4) Probar el script a mano antes de instalarlo como servicio
+# 4) Antes de nada: completar los 3 datos "TODO CONFIRMAR" en
+#    dispensar.py con lo que confirme el fabricante.
+
+# 5) Probar el script a mano antes de instalarlo como servicio
 python3 dispensar.py
 #    Generá un cobro de prueba desde cobro-qr/index.html y pagalo con
-#    credenciales de TEST de Mercado Pago: el relé debería accionarse
-#    apenas la pantalla muestre "✔ Pago aprobado".
+#    credenciales de TEST de Mercado Pago: deberías ver en la consola
+#    "Cargando crédito: N pulsos" apenas se apruebe el pago, y la
+#    máquina debería reflejar ese crédito igual que con monedas.
 
-# 5) Instalarlo como servicio para que arranque solo con la Raspberry
+# 6) Instalarlo como servicio para que arranque solo con la Raspberry
 sudo cp dispensador.service /etc/systemd/system/dispensador.service
 sudo systemctl daemon-reload
 sudo systemctl enable --now dispensador.service
@@ -56,7 +91,7 @@ journalctl -u dispensador.service -f
 
 Si el usuario del sistema o la ruta de instalación no son `pi` /
 `/home/pi/CALCU`, ajustá `User` y las rutas dentro de
-`dispensador.service` antes del paso 5.
+`dispensador.service` antes del paso 6.
 
 ## Cómo funciona
 
@@ -67,9 +102,13 @@ Si el usuario del sistema o la ruta de instalación no son `pi` /
 3. Este script tiene un listener en tiempo real de Firestore sobre los
    cobros con `estado == "aprobado"` y `dispensado == false`.
 4. Apenas detecta uno, hace una transacción para marcarlo
-   `dispensado: true` (evita accionar el relé dos veces si el mismo
-   evento llega repetido) y dispara el relé por `PULSO_SEGUNDOS`
-   (2 segundos por defecto — ajustable en `dispensar.py`).
+   `dispensado: true` (evita cargar el crédito dos veces si el mismo
+   evento llega repetido) y manda tantos pulsos como haga falta para
+   cubrir el monto pagado (`cargar_credito()` en `dispensar.py`).
+5. Si el monto no es múltiplo exacto del valor de un pulso, queda un
+   resto sin acreditar (se loguea como advertencia) — por eso conviene
+   que la pantalla de cobro solo ofrezca montos múltiplos del valor de
+   pulso una vez que lo confirmemos.
 
 ## Seguridad
 

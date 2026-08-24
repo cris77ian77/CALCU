@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 # ============================================================
-# dispensar.py — Escucha los cobros aprobados en Firestore y
-# acciona el relé de la expendedora para entregar el producto.
+# dispensar.py — Escucha los cobros aprobados en Firestore y le
+# manda a la Pukui los pulsos del validador de monedas ("impulse
+# coin acceptor", 12V) para cargarle el crédito equivalente.
 #
 # Corre en la Raspberry Pi que también muestra el QR (Chromium en
 # modo kiosco apuntando a cobro-qr/index.html). Este script va
@@ -13,8 +14,22 @@
 #      webhookMP pone estado: 'aprobado'.
 #   3) Este script tiene un listener en tiempo real sobre
 #      cobros donde estado == 'aprobado' y dispensado == false.
-#      Apenas ve uno, acciona el relé y marca dispensado: true
-#      (así nunca entrega el producto dos veces por el mismo cobro).
+#      Apenas ve uno, manda N pulsos por el pin del optoacoplador/relé
+#      conectado al "impulse point" del validador de monedas — la
+#      máquina lo interpreta exactamente como si hubieran metido N
+#      monedas — y marca dispensado: true (así nunca carga el mismo
+#      cobro dos veces). El cliente elige el producto con los botones
+#      de siempre; la Pukui dispensa con su propia lógica.
+#
+# ⚠️ CONFIRMAR CON EL FABRICANTE antes de conectar a la máquina real:
+#   - VALOR_POR_PULSO_CENTAVOS: cuánto crédito representa cada pulso.
+#   - PULSO_MS / PAUSA_ENTRE_PULSOS_MS: duración del pulso y separación
+#     entre pulsos que la placa de la Pukui espera poder leer.
+#   - Si el "impulse point" es un contacto seco (relé) o una salida
+#     activa a 12V que hay que llevar a GND (optoacoplador) — de eso
+#     depende qué módulo poner entre el GPIO y ese cable.
+# Los valores de acá abajo son placeholders típicos de validadores de
+# monedas por impulso — NO están confirmados para esta máquina.
 # ============================================================
 
 import logging
@@ -31,9 +46,13 @@ from google.cloud.firestore_v1.base_query import FieldFilter
 # ── Configuración ───────────────────────────────────────────
 CREDENCIALES_JSON = Path(__file__).parent / "service-account.json"
 
-RELAY_PIN = 17              # pin BCM al que está conectado el módulo relé
-RELAY_ACTIVO_EN_BAJO = True # la mayoría de los módulos de relé son "active-low"
-PULSO_SEGUNDOS = 2.0        # cuánto tiempo se mantiene accionado el relé
+PULSO_PIN = 17                    # pin BCM conectado al módulo optoacoplador/relé
+PULSO_ACTIVO_EN_BAJO = True       # True si el módulo es "active-low" (lo más común)
+
+VALOR_POR_PULSO_CENTAVOS = 10000  # TODO CONFIRMAR: $ que representa 1 pulso (acá: $100,00)
+PULSO_MS = 100                    # TODO CONFIRMAR: duración de cada pulso
+PAUSA_ENTRE_PULSOS_MS = 100       # TODO CONFIRMAR: pausa entre pulso y pulso
+MAX_PULSOS_POR_COBRO = 500        # límite de seguridad (evita quedar pulsando por error de config)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -43,20 +62,48 @@ log = logging.getLogger("dispensar")
 
 
 # ── GPIO ─────────────────────────────────────────────────────
-def inicializar_relay():
+def inicializar_pulso():
     GPIO.setmode(GPIO.BCM)
-    estado_reposo = GPIO.HIGH if RELAY_ACTIVO_EN_BAJO else GPIO.LOW
-    GPIO.setup(RELAY_PIN, GPIO.OUT, initial=estado_reposo)
+    estado_reposo = GPIO.HIGH if PULSO_ACTIVO_EN_BAJO else GPIO.LOW
+    GPIO.setup(PULSO_PIN, GPIO.OUT, initial=estado_reposo)
 
 
-def accionar_relay():
-    log.info("Accionando relé por %.1fs…", PULSO_SEGUNDOS)
-    activo = GPIO.LOW if RELAY_ACTIVO_EN_BAJO else GPIO.HIGH
-    reposo = GPIO.HIGH if RELAY_ACTIVO_EN_BAJO else GPIO.LOW
-    GPIO.output(RELAY_PIN, activo)
-    time.sleep(PULSO_SEGUNDOS)
-    GPIO.output(RELAY_PIN, reposo)
-    log.info("Relé vuelto a reposo.")
+def _un_pulso():
+    activo = GPIO.LOW if PULSO_ACTIVO_EN_BAJO else GPIO.HIGH
+    reposo = GPIO.HIGH if PULSO_ACTIVO_EN_BAJO else GPIO.LOW
+    GPIO.output(PULSO_PIN, activo)
+    time.sleep(PULSO_MS / 1000)
+    GPIO.output(PULSO_PIN, reposo)
+
+
+def cargar_credito(monto_centavos: int):
+    """Manda tantos pulsos como haga falta para cargar `monto_centavos`
+    de crédito, simulando monedas insertadas."""
+    n_pulsos = round(monto_centavos / VALOR_POR_PULSO_CENTAVOS)
+
+    if n_pulsos <= 0:
+        log.warning("Monto %s no llega a valer 1 pulso ($%.2f) — no se manda nada.",
+                    monto_centavos, VALOR_POR_PULSO_CENTAVOS / 100)
+        return
+    if n_pulsos > MAX_PULSOS_POR_COBRO:
+        log.error("El monto pedía %s pulsos, supera el límite de seguridad (%s). "
+                   "Revisá VALOR_POR_PULSO_CENTAVOS antes de seguir.",
+                   n_pulsos, MAX_PULSOS_POR_COBRO)
+        return
+
+    resto = monto_centavos - n_pulsos * VALOR_POR_PULSO_CENTAVOS
+    if resto != 0:
+        log.warning("El monto ($%.2f) no es múltiplo exacto del valor de pulso "
+                     "($%.2f) — quedan $%.2f de crédito sin acreditar. Conviene que "
+                     "la pantalla de cobro solo ofrezca montos múltiplos del pulso.",
+                     monto_centavos / 100, VALOR_POR_PULSO_CENTAVOS / 100, resto / 100)
+
+    log.info("Cargando crédito: %s pulsos ($%.2f c/u).", n_pulsos, VALOR_POR_PULSO_CENTAVOS / 100)
+    for i in range(n_pulsos):
+        _un_pulso()
+        if i < n_pulsos - 1:
+            time.sleep(PAUSA_ENTRE_PULSOS_MS / 1000)
+    log.info("Crédito cargado.")
 
 
 # ── Firestore ────────────────────────────────────────────────
@@ -76,8 +123,9 @@ def inicializar_firestore():
 
 
 def procesar_cobro(cobro_id: str, db):
-    """Acciona el relé y marca el cobro como dispensado (con transacción,
-    así dos eventos casi simultáneos nunca disparan el relé dos veces)."""
+    """Manda los pulsos de crédito y marca el cobro como dispensado (con
+    transacción, así dos eventos casi simultáneos nunca cargan el
+    crédito dos veces)."""
     ref = db.collection("cobros").document(cobro_id)
 
     @firestore.transactional
@@ -85,17 +133,18 @@ def procesar_cobro(cobro_id: str, db):
         snap = ref.get(transaction=transaccion)
         data = snap.to_dict() or {}
         if data.get("estado") != "aprobado" or data.get("dispensado"):
-            return False
+            return None
         transaccion.update(ref, {
             "dispensado": True,
             "dispensadoEn": firestore.SERVER_TIMESTAMP,
         })
-        return True
+        return data.get("monto")
 
     transaccion = db.transaction()
-    if marcar_si_corresponde(transaccion):
-        log.info("Cobro %s aprobado → dispensando producto.", cobro_id)
-        accionar_relay()
+    monto = marcar_si_corresponde(transaccion)
+    if monto is not None:
+        log.info("Cobro %s aprobado por $%.2f → cargando crédito.", cobro_id, monto)
+        cargar_credito(round(monto * 100))  # monto en Firestore está en pesos, no en centavos
     else:
         log.debug("Cobro %s ya estaba dispensado o no está aprobado, se ignora.", cobro_id)
 
@@ -121,10 +170,10 @@ def escuchar_cobros(db):
 # ── Main ─────────────────────────────────────────────────────
 def main():
     log.info("Iniciando dispensador…")
-    inicializar_relay()
+    inicializar_pulso()
     db = inicializar_firestore()
     watch = escuchar_cobros(db)
-    log.info("Escuchando cobros aprobados en Firestore (pin BCM %s).", RELAY_PIN)
+    log.info("Escuchando cobros aprobados en Firestore (pin BCM %s).", PULSO_PIN)
 
     detener = False
 
