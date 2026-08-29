@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Política de Privacidad — OpenClaw Integration</title>
+<meta name="description" content="Política de privacidad de OpenClaw Integration, la integración personal de Cristian con Gmail y Google Calendar.">
+<meta name="robots" content="noindex">
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg: #f4f6f7;
+    --bg-raised: #ffffff;
+    --ink: #16232a;
+    --ink-soft: #4a5c66;
+    --line: #d7dee1;
+    --accent: #0f6d78;
+    --accent-ink: #ffffff;
+    --accent-wash: #e3eff0;
+    --mono-chip-bg: #eef2f2;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #10171a;
+      --bg-raised: #171f23;
+      --ink: #e7edee;
+      --ink-soft: #9fb0b6;
+      --line: #2a353a;
+      --accent: #4fb8c4;
+      --accent-ink: #06181b;
+      --accent-wash: #16292c;
+      --mono-chip-bg: #1c2529;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --bg: #10171a;
+    --bg-raised: #171f23;
+    --ink: #e7edee;
+    --ink-soft: #9fb0b6;
+    --line: #2a353a;
+    --accent: #4fb8c4;
+    --accent-ink: #06181b;
+    --accent-wash: #16292c;
+    --mono-chip-bg: #1c2529;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "IBM Plex Sans", system-ui, sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 4rem 1.5rem 5rem;
+  }
+
+  header.masthead {
+    display: flex;
+    flex-direction: column;
+    gap: 1.1rem;
+    padding-bottom: 2.5rem;
+    margin-bottom: 2.75rem;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    align-self: flex-start;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--accent);
+    background: var(--accent-wash);
+    padding: 0.32rem 0.7rem;
+    border-radius: 999px;
+  }
+
+  h1 {
+    font-family: "Newsreader", Georgia, serif;
+    font-weight: 500;
+    font-size: clamp(2.1rem, 5vw, 2.9rem);
+    line-height: 1.12;
+    margin: 0;
+    text-wrap: balance;
+    color: var(--ink);
+  }
+
+  .dek {
+    font-size: 1.05rem;
+    color: var(--ink-soft);
+    max-width: 60ch;
+    margin: 0;
+  }
+
+  .meta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem 1.4rem;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 0.78rem;
+    color: var(--ink-soft);
+  }
+
+  .meta-row span b {
+    color: var(--ink);
+    font-weight: 500;
+  }
+
+  main { display: flex; flex-direction: column; gap: 2.5rem; }
+
+  section h2 {
+    font-family: "Newsreader", Georgia, serif;
+    font-weight: 600;
+    font-size: 1.35rem;
+    margin: 0 0 0.9rem;
+    color: var(--ink);
+  }
+
+  section p, section li {
+    max-width: 68ch;
+    color: var(--ink-soft);
+  }
+
+  section p { margin: 0 0 0.85rem; }
+  section p:last-child { margin-bottom: 0; }
+
+  ul.plain {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.7rem;
+  }
+
+  ul.plain li {
+    position: relative;
+    padding-left: 1.3rem;
+  }
+
+  ul.plain li::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0.55em;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+  }
+
+  .scope-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 0.9rem;
+    margin-top: 0.5rem;
+  }
+
+  .scope-card {
+    background: var(--bg-raised);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 1rem 1.1rem;
+  }
+
+  .scope-card .scope-name {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.04em;
+    color: var(--accent);
+    display: block;
+    margin-bottom: 0.4rem;
+  }
+
+  .scope-card p {
+    margin: 0;
+    font-size: 0.92rem;
+    color: var(--ink-soft);
+  }
+
+  .contact-card {
+    background: var(--bg-raised);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 1.5rem 1.6rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+  }
+
+  .contact-card .label {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+  }
+
+  .contact-card a {
+    color: var(--accent);
+    text-decoration: none;
+    font-weight: 500;
+    border-bottom: 1px solid transparent;
+  }
+
+  .contact-card a:hover,
+  .contact-card a:focus-visible {
+    border-bottom-color: var(--accent);
+  }
+
+  a:focus-visible, button:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  footer {
+    margin-top: 3.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--line);
+    font-size: 0.82rem;
+    color: var(--ink-soft);
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .page { animation: rise 0.5s ease-out; }
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  }
+</style>
+</head>
+<body>
+
+<div class="page">
+  <header class="masthead">
+    <span class="eyebrow">Documento legal · OpenClaw Integration</span>
+    <h1>Política de Privacidad</h1>
+    <p class="dek">Cómo OpenClaw Integration accede, usa y protege los datos de Gmail y Google Calendar de su propio titular.</p>
+    <div class="meta-row">
+      <span>Responsable: <b>Cristian Polla</b></span>
+      <span>Vigente desde: <b>24 de agosto de 2026</b></span>
+      <span>Proyecto: <b>openclaw-integration-505510</b></span>
+    </div>
+  </header>
+
+  <main>
+    <section>
+      <h2>Qué es esta aplicación</h2>
+      <p>OpenClaw Integration es una conexión de uso estrictamente personal entre el asistente de IA de Cristian Polla (OpenClaw, corriendo en un servidor privado propio) y sus propias cuentas de Google. No es un producto público: nadie fuera de su titular puede autorizarla, y no recibe ni procesa datos de terceros.</p>
+      <p>Su único propósito es permitir que ese asistente lea y gestione, en nombre del propio Cristian y bajo su instrucción directa, el correo y el calendario de las cuentas que él mismo autoriza.</p>
+    </section>
+
+    <section>
+      <h2>Qué datos accede</h2>
+      <div class="scope-grid">
+        <div class="scope-card">
+          <span class="scope-name">Gmail</span>
+          <p>Lectura, redacción y envío de correos en las cuentas autorizadas, únicamente para tareas que Cristian le pide directamente al asistente.</p>
+        </div>
+        <div class="scope-card">
+          <span class="scope-name">Google Calendar</span>
+          <p>Lectura y gestión de eventos (crear, modificar, consultar disponibilidad) en las cuentas autorizadas.</p>
+        </div>
+        <div class="scope-card">
+          <span class="scope-name">Perfil básico</span>
+          <p>Nombre y dirección de correo de la cuenta, únicamente para identificar qué cuenta está conectada.</p>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Cuentas autorizadas</h2>
+      <p>Solo dos cuentas, ambas del mismo titular, pueden usar esta integración:</p>
+      <ul class="plain">
+        <li>pollacristian@gmail.com — cuenta personal</li>
+        <li>cristian@polair.com.ar — cuenta laboral (Refrigeración Polair)</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Cómo se almacenan los datos</h2>
+      <ul class="plain">
+        <li>Las credenciales de acceso (tokens de OAuth) se guardan cifradas en un servidor privado (VPS) que administra directamente Cristian, con acceso restringido por clave SSH.</li>
+        <li>El contenido de correos y eventos no se copia a ninguna base de datos externa: el asistente lo consulta en el momento y lo usa solo para responder a lo que se le pide.</li>
+        <li>Ningún dato se vende, se comparte con terceros ni se usa con fines publicitarios.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Revocar el acceso</h2>
+      <p>El titular puede revocar el acceso de esta aplicación en cualquier momento, sin necesidad de avisar a nadie, desde la página de permisos de su cuenta de Google:</p>
+      <p><a href="https://myaccount.google.com/permissions" style="color:var(--accent); font-weight:500;">myaccount.google.com/permissions</a></p>
+    </section>
+
+    <section>
+      <h2>Contacto</h2>
+      <div class="contact-card">
+        <span class="label">Responsable de esta integración</span>
+        <div>Cristian Polla</div>
+        <a href="mailto:cristian@polair.com.ar">cristian@polair.com.ar</a>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    Esta política corresponde exclusivamente al proyecto de Google Cloud <em>openclaw-integration-505510</em>, usado para uso interno y personal. No aplica a ningún otro servicio ni producto de terceros.
+  </footer>
+</div>
+
+</body>
+</html>
