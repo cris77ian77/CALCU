@@ -1,0 +1,22 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Perfiles de usuario: cada uno lee/escribe solo el suyo.
+    match /usuarios/{uid} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+
+    // Cobros QR de Mercado Pago: el id del documento es aleatorio e
+    // impredecible (no se puede listar la colección), por eso se permite
+    // lectura pública para que la pantalla de cobro y el celular del
+    // cliente puedan ver el estado del pago en tiempo real.
+    // La escritura queda reservada exclusivamente al backend
+    // (Cloud Functions con Admin SDK, que no pasa por estas reglas).
+    match /cobros/{cobroId} {
+      allow read: if true;
+      allow write: if false;
+      allow list: if false;
+    }
+  }
+}

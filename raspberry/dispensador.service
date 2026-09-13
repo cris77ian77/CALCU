@@ -1,0 +1,15 @@
+[Unit]
+Description=Dispensador — escucha cobros de Mercado Pago y acciona el relé
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/CALCU/raspberry
+ExecStart=/home/pi/CALCU/raspberry/venv/bin/python3 /home/pi/CALCU/raspberry/dispensar.py
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

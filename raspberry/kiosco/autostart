@@ -1,0 +1,6 @@
+@lxpanel --profile LXDE-pi
+@pcmanfm --desktop --profile LXDE-pi
+@xscreensaver -no-splash
+
+# Cobro QR en modo kiosco
+@bash /home/pi/CALCU/raspberry/kiosco/kiosk.sh
