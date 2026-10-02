@@ -432,6 +432,7 @@ tr:hover td { background: #f8fafc; }
       <button class="nav-tab-btn" data-tab="estadisticas">📊 Estadísticas</button>
       <button class="nav-tab-btn" data-tab="campanas">📋 Campañas</button>
       <button class="nav-tab-btn" data-tab="est-campanas">📈 Est. Campañas</button>
+      <button class="nav-tab-btn" data-tab="plantillas">💬 Plantillas</button>
     </div>
 
     <!-- Sub-nav campañas (visible solo en tabs de campañas) -->
@@ -676,6 +677,22 @@ tr:hover td { background: #f8fafc; }
 
       </div>
     </div><!-- /tab-est-campanas -->
+
+    <!-- ── Tab: Plantillas de WhatsApp ─────────────────────────── -->
+    <div id="tab-plantillas" class="tab-panel">
+      <div style="margin-top:1rem">
+        <div class="stat-section">
+          <h3 style="margin-bottom:.35rem">💬 Plantillas de WhatsApp aprobadas</h3>
+          <div style="font-size:.8rem;color:#64748b;margin-bottom:1rem">
+            Son las que Meta aprobó y se pueden elegir en la configuración de cada campaña.
+            <b>[Nombre]</b> se reemplaza por el nombre de cada lead. La lista se actualiza sola cada hora.
+          </div>
+          <div id="plantillas-list" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:1rem">
+            <div style="color:#94a3b8;font-size:.85rem">Cargando…</div>
+          </div>
+        </div>
+      </div>
+    </div><!-- /tab-plantillas -->
 
   </div><!-- /admin-main -->
 </div><!-- /section-panel -->
@@ -1265,8 +1282,41 @@ document.querySelectorAll('.nav-tab-btn').forEach(btn => {
     subnav.style.display = (t === 'campanas' || t === 'est-campanas') ? 'flex' : 'none';
     if (t === 'estadisticas' && allSessions.length > 0) renderEstadisticas();
     if (t === 'campanas' || t === 'est-campanas') campLoad();
+    if (t === 'plantillas') plantillasLoad();
   });
 });
+
+// ── Plantillas de WhatsApp (las sincroniza el bot en campanias_config/_plantillas) ──
+async function plantillasLoad() {
+  const cont = document.getElementById('plantillas-list');
+  try {
+    const snap = await getDocs(collection(db, 'campanias_config'));
+    const docs = {};
+    snap.docs.forEach(d => { docs[d.id] = d.data(); });
+    const lista = (docs._plantillas && docs._plantillas.lista) || [];
+    const actualizado = docs._plantillas?.actualizadoEn ? new Date(docs._plantillas.actualizadoEn).toLocaleString('es-AR') : '—';
+    if (!lista.length) { cont.innerHTML = '<div style="color:#94a3b8;font-size:.85rem">Sin plantillas sincronizadas todavía.</div>'; return; }
+    const usadaEn = name => Object.entries(docs)
+      .filter(([id, c]) => !id.startsWith('_') && c.plantilla === name)
+      .map(([, c]) => `${c.campana}${c.activa ? ' (activa)' : ''}`);
+    const conNombre = s => escHtml(s || '').replace(/\{\{1\}\}/g, '<b style="background:#fef9c3;padding:0 .2rem;border-radius:3px">[Nombre]</b>');
+    cont.innerHTML = lista.map(p => {
+      const usos = usadaEn(p.name);
+      const botones = (p.buttons || []).map(b =>
+        `<div style="margin-top:.4rem;border-top:1px solid #e2e8f0;padding-top:.45rem;text-align:center;color:#0284c7;font-weight:700;font-size:.82rem">🔗 ${escHtml(b.text)}${b.url ? `<div style="font-weight:400;font-size:.72rem;color:#64748b">${escHtml(b.url)}</div>` : ''}</div>`).join('');
+      return `<div style="border:1px solid #e2e8f0;border-radius:.7rem;padding:.9rem;background:#f8fafc">
+        <div style="display:flex;justify-content:space-between;gap:.5rem;align-items:baseline;margin-bottom:.6rem;flex-wrap:wrap">
+          <code style="font-weight:800;color:#0d3b66;font-size:.88rem">${escHtml(p.name)}</code>
+          <span style="font-size:.72rem;color:#64748b">${escHtml(p.category || '')} · ${escHtml(p.language || '')}</span>
+        </div>
+        <div style="background:#e7fbe0;border-radius:.6rem;padding:.7rem .8rem;box-shadow:0 1px 1px rgba(0,0,0,.06);font-size:.86rem;color:#1f2937;white-space:pre-wrap;line-height:1.4">${p.header ? `<div style="font-weight:800;margin-bottom:.45rem">${escHtml(p.header)}</div>` : ''}${conNombre(p.body)}${p.footer ? `<div style="margin-top:.5rem;font-size:.76rem;color:#64748b">${escHtml(p.footer)}</div>` : ''}${botones}</div>
+        <div style="margin-top:.55rem;font-size:.75rem;color:#475569">${usos.length ? 'Usada en: ' + usos.map(escHtml).join(', ') : 'No está asignada a ninguna campaña'}</div>
+      </div>`;
+    }).join('') + `<div style="grid-column:1/-1;font-size:.72rem;color:#94a3b8">Última sincronización con Meta: ${escHtml(actualizado)}</div>`;
+  } catch (err) {
+    cont.innerHTML = `<div style="color:#dc2626;font-size:.85rem">No se pudieron leer las plantillas: ${escHtml(err.message)}</div>`;
+  }
+}
 
 // ── Range selector ────────────────────────────────────────────
 let statsDays = 30;
@@ -1963,8 +2013,37 @@ function campRender() {
       return (va < vb ? -1 : va > vb ? 1 : 0) * campSortDir;
     });
 
-  document.getElementById('camp-leads-info').textContent =
-    `${filtered.length} leads${filtered.length !== campLeads.length ? ` (de ${campLeads.length} totales)` : ''}`;
+  // Resumen de la campaña seleccionada (o de todas): enviados / pendientes / descartados por motivo.
+  {
+    const base = selectedCampana ? campLeads.filter(l => l.campana === selectedCampana) : campLeads;
+    const esDesc = l => String(l.botEstado || '').startsWith('descartado') || l.botDescartado === true;
+    const env  = base.filter(l => l.botEstado === 'enviado');
+    const resp = env.filter(l => l.botRespondido === true).length;
+    const desc = base.filter(esDesc);
+    const pend = base.length - env.length - desc.length;
+    const motivo = l => {
+      const m = String(l.botMotivoDescarte || '').toLowerCase();
+      if (m.includes('exterior') || l.botEstado === 'descartado_extranjero') return 'Teléfono del exterior';
+      if (m.includes('duplicado')) return 'Teléfono repetido';
+      if (m.includes('invalido') || m.includes('inválido') || m.includes('sin telefono') || l.botEstado === 'descartado_numero') return 'Teléfono inválido';
+      return 'Otro motivo';
+    };
+    const porMotivo = {};
+    desc.forEach(l => { const k = motivo(l); porMotivo[k] = (porMotivo[k] || 0) + 1; });
+    const chip = (txt, val, color, bg) =>
+      `<span style="display:inline-flex;gap:.35rem;align-items:center;padding:.28rem .7rem;border-radius:20px;background:${bg};color:${color};font-weight:700;font-size:.78rem">${txt} <b style="font-size:.88rem">${val}</b></span>`;
+    const pct = (n) => base.length ? ` (${Math.round(n / base.length * 100)}%)` : '';
+    document.getElementById('camp-leads-info').innerHTML = `
+      <div style="display:flex;gap:.45rem;flex-wrap:wrap;align-items:center;margin-bottom:.35rem">
+        ${chip(selectedCampana ? escHtml(selectedCampana) : 'Todas las campañas', base.length + ' leads', '#0d3b66', '#e0f2fe')}
+        ${chip('✓ Enviados', env.length + pct(env.length), '#166534', '#dcfce7')}
+        ${chip('💬 Respondieron', resp + (env.length ? ` (${Math.round(resp / env.length * 100)}% de enviados)` : ''), '#6d28d9', '#ede9fe')}
+        ${chip('⏳ Pendientes', pend + pct(pend), '#92400e', '#fef3c7')}
+        ${chip('✗ Descartados', desc.length + pct(desc.length), '#991b1b', '#fee2e2')}
+        ${Object.entries(porMotivo).sort((a, b) => b[1] - a[1]).map(([k, v]) => chip('· ' + escHtml(k), v, '#991b1b', '#fff1f2')).join('')}
+      </div>
+      ${filtered.length !== base.length ? `<div style="font-size:.78rem;color:#64748b">Mostrando ${filtered.length} según el filtro / búsqueda.</div>` : ''}`;
+  }
 
   const estadoBadge = e => {
     if (e === 'enviado')    return '<span style="color:#16a34a;font-weight:700">✓ Enviado</span>';
