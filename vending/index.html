@@ -469,14 +469,14 @@ thead th.mes0-col { background: #7d4e00 !important; border-right: 2px solid #e8c
     <h2 style="margin-top:24px;">💳 Forma de Pago</h2>
     <div class="pago-section">
       <div class="pago-options" id="pago-options">
-        <div class="pago-btn" id="pago-contado" onclick="setPago('contado')">
+        <div class="pago-btn selected" id="pago-contado" onclick="setPago('contado')">
           <span class="pb-icon">💵</span>
           <div>
             <div class="pb-title">Contado</div>
             <div class="pb-desc">50% anticipo + 50% antes de entrega</div>
           </div>
         </div>
-        <div class="pago-btn selected" id="pago-financiado" onclick="setPago('financiado')">
+        <div class="pago-btn" id="pago-financiado" onclick="setPago('financiado')">
           <span class="pb-icon">📋</span>
           <div>
             <div class="pb-title">Financiado</div>
@@ -507,7 +507,7 @@ thead th.mes0-col { background: #7d4e00 !important; border-right: 2px solid #e8c
 
       <div class="field">
         <label>Máquina seleccionada (USD)</label>
-        <input type="number" id="maquina" value="25800" readonly>
+        <input type="number" id="maquina" value="23500" readonly>
         <div class="hint">Se carga automáticamente según la forma de pago</div>
         <div class="derived" id="maquina-ars"></div>
       </div>
@@ -638,7 +638,7 @@ const MES_LABELS    = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oc
 const UTIL_SEASONAL = [100,100,80,70,60,50,50,60,70,80,90,100];
 const ARRANQUE_CURVE= [25,50,75,100,100,100,100,100,100,100,100,100];
 
-let pagoMode     = 'financiado';
+let pagoMode     = 'contado';
 let locacionMode = 'fijo';
 let currency     = 'USD';
 let utilArr      = null;
