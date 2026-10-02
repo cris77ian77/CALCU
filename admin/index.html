@@ -613,6 +613,18 @@ tr:hover td { background: #f8fafc; }
     <div id="tab-est-campanas" class="tab-panel">
       <div style="margin-top:1rem">
 
+        <!-- Configuración de envío por campaña (la lee el bot de WhatsApp) -->
+        <div class="stat-section" style="margin-bottom:1.25rem">
+          <h3 style="margin-bottom:.35rem">⚙️ Configuración de envío</h3>
+          <div style="font-size:.8rem;color:#64748b;margin-bottom:.85rem">
+            El bot de WhatsApp envía cada campaña <b>activa</b> de lunes a viernes, a partir del horario indicado
+            (hora Argentina), hasta la cantidad diaria, siguiendo el orden de prioridad de los leads pendientes.
+          </div>
+          <div id="campcfg-list" style="display:grid;gap:.75rem">
+            <div style="color:#94a3b8;font-size:.85rem">Cargando…</div>
+          </div>
+        </div>
+
         <!-- Stat cards campañas -->
         <div class="stats-grid" id="estcamp-cards" style="grid-template-columns:repeat(4,1fr);margin-bottom:1.25rem">
           <div class="stat-card">
@@ -692,7 +704,7 @@ tr:hover td { background: #f8fafc; }
 import { initializeApp }      from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js';
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged }
                                from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
-import { getFirestore, collection, getDocs, doc, getDoc, deleteDoc, query, where, orderBy, writeBatch, serverTimestamp }
+import { getFirestore, collection, getDocs, doc, getDoc, setDoc, deleteDoc, query, where, orderBy, writeBatch, serverTimestamp }
                                from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
 import { firebaseConfig }      from '../auth/firebase-config.js';
 
@@ -1708,8 +1720,8 @@ function renderEstCampanas() {
   const data = selectedCampana ? campLeads.filter(l => l.campana === selectedCampana) : campLeads;
   const total = data.length;
   const cont  = data.filter(l => l.botEstado === 'enviado').length;
-  const desc  = data.filter(l => l.botEstado === 'descartado').length;
-  const pend  = data.filter(l => l.botEstado !== 'enviado' && l.botEstado !== 'descartado').length;
+  const desc  = data.filter(l => String(l.botEstado||'').startsWith('descartado')).length;
+  const pend  = data.filter(l => l.botEstado !== 'enviado' && !String(l.botEstado||'').startsWith('descartado')).length;
   const pct   = total ? Math.round(cont / total * 100) : 0;
 
   document.getElementById('ec-total').textContent = total;
@@ -1727,8 +1739,8 @@ function renderEstCampanas() {
   tbody.innerHTML = campanas.map(c => {
     const leads   = campLeads.filter(l => l.campana === c);
     const cnt     = leads.filter(l => l.botEstado === 'enviado').length;
-    const dsc     = leads.filter(l => l.botEstado === 'descartado').length;
-    const pd      = leads.filter(l => l.botEstado !== 'enviado' && l.botEstado !== 'descartado').length;
+    const dsc     = leads.filter(l => String(l.botEstado||'').startsWith('descartado')).length;
+    const pd      = leads.filter(l => l.botEstado !== 'enviado' && !String(l.botEstado||'').startsWith('descartado')).length;
     const resp    = leads.filter(l => l.botRespondido === true).length;
     const p       = leads.length ? Math.round(cnt / leads.length * 100) : 0;
     const pResp   = cnt ? Math.round(resp / cnt * 100) : 0;
@@ -1837,6 +1849,83 @@ async function campImport() {
   }
 }
 
+// ── Configuración de envío por campaña ─────────────────────────
+// Se guarda en campanias_config/{slug}. El documento especial "_plantillas" lo
+// mantiene el bot con la lista de plantillas de WhatsApp aprobadas por Meta.
+const campSlug = s => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+  .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 120);
+
+async function campCfgLoad() {
+  const cont = document.getElementById('campcfg-list');
+  const campanas = [...new Set(campLeads.map(l => l.campana).filter(Boolean))].sort();
+  if (!campanas.length) { cont.innerHTML = '<div style="color:#94a3b8;font-size:.85rem">Sin campañas cargadas</div>'; return; }
+  let cfgs = {}, plantillas = [];
+  try {
+    const snap = await getDocs(collection(db, 'campanias_config'));
+    snap.docs.forEach(d => { cfgs[d.id] = d.data(); });
+    plantillas = (cfgs._plantillas && cfgs._plantillas.lista) || [];
+  } catch (err) {
+    cont.innerHTML = `<div style="color:#dc2626;font-size:.85rem">No se pudo leer la configuración: ${escHtml(err.message)}</div>`;
+    return;
+  }
+  const inp = 'padding:.38rem .6rem;border:1px solid #cbd5e1;border-radius:.4rem;font-size:.82rem';
+  cont.innerHTML = campanas.map(c => {
+    const id = campSlug(c);
+    const cfg = cfgs[id] || {};
+    const leads = campLeads.filter(l => l.campana === c);
+    const pend = leads.filter(l => l.botEstado !== 'enviado' && !String(l.botEstado || '').startsWith('descartado')).length;
+    const opts = ['<option value="">— elegir plantilla —</option>'].concat(plantillas.map(p =>
+      `<option value="${escHtml(p.name)}" ${cfg.plantilla === p.name ? 'selected' : ''}>${escHtml(p.name)}</option>`)).join('');
+    const pl = plantillas.find(p => p.name === cfg.plantilla);
+    const ult = cfg.ultimaCorrida ? `Última corrida: ${escHtml(cfg.ultimaCorrida)} · ${cfg.enviadosUltimaCorrida ?? 0} enviados` : 'Todavía no corrió';
+    return `<div data-cfg="${escHtml(id)}" data-camp="${escHtml(c)}" style="border:1px solid #e2e8f0;border-radius:.6rem;padding:.85rem 1rem;background:#fff">
+      <div style="display:flex;justify-content:space-between;gap:.5rem;flex-wrap:wrap;margin-bottom:.6rem">
+        <div style="font-weight:700;color:#0d3b66">${escHtml(c)}</div>
+        <div style="font-size:.78rem;color:#64748b">${pend} pendientes · ${ult}</div>
+      </div>
+      <div style="display:flex;gap:.75rem;flex-wrap:wrap;align-items:flex-end">
+        <label style="font-size:.75rem;color:#475569;display:grid;gap:.2rem">Plantilla
+          <select class="cfg-plantilla" style="${inp};min-width:240px">${opts}</select></label>
+        <label style="font-size:.75rem;color:#475569;display:grid;gap:.2rem">Horario de envío (AR)
+          <input type="time" class="cfg-hora" value="${escHtml(cfg.horaEnvio || '11:00')}" style="${inp}"></label>
+        <label style="font-size:.75rem;color:#475569;display:grid;gap:.2rem">Cantidad por día hábil
+          <input type="number" class="cfg-cantidad" min="1" max="500" value="${cfg.cantidadPorDia ?? 50}" style="${inp};width:110px"></label>
+        <label style="font-size:.8rem;color:#475569;display:flex;gap:.35rem;align-items:center;padding-bottom:.4rem">
+          <input type="checkbox" class="cfg-activa" ${cfg.activa ? 'checked' : ''}> Activa</label>
+        <button class="cfg-guardar" style="padding:.42rem 1rem;border:none;border-radius:.4rem;background:#0ea5e9;color:#fff;font-weight:700;font-size:.82rem;cursor:pointer">Guardar</button>
+      </div>
+      <div class="cfg-preview" style="margin-top:.6rem;font-size:.78rem;color:#64748b;white-space:pre-wrap;${pl ? '' : 'display:none'}">${pl ? escHtml((pl.header ? pl.header + '\n\n' : '') + (pl.body || '')) : ''}</div>
+    </div>`;
+  }).join('');
+
+  cont.querySelectorAll('[data-cfg]').forEach(card => {
+    const prev = card.querySelector('.cfg-preview');
+    card.querySelector('.cfg-plantilla').addEventListener('change', e => {
+      const pl = plantillas.find(p => p.name === e.target.value);
+      prev.style.display = pl ? '' : 'none';
+      prev.textContent = pl ? (pl.header ? pl.header + '\n\n' : '') + (pl.body || '') : '';
+    });
+    card.querySelector('.cfg-guardar').addEventListener('click', async () => {
+      const plantilla = card.querySelector('.cfg-plantilla').value;
+      const horaEnvio = card.querySelector('.cfg-hora').value;
+      const cantidadPorDia = parseInt(card.querySelector('.cfg-cantidad').value, 10);
+      const activa = card.querySelector('.cfg-activa').checked;
+      if (activa && !plantilla) { toast('Elegí una plantilla antes de activar la campaña'); return; }
+      if (!/^\d{2}:\d{2}$/.test(horaEnvio)) { toast('Horario inválido'); return; }
+      if (!(cantidadPorDia >= 1 && cantidadPorDia <= 500)) { toast('La cantidad debe estar entre 1 y 500'); return; }
+      try {
+        await setDoc(doc(db, 'campanias_config', card.dataset.cfg), {
+          campana: card.dataset.camp, plantilla, horaEnvio, cantidadPorDia, activa,
+          actualizadoEn: serverTimestamp(),
+        }, { merge: true });
+        toast('✓ Configuración guardada');
+      } catch (err) {
+        toast('Error: ' + err.message);
+      }
+    });
+  });
+}
+
 // ── Cargar leads desde Firestore ──────────────────────────────
 async function campLoad() {
   try {
@@ -1845,6 +1934,7 @@ async function campLoad() {
     campUpdateSubnav();
     campRender();
     renderEstCampanas();
+    campCfgLoad();
   } catch(err) {
     document.getElementById('camp-leads-tbody').innerHTML =
       `<tr><td colspan="6" style="padding:2rem;text-align:center;color:#dc2626">Error: ${err.message}</td></tr>`;
@@ -1858,7 +1948,7 @@ function campRender() {
   const filtered = campLeads
     .filter(l => {
       if (selectedCampana && l.campana !== selectedCampana) return false;
-      if (filterEstado    && l.botEstado !== filterEstado)  return false;
+      if (filterEstado === 'descartado' ? !String(l.botEstado||'').startsWith('descartado') : (filterEstado === 'pendiente' ? (l.botEstado === 'enviado' || String(l.botEstado||'').startsWith('descartado')) : (filterEstado && l.botEstado !== filterEstado))) return false;
       if (q) {
         const hay = [l.contacto, l.email, l.telefono, l.wa, l.modelo, l.ubicacion, l.campana, l.fechaConsulta].join(' ').toLowerCase();
         if (!hay.includes(q)) return false;
@@ -1878,7 +1968,7 @@ function campRender() {
 
   const estadoBadge = e => {
     if (e === 'enviado')    return '<span style="color:#16a34a;font-weight:700">✓ Enviado</span>';
-    if (e === 'descartado') return '<span style="color:#dc2626;font-weight:700">✗ Descartado</span>';
+    if (String(e||'').startsWith('descartado')) return '<span style="color:#dc2626;font-weight:700">✗ Descartado</span>';
     return '<span style="color:#d97706;font-weight:700">⏳ Pendiente</span>';
   };
   const fmtTs = ts => {
