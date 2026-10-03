@@ -434,6 +434,7 @@ tr:hover td { background: #f8fafc; }
       <button class="nav-tab-btn" data-tab="est-campanas">📈 Est. Campañas</button>
       <button class="nav-tab-btn" data-tab="plantillas">💬 Plantillas</button>
       <button class="nav-tab-btn" data-tab="blacklist">⛔ Blacklist</button>
+      <button class="nav-tab-btn" data-tab="polair">🏢 Polair</button>
     </div>
 
     <!-- Sub-nav campañas (visible solo en tabs de campañas) -->
@@ -721,6 +722,27 @@ tr:hover td { background: #f8fafc; }
         </div>
       </div>
     </div><!-- /tab-blacklist -->
+
+    <!-- ── Tab: Teléfonos de Polair ────────────────────────────── -->
+    <div id="tab-polair" class="tab-panel">
+      <div style="margin-top:1rem">
+        <div class="stat-section">
+          <h3 style="margin-bottom:.35rem">🏢 Polair: teléfonos de la empresa</h3>
+          <div style="font-size:.8rem;color:#64748b;margin-bottom:.9rem">
+            No es la blacklist. El bot les responde como a un cliente (para hacer pruebas) y les llegan las
+            pruebas de plantillas, pero <b>nunca reciben campañas masivas</b> y no cuentan en estadísticas ni exportaciones.
+          </div>
+          <div style="display:flex;gap:.6rem;flex-wrap:wrap;align-items:flex-end;margin-bottom:.9rem;padding:.75rem;border:1px dashed #cbd5e1;border-radius:.6rem;background:#f8fafc">
+            <label style="font-size:.75rem;color:#475569;display:grid;gap:.2rem">Teléfono
+              <input id="pol-nuevo-tel" placeholder="341 315-9550" style="padding:.38rem .6rem;border:1px solid #cbd5e1;border-radius:.4rem;font-size:.82rem;width:160px"></label>
+            <label style="font-size:.75rem;color:#475569;display:grid;gap:.2rem;flex:1;min-width:200px">Quién es
+              <input id="pol-nuevo-nombre" placeholder="Nombre / área" style="padding:.38rem .6rem;border:1px solid #cbd5e1;border-radius:.4rem;font-size:.82rem"></label>
+            <button id="pol-agregar" style="padding:.42rem 1rem;border:none;border-radius:.4rem;background:#0d3b66;color:#fff;font-weight:700;font-size:.82rem;cursor:pointer">Agregar a Polair</button>
+          </div>
+          <div id="pol-lista" style="overflow-x:auto"><div style="color:#94a3b8;font-size:.85rem">Cargando…</div></div>
+        </div>
+      </div>
+    </div><!-- /tab-polair -->
 
   </div><!-- /admin-main -->
 </div><!-- /section-panel -->
@@ -1282,6 +1304,8 @@ function badgeBot(u) {
     return `<span style="background:#f0fdf4;color:#166534;border:1px solid #bbf7d0;border-radius:20px;padding:2px 9px;font-size:.72rem;font-weight:700;white-space:nowrap">✓ Enviado</span>`;
   if (estado === 'descartado_numero')
     return `<span style="background:#fff7ed;color:#c2410c;border:1px solid #fed7aa;border-radius:20px;padding:2px 9px;font-size:.72rem;font-weight:700;white-space:nowrap">✗ N° erróneo</span>`;
+  if (estado === 'descartado_polair')
+    return `<span style="background:#e0f2fe;color:#075985;border:1px solid #bae6fd;border-radius:20px;padding:2px 9px;font-size:.72rem;font-weight:700;white-space:nowrap">🏢 Polair</span>`;
   if (estado === 'descartado_blacklist')
     return `<span style="background:#fee2e2;color:#991b1b;border:1px solid #fecaca;border-radius:20px;padding:2px 9px;font-size:.72rem;font-weight:700;white-space:nowrap">⛔ Blacklist</span>`;
   if (estado === 'descartado_extranjero')
@@ -1314,6 +1338,7 @@ document.querySelectorAll('.nav-tab-btn').forEach(btn => {
     if (t === 'campanas' || t === 'est-campanas') campLoad();
     if (t === 'plantillas') plantillasLoad();
     if (t === 'blacklist') blacklistLoad();
+    if (t === 'polair') polairLoad();
   });
 });
 
@@ -1360,7 +1385,6 @@ const BL_MOTIVOS = {
   fuera_catalogo: 'Buscaba algo que no fabricamos',
   cubitos: 'Busca hielo en cubo',
   whatsapp_no_entrega: 'WhatsApp no le entrega',
-  telefono_polair: 'Teléfono de Polair (interno)',
   manual: 'Cargado a mano',
 };
 // Mismo criterio que canonicalPhone() del bot: 10 dígitos sin 54/9/0/15.
@@ -1435,6 +1459,49 @@ document.getElementById('bl-agregar').addEventListener('click', async () => {
     document.getElementById('bl-nuevo-detalle').value = '';
     toast('Agregado a la blacklist');
     blacklistLoad();
+  } catch (err) { toast('No se pudo agregar: ' + err.message); }
+});
+
+// ── Lista Polair (colección "telefonos_polair", id = teléfono de 10 dígitos) ──
+async function polairLoad() {
+  const lista = document.getElementById('pol-lista');
+  let docs = [];
+  try {
+    const snap = await getDocs(collection(db, 'telefonos_polair'));
+    docs = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => a.id.localeCompare(b.id));
+  } catch (err) {
+    lista.innerHTML = `<div style="color:#dc2626;font-size:.85rem">No se pudo leer la lista: ${escHtml(err.message)}</div>`;
+    return;
+  }
+  const th = 'text-align:left;padding:.45rem .55rem;font-size:.72rem;color:#64748b;text-transform:uppercase;border-bottom:1px solid #e2e8f0';
+  const td = 'padding:.45rem .55rem;font-size:.82rem;border-bottom:1px solid #f1f5f9';
+  lista.innerHTML = `<div style="font-size:.78rem;color:#475569;margin-bottom:.4rem">${docs.length} teléfonos</div>
+    <table style="width:100%;border-collapse:collapse"><thead><tr><th style="${th}">Teléfono</th><th style="${th}">Quién es</th><th style="${th}">Agregado</th><th style="${th}"></th></tr></thead>
+    <tbody>${docs.map(p => `<tr>
+      <td style="${td};white-space:nowrap"><a href="https://wa.me/${escHtml(p.telefono || '549' + p.id)}" target="_blank" style="color:#0284c7">${escHtml(p.id)}</a></td>
+      <td style="${td}">${escHtml(p.nombre || '')}</td>
+      <td style="${td};color:#64748b;font-size:.74rem">${escHtml(String(p.agregadoEn || '').slice(0, 10))}</td>
+      <td style="${td}"><button data-pol-quitar="${escHtml(p.id)}" style="padding:.2rem .55rem;border:1px solid #cbd5e1;border-radius:.35rem;background:#fff;font-size:.74rem;cursor:pointer">Quitar</button></td>
+    </tr>`).join('')}</tbody></table>`;
+  lista.querySelectorAll('[data-pol-quitar]').forEach(btn => btn.addEventListener('click', async () => {
+    const id = btn.dataset.polQuitar;
+    if (!confirm(`¿Quitar ${id} de la lista Polair? Va a poder recibir campañas como cualquier cliente.`)) return;
+    try { await deleteDoc(doc(db, 'telefonos_polair', id)); toast('Quitado de la lista Polair'); polairLoad(); }
+    catch (err) { toast('No se pudo quitar: ' + err.message); }
+  }));
+}
+document.getElementById('pol-agregar').addEventListener('click', async () => {
+  const id = blCanon(document.getElementById('pol-nuevo-tel').value);
+  if (!id) { toast('Teléfono inválido: tiene que ser un celular argentino de 10 dígitos'); return; }
+  try {
+    await setDoc(doc(db, 'telefonos_polair', id), {
+      telefono: '549' + id, nombre: document.getElementById('pol-nuevo-nombre').value.trim(),
+      detalle: '', fuente: 'Panel (a mano)', agregadoEn: new Date().toISOString(),
+    }, { merge: true });
+    document.getElementById('pol-nuevo-tel').value = '';
+    document.getElementById('pol-nuevo-nombre').value = '';
+    toast('Agregado a la lista Polair');
+    polairLoad();
   } catch (err) { toast('No se pudo agregar: ' + err.message); }
 });
 
@@ -2145,6 +2212,7 @@ function campRender() {
     const pend = base.length - env.length - desc.length;
     const motivo = l => {
       const m = String(l.botMotivoDescarte || '').toLowerCase();
+      if (m.includes('polair') || l.botEstado === 'descartado_polair') return 'Teléfono de Polair';
       if (m.includes('blacklist') || l.botEstado === 'descartado_blacklist') return 'Blacklist';
       if (m.includes('exterior') || l.botEstado === 'descartado_extranjero') return 'Teléfono del exterior';
       if (m.includes('duplicado')) return 'Teléfono repetido';
