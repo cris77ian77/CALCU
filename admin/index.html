@@ -433,6 +433,7 @@ tr:hover td { background: #f8fafc; }
       <button class="nav-tab-btn" data-tab="campanas">📋 Campañas</button>
       <button class="nav-tab-btn" data-tab="est-campanas">📈 Est. Campañas</button>
       <button class="nav-tab-btn" data-tab="plantillas">💬 Plantillas</button>
+      <button class="nav-tab-btn" data-tab="blacklist">⛔ Blacklist</button>
     </div>
 
     <!-- Sub-nav campañas (visible solo en tabs de campañas) -->
@@ -693,6 +694,33 @@ tr:hover td { background: #f8fafc; }
         </div>
       </div>
     </div><!-- /tab-plantillas -->
+
+    <!-- ── Tab: Blacklist ──────────────────────────────────────── -->
+    <div id="tab-blacklist" class="tab-panel">
+      <div style="margin-top:1rem">
+        <div class="stat-section">
+          <h3 style="margin-bottom:.35rem">⛔ Blacklist: números a los que nunca se les manda una campaña</h3>
+          <div style="font-size:.8rem;color:#64748b;margin-bottom:.9rem">
+            Se filtran en <b>todos</b> los envíos masivos, aunque estén dentro de una campaña.
+            El bot agrega solo a quien pide que no le escriban, se molesta o es un número equivocado,
+            y cada noche se suman los números a los que WhatsApp no les entrega.
+            Si alguien de acá vuelve a escribir, el bot le responde igual.
+          </div>
+          <div id="bl-resumen" style="display:flex;gap:.45rem;flex-wrap:wrap;margin-bottom:.9rem"></div>
+          <div style="display:flex;gap:.6rem;flex-wrap:wrap;align-items:flex-end;margin-bottom:.9rem;padding:.75rem;border:1px dashed #cbd5e1;border-radius:.6rem;background:#f8fafc">
+            <label style="font-size:.75rem;color:#475569;display:grid;gap:.2rem">Teléfono
+              <input id="bl-nuevo-tel" placeholder="341 555-1234" style="padding:.38rem .6rem;border:1px solid #cbd5e1;border-radius:.4rem;font-size:.82rem;width:160px"></label>
+            <label style="font-size:.75rem;color:#475569;display:grid;gap:.2rem">Motivo
+              <select id="bl-nuevo-motivo" style="padding:.38rem .6rem;border:1px solid #cbd5e1;border-radius:.4rem;font-size:.82rem"></select></label>
+            <label style="font-size:.75rem;color:#475569;display:grid;gap:.2rem;flex:1;min-width:200px">Detalle
+              <input id="bl-nuevo-detalle" placeholder="qué dijo / por qué" style="padding:.38rem .6rem;border:1px solid #cbd5e1;border-radius:.4rem;font-size:.82rem"></label>
+            <button id="bl-agregar" style="padding:.42rem 1rem;border:none;border-radius:.4rem;background:#dc2626;color:#fff;font-weight:700;font-size:.82rem;cursor:pointer">Agregar a la blacklist</button>
+          </div>
+          <input id="bl-buscar" placeholder="Buscar por teléfono, nombre o detalle…" style="padding:.45rem .7rem;border:1px solid #cbd5e1;border-radius:.4rem;font-size:.84rem;width:100%;max-width:380px;margin-bottom:.7rem">
+          <div id="bl-lista" style="overflow-x:auto"><div style="color:#94a3b8;font-size:.85rem">Cargando…</div></div>
+        </div>
+      </div>
+    </div><!-- /tab-blacklist -->
 
   </div><!-- /admin-main -->
 </div><!-- /section-panel -->
@@ -1254,6 +1282,8 @@ function badgeBot(u) {
     return `<span style="background:#f0fdf4;color:#166534;border:1px solid #bbf7d0;border-radius:20px;padding:2px 9px;font-size:.72rem;font-weight:700;white-space:nowrap">✓ Enviado</span>`;
   if (estado === 'descartado_numero')
     return `<span style="background:#fff7ed;color:#c2410c;border:1px solid #fed7aa;border-radius:20px;padding:2px 9px;font-size:.72rem;font-weight:700;white-space:nowrap">✗ N° erróneo</span>`;
+  if (estado === 'descartado_blacklist')
+    return `<span style="background:#fee2e2;color:#991b1b;border:1px solid #fecaca;border-radius:20px;padding:2px 9px;font-size:.72rem;font-weight:700;white-space:nowrap">⛔ Blacklist</span>`;
   if (estado === 'descartado_extranjero')
     return `<span style="background:#fff7ed;color:#c2410c;border:1px solid #fed7aa;border-radius:20px;padding:2px 9px;font-size:.72rem;font-weight:700;white-space:nowrap">✗ Extranjero</span>`;
   return `<span style="background:#f1f5f9;color:#94a3b8;border:1px solid #e2e8f0;border-radius:20px;padding:2px 9px;font-size:.72rem;font-weight:700">Pendiente</span>`;
@@ -1283,6 +1313,7 @@ document.querySelectorAll('.nav-tab-btn').forEach(btn => {
     if (t === 'estadisticas' && allSessions.length > 0) renderEstadisticas();
     if (t === 'campanas' || t === 'est-campanas') campLoad();
     if (t === 'plantillas') plantillasLoad();
+    if (t === 'blacklist') blacklistLoad();
   });
 });
 
@@ -1317,6 +1348,94 @@ async function plantillasLoad() {
     cont.innerHTML = `<div style="color:#dc2626;font-size:.85rem">No se pudieron leer las plantillas: ${escHtml(err.message)}</div>`;
   }
 }
+
+// ── Blacklist (colección "blacklist", id = teléfono de 10 dígitos) ──
+const BL_MOTIVOS = {
+  pidio_no_contactar: 'Pidió que no lo contactemos',
+  molesto: 'Se molestó con los mensajes',
+  no_interesado_definitivo: 'No le interesa (definitivo)',
+  numero_equivocado: 'Número equivocado',
+  no_es_celular: 'No es un celular',
+  inviable_capacidad: 'Inviable: menos de 500 kg/día',
+  fuera_catalogo: 'Buscaba algo que no fabricamos',
+  cubitos: 'Busca hielo en cubo',
+  whatsapp_no_entrega: 'WhatsApp no le entrega',
+  manual: 'Cargado a mano',
+};
+// Mismo criterio que canonicalPhone() del bot: 10 dígitos sin 54/9/0/15.
+function blCanon(raw) {
+  let d = String(raw || '').replace(/[^0-9]/g, '');
+  if (d.startsWith('549') && d.length === 13) d = d.slice(3);
+  else if (d.startsWith('54') && d.length >= 12) d = d.slice(2);
+  if (d.startsWith('0')) d = d.slice(1);
+  const m = d.match(/^(\d{2,4})15(\d{6,8})$/);
+  if (m && (m[1] + m[2]).length === 10) d = m[1] + m[2];
+  if (d.length === 11 && d[0] === '9') d = d.slice(1);
+  return d.length === 10 ? d : '';
+}
+let blDocs = [];
+async function blacklistLoad() {
+  const lista = document.getElementById('bl-lista');
+  const sel = document.getElementById('bl-nuevo-motivo');
+  if (!sel.options.length) sel.innerHTML = Object.entries(BL_MOTIVOS).map(([k, v]) => `<option value="${k}" ${k === 'manual' ? 'selected' : ''}>${escHtml(v)}</option>`).join('');
+  try {
+    const snap = await getDocs(collection(db, 'blacklist'));
+    blDocs = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => String(b.agregadoEn || '').localeCompare(String(a.agregadoEn || '')));
+  } catch (err) {
+    lista.innerHTML = `<div style="color:#dc2626;font-size:.85rem">No se pudo leer la blacklist: ${escHtml(err.message)}</div>`;
+    return;
+  }
+  const por = {};
+  blDocs.forEach(b => { por[b.motivo] = (por[b.motivo] || 0) + 1; });
+  document.getElementById('bl-resumen').innerHTML =
+    `<span style="padding:.28rem .7rem;border-radius:20px;background:#fee2e2;color:#991b1b;font-weight:700;font-size:.78rem">Total <b>${blDocs.length}</b></span>` +
+    Object.entries(por).sort((a, b) => b[1] - a[1]).map(([k, v]) =>
+      `<span style="padding:.28rem .7rem;border-radius:20px;background:#f1f5f9;color:#334155;font-weight:700;font-size:.78rem">${escHtml(BL_MOTIVOS[k] || k)} <b>${v}</b></span>`).join('');
+  blacklistRender();
+}
+function blacklistRender() {
+  const q = (document.getElementById('bl-buscar').value || '').toLowerCase().trim();
+  const filas = blDocs.filter(b => !q || [b.id, b.telefono, b.nombre, b.detalle, b.motivoTexto].join(' ').toLowerCase().includes(q));
+  const th = 'text-align:left;padding:.45rem .55rem;font-size:.72rem;color:#64748b;text-transform:uppercase;border-bottom:1px solid #e2e8f0';
+  const td = 'padding:.45rem .55rem;font-size:.8rem;border-bottom:1px solid #f1f5f9;vertical-align:top';
+  document.getElementById('bl-lista').innerHTML = `<table style="width:100%;border-collapse:collapse">
+    <thead><tr><th style="${th}">Teléfono</th><th style="${th}">Nombre</th><th style="${th}">Motivo</th><th style="${th}">Detalle</th><th style="${th}">Fuente</th><th style="${th}">Fecha</th><th style="${th}"></th></tr></thead>
+    <tbody>${filas.slice(0, 500).map(b => `<tr>
+      <td style="${td};white-space:nowrap"><a href="https://wa.me/${escHtml(b.telefono || '549' + b.id)}" target="_blank" style="color:#0284c7">${escHtml(b.id)}</a></td>
+      <td style="${td}">${escHtml(b.nombre || '')}</td>
+      <td style="${td};white-space:nowrap">${escHtml(BL_MOTIVOS[b.motivo] || b.motivoTexto || b.motivo || '')}</td>
+      <td style="${td};color:#475569">${escHtml(b.detalle || '')}</td>
+      <td style="${td};color:#64748b;font-size:.74rem">${escHtml(b.fuente || '')}</td>
+      <td style="${td};white-space:nowrap;color:#64748b;font-size:.74rem">${escHtml(String(b.agregadoEn || '').slice(0, 10))}</td>
+      <td style="${td}"><button data-bl-quitar="${escHtml(b.id)}" style="padding:.2rem .55rem;border:1px solid #cbd5e1;border-radius:.35rem;background:#fff;font-size:.74rem;cursor:pointer">Quitar</button></td>
+    </tr>`).join('')}</tbody></table>
+    ${filas.length > 500 ? `<div style="font-size:.75rem;color:#94a3b8;margin-top:.4rem">Mostrando 500 de ${filas.length}. Usá el buscador.</div>` : ''}
+    ${!filas.length ? '<div style="color:#94a3b8;font-size:.85rem;padding:.6rem">Sin resultados.</div>' : ''}`;
+  document.querySelectorAll('[data-bl-quitar]').forEach(btn => btn.addEventListener('click', async () => {
+    const id = btn.dataset.blQuitar;
+    if (!confirm(`¿Quitar ${id} de la blacklist? Va a poder volver a recibir campañas.`)) return;
+    try { await deleteDoc(doc(db, 'blacklist', id)); toast('Quitado de la blacklist'); blacklistLoad(); }
+    catch (err) { toast('No se pudo quitar: ' + err.message); }
+  }));
+}
+document.getElementById('bl-buscar').addEventListener('input', blacklistRender);
+document.getElementById('bl-agregar').addEventListener('click', async () => {
+  const id = blCanon(document.getElementById('bl-nuevo-tel').value);
+  if (!id) { toast('Teléfono inválido: tiene que ser un celular argentino de 10 dígitos'); return; }
+  const motivo = document.getElementById('bl-nuevo-motivo').value;
+  try {
+    await setDoc(doc(db, 'blacklist', id), {
+      telefono: '549' + id, motivo, motivoTexto: BL_MOTIVOS[motivo] || motivo,
+      detalle: document.getElementById('bl-nuevo-detalle').value.trim(),
+      nombre: '', fuente: 'Panel (a mano)', agregadoEn: new Date().toISOString(),
+      agregadoPor: auth.currentUser?.email || '',
+    }, { merge: true });
+    document.getElementById('bl-nuevo-tel').value = '';
+    document.getElementById('bl-nuevo-detalle').value = '';
+    toast('Agregado a la blacklist');
+    blacklistLoad();
+  } catch (err) { toast('No se pudo agregar: ' + err.message); }
+});
 
 // ── Range selector ────────────────────────────────────────────
 let statsDays = 30;
@@ -1930,7 +2049,7 @@ async function campCfgLoad() {
     const ult = cfg.ultimaCorrida ? `Última corrida: ${escHtml(cfg.ultimaCorrida)} · ${cfg.enviadosUltimaCorrida ?? 0} enviados` : 'Todavía no corrió';
     return `<div data-cfg="${escHtml(id)}" data-camp="${escHtml(c)}" style="border:1px solid #e2e8f0;border-radius:.6rem;padding:.85rem 1rem;background:#fff">
       <div style="display:flex;justify-content:space-between;gap:.5rem;flex-wrap:wrap;margin-bottom:.6rem">
-        <div style="font-weight:700;color:#0d3b66">${escHtml(c)}</div>
+        <div style="font-weight:700;color:#0d3b66">${escHtml(c)}${cfg.plantilla ? '' : ' <span style="margin-left:.35rem;padding:.1rem .5rem;border-radius:20px;background:#fef3c7;color:#92400e;font-size:.72rem;font-weight:700;vertical-align:middle">⚠️ Sin plantilla todavía</span>'}</div>
         <div style="font-size:.78rem;color:#64748b">${pend} pendientes · ${ult}</div>
       </div>
       <div style="display:flex;gap:.75rem;flex-wrap:wrap;align-items:flex-end">
@@ -2023,6 +2142,7 @@ function campRender() {
     const pend = base.length - env.length - desc.length;
     const motivo = l => {
       const m = String(l.botMotivoDescarte || '').toLowerCase();
+      if (m.includes('blacklist') || l.botEstado === 'descartado_blacklist') return 'Blacklist';
       if (m.includes('exterior') || l.botEstado === 'descartado_extranjero') return 'Teléfono del exterior';
       if (m.includes('duplicado')) return 'Teléfono repetido';
       if (m.includes('invalido') || m.includes('inválido') || m.includes('sin telefono') || l.botEstado === 'descartado_numero') return 'Teléfono inválido';
