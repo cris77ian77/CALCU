@@ -2124,7 +2124,7 @@ async function campCfgLoad() {
         <label style="font-size:.75rem;color:#475569;display:grid;gap:.2rem">Plantilla
           <select class="cfg-plantilla" style="${inp};min-width:240px">${opts}</select></label>
         <label style="font-size:.75rem;color:#475569;display:grid;gap:.2rem">Horario de envío (AR)
-          <input type="time" class="cfg-hora" min="08:00" max="16:00" value="${escHtml(cfg.horaEnvio || '11:00')}" style="${inp}"></label>
+          <input type="time" class="cfg-hora" min="08:00" max="17:00" value="${escHtml(cfg.horaEnvio || '11:00')}" style="${inp}"></label>
         <label style="font-size:.75rem;color:#475569;display:grid;gap:.2rem">Cantidad por día hábil
           <input type="number" class="cfg-cantidad" min="1" max="500" value="${cfg.cantidadPorDia ?? 50}" style="${inp};width:110px"></label>
         <label style="font-size:.8rem;color:#475569;display:flex;gap:.35rem;align-items:center;padding-bottom:.4rem">
@@ -2149,8 +2149,8 @@ async function campCfgLoad() {
       const activa = card.querySelector('.cfg-activa').checked;
       if (activa && !plantilla) { toast('Elegí una plantilla antes de activar la campaña'); return; }
       if (!/^\d{2}:\d{2}$/.test(horaEnvio)) { toast('Horario inválido'); return; }
-      // Regla: las campañas solo salen de lunes a viernes de 08:00 a 17:00 (el bot igual rechaza cualquier envío fuera de ese horario).
-      if (horaEnvio < '08:00' || horaEnvio > '16:00') { toast('El horario tiene que estar entre 08:00 y 16:00: las campañas solo salen de lunes a viernes de 8 a 17'); return; }
+      // Regla: las campañas solo salen de lunes a viernes de 08:00 a 18:00 (el bot igual rechaza cualquier envío fuera de ese horario).
+      if (horaEnvio < '08:00' || horaEnvio > '17:00') { toast('El horario tiene que estar entre 08:00 y 17:00: las campañas solo salen de lunes a viernes de 8 a 18'); return; }
       if (!(cantidadPorDia >= 1 && cantidadPorDia <= 500)) { toast('La cantidad debe estar entre 1 y 500'); return; }
       try {
         await setDoc(doc(db, 'campanias_config', card.dataset.cfg), {
