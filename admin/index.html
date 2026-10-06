@@ -428,8 +428,8 @@ tr:hover td { background: #f8fafc; }
 
     <!-- Nav Tabs -->
     <div class="nav-tabs">
-      <button class="nav-tab-btn active" data-tab="usuarios">👥 Usuarios</button>
-      <button class="nav-tab-btn" data-tab="estadisticas">📊 Estadísticas</button>
+      <button class="nav-tab-btn" data-tab="usuarios">👥 Usuarios</button>
+      <button class="nav-tab-btn active" data-tab="estadisticas">📊 Estadísticas</button>
       <button class="nav-tab-btn" data-tab="campanas">📋 Campañas</button>
       <button class="nav-tab-btn" data-tab="est-campanas">📈 Est. Campañas</button>
       <button class="nav-tab-btn" data-tab="plantillas">💬 Plantillas</button>
@@ -444,7 +444,7 @@ tr:hover td { background: #f8fafc; }
     </div>
 
     <!-- ── Tab: Usuarios ──────────────────────────────────────── -->
-    <div id="tab-usuarios" class="tab-panel active">
+    <div id="tab-usuarios" class="tab-panel">
 
       <!-- Toolbar -->
       <div class="toolbar">
@@ -490,11 +490,12 @@ tr:hover td { background: #f8fafc; }
           <tbody id="users-tbody"></tbody>
         </table>
       </div>
+      <div id="users-pagination" style="display:none;padding:.65rem 0;justify-content:center;align-items:center;gap:.6rem;flex-wrap:wrap"></div>
 
     </div><!-- /tab-usuarios -->
 
     <!-- ── Tab: Estadísticas ──────────────────────────────────── -->
-    <div id="tab-estadisticas" class="tab-panel">
+    <div id="tab-estadisticas" class="tab-panel active">
 
       <div class="range-selector" style="margin-top:1rem">
         <label>Período:</label>
@@ -870,30 +871,23 @@ $('#btn-adm-logout').addEventListener('click', async () => {
 async function loadData() {
   showLoading();
   try {
-    // 1. Traer todos los usuarios
-    const usersSnap    = await getDocs(collection(db, 'usuarios'));
-    // 2. Traer todas las sesiones
-    const sessionsSnap = await getDocs(collection(db, 'sesiones'));
-    // 3. Traer todos los clicks de contacto (tolerante: si las rules lo bloquean, sigue)
-    let clicksSnap;
-    try {
-      clicksSnap = await getDocs(collection(db, 'clicks'));
-    } catch(err) {
-      console.warn('[admin] No se pudo leer la colección clicks:', err.message);
-      clicksSnap = { docs: [] };
-    }
+    // Todas las colecciones en paralelo para minimizar tiempo de carga
+    const [usersSnap, sessionsSnap, clicksSnap, campSnap] = await Promise.all([
+      getDocs(collection(db, 'usuarios')),
+      getDocs(collection(db, 'sesiones')),
+      getDocs(collection(db, 'clicks')).catch(err => {
+        console.warn('[admin] No se pudo leer clicks:', err.message);
+        return { docs: [] };
+      }),
+      getDocs(collection(db, 'campana_leads')).catch(err => {
+        console.warn('[admin] No se pudo leer campana_leads:', err.message);
+        return { docs: [] };
+      }),
+    ]);
 
-    allSessions = sessionsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-    allClicks   = clicksSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-
-    // 4. Leads de campañas (tolerante)
-    try {
-      const campSnap = await getDocs(collection(db, 'campana_leads'));
-      allCampanaLeads = campSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-    } catch(err) {
-      console.warn('[admin] No se pudo leer campana_leads:', err.message);
-      allCampanaLeads = [];
-    }
+    allSessions     = sessionsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    allClicks       = clicksSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    allCampanaLeads = campSnap.docs.map(d => ({ id: d.id, ...d.data() }));
 
     // Agrupar sesiones por uid
     const sessByUid = {};
@@ -1014,23 +1008,35 @@ function getFilteredUsers() {
     });
 }
 
+// ── RENDER TABLE ──────────────────────────────────────────────
+const USERS_PER_PAGE = 50;
+let usersPage = 1;
+
 function renderTable() {
   const rows  = getFilteredUsers();
   const tbody = $('#users-tbody');
   const table = $('#users-table');
   const empty = $('#table-empty');
+  const pgDiv = document.getElementById('users-pagination');
 
   $('#table-loading').style.display = 'none';
 
   if (rows.length === 0) {
     table.style.display = 'none';
     empty.style.display = 'block';
+    pgDiv.style.display = 'none';
     return;
   }
   empty.style.display = 'none';
   table.style.display = 'table';
 
-  tbody.innerHTML = rows.map(u => `
+  // Paginación
+  const totalPages = Math.ceil(rows.length / USERS_PER_PAGE);
+  if (usersPage > totalPages) usersPage = totalPages;
+  const start = (usersPage - 1) * USERS_PER_PAGE;
+  const pageRows = rows.slice(start, start + USERS_PER_PAGE);
+
+  tbody.innerHTML = pageRows.map(u => `
     <tr>
       <td>
         <div class="td-name">${esc([u.nombre, u.apellido].filter(Boolean).join(' ') || u.email)}</div>
@@ -1065,6 +1071,23 @@ function renderTable() {
       icon.textContent = '↕';
     }
   });
+
+  // Controles de paginación
+  if (totalPages <= 1) {
+    pgDiv.style.display = 'none';
+  } else {
+    pgDiv.style.display = 'flex';
+    const btnStyle = 'padding:.35rem .8rem;border:1.5px solid #cbd5e1;border-radius:6px;background:#fff;cursor:pointer;font-size:.82rem;font-weight:600;color:#0d3b66';
+    const btnDisabled = 'padding:.35rem .8rem;border:1.5px solid #e2e8f0;border-radius:6px;background:#f8fafc;font-size:.82rem;font-weight:600;color:#94a3b8;cursor:default';
+    pgDiv.innerHTML = `
+      <button data-pg="${usersPage - 1}" ${usersPage <= 1 ? `style="${btnDisabled}" disabled` : `style="${btnStyle}"`}>← Ant.</button>
+      <span style="font-size:.82rem;color:#475569">Pág. <b>${usersPage}</b> de <b>${totalPages}</b> · ${rows.length} usuarios</span>
+      <button data-pg="${usersPage + 1}" ${usersPage >= totalPages ? `style="${btnDisabled}" disabled` : `style="${btnStyle}"`}>Sig. →</button>
+    `;
+    pgDiv.querySelectorAll('button[data-pg]:not([disabled])').forEach(btn => {
+      btn.addEventListener('click', () => { usersPage = +btn.dataset.pg; renderTable(); });
+    });
+  }
 }
 
 function showLoading(show = true) {
@@ -1078,14 +1101,15 @@ document.querySelectorAll('#users-table th[data-col]').forEach(th => {
   th.addEventListener('click', () => {
     if (sortCol === th.dataset.col) sortDir *= -1;
     else { sortCol = th.dataset.col; sortDir = -1; }
+    usersPage = 1;
     renderTable();
   });
 });
 
 // ── FILTROS ───────────────────────────────────────────────────
-$('#search-input').addEventListener('input', renderTable);
-$('#filter-bot').addEventListener('change', renderTable);
-$('#filter-perfil').addEventListener('change', renderTable);
+$('#search-input').addEventListener('input',  () => { usersPage = 1; renderTable(); });
+$('#filter-bot').addEventListener('change',   () => { usersPage = 1; renderTable(); });
+$('#filter-perfil').addEventListener('change',() => { usersPage = 1; renderTable(); });
 $('#btn-refresh').addEventListener('click', loadData);
 document.getElementById('camp-search').addEventListener('input', campRender);
 document.getElementById('camp-filter-estado').addEventListener('change', campRender);
