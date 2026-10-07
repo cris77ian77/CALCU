@@ -505,6 +505,7 @@ tr:hover td { background: #f8fafc; }
         <button class="range-btn active" data-days="30">30 días</button>
         <button class="range-btn" data-days="90">90 días</button>
         <button class="range-btn" data-days="9999">Todo</button>
+        <span id="stats-excluidos" style="margin-left:auto;font-size:.75rem;color:#64748b"></span>
       </div>
 
       <!-- 1. Entradas por día -->
@@ -799,6 +800,11 @@ let allUsers        = [];   // filas combinadas (usuario + stats sesiones)
 let allSessions     = [];   // todas las sesiones raw
 let allClicks       = [];   // todos los clicks raw a botones de contacto
 let allCampanaLeads = [];   // leads de campañas importadas
+// Para la pestaña Estadísticas: lo mismo pero sin los usuarios de Polair (empresa)
+let polairUids   = new Set();
+let statUsers    = [];
+let statSessions = [];
+let statClicks   = [];
 let sortCol     = 'ultimaVisita';
 let sortDir     = -1;   // -1 desc, 1 asc
 
@@ -875,7 +881,7 @@ async function loadData() {
   showLoading();
   try {
     // Todas las colecciones en paralelo para minimizar tiempo de carga
-    const [usersSnap, sessionsSnap, clicksSnap, campSnap] = await Promise.all([
+    const [usersSnap, sessionsSnap, clicksSnap, campSnap, polSnap] = await Promise.all([
       getDocs(collection(db, 'usuarios')),
       getDocs(collection(db, 'sesiones')),
       getDocs(collection(db, 'clicks')).catch(err => {
@@ -884,6 +890,10 @@ async function loadData() {
       }),
       getDocs(collection(db, 'campana_leads')).catch(err => {
         console.warn('[admin] No se pudo leer campana_leads:', err.message);
+        return { docs: [] };
+      }),
+      getDocs(collection(db, 'telefonos_polair')).catch(err => {
+        console.warn('[admin] No se pudo leer telefonos_polair:', err.message);
         return { docs: [] };
       }),
     ]);
@@ -959,6 +969,13 @@ async function loadData() {
       };
     });
 
+    // Usuarios de Polair (empresa): quedan afuera de la pestaña Estadísticas
+    const telPolair = new Set(polSnap.docs.map(d => d.id));
+    polairUids   = new Set(allUsers.filter(u => esPolair(u, telPolair)).map(u => u.uid));
+    statUsers    = allUsers.filter(u => !polairUids.has(u.uid));
+    statSessions = allSessions.filter(s => !polairUids.has(s.uid));
+    statClicks   = allClicks.filter(c => !polairUids.has(c.uid));
+
     updateStats();
     renderTable();
     if (document.getElementById('tab-estadisticas').classList.contains('active')) {
@@ -977,6 +994,16 @@ async function loadData() {
 function lineaDeSesion(s) {
   if (s.linea) return s.linea;
   return (s.pagina === 'vending' || s.valores?.maquina === 'MV-450') ? 'VEND' : 'MH';
+}
+
+// Usuario de Polair (la empresa): admin, email @polair.com.ar, teléfono de la
+// lista "Polair" o descartado por el bot como teléfono de Polair.
+function esPolair(u, telPolair) {
+  if (u.rol === 'admin') return true;
+  if (/@polair\.com\.ar$/i.test(u.email || '')) return true;
+  const tel = blCanon(u.telefono);
+  if (tel && telPolair.has(tel)) return true;
+  return getBotEstado(u) === 'descartado_polair';
 }
 
 function getBotEstado(u) {
@@ -1573,21 +1600,23 @@ document.querySelectorAll('.range-btn').forEach(btn => {
 
 // ── Render principal ──────────────────────────────────────────
 function renderEstadisticas() {
+  const exc = document.getElementById('stats-excluidos');
+  if (exc) exc.textContent = polairUids.size ? `Sin usuarios de Polair (${polairUids.size} excluidos)` : '';
   const effectiveDays = statsDays === 9999 ? computeEffectiveDays() : statsDays;
   const cutoff = Date.now() - effectiveDays * 86400000;
-  const sessInRange = allSessions.filter(s => {
+  const sessInRange = statSessions.filter(s => {
     const ts = s.timestampEntrada?.toDate?.()?.getTime()
       ?? (s.timestampEntrada ? new Date(s.timestampEntrada).getTime() : 0);
     return ts >= cutoff;
   });
-  const clicksInRange = allClicks.filter(c => {
+  const clicksInRange = statClicks.filter(c => {
     const ts = c.timestamp?.toDate?.()?.getTime()
       ?? (c.timestamp ? new Date(c.timestamp).getTime() : 0);
     return ts >= cutoff;
   });
   // Bot sends by day — usuarios (within selected range)
   const botByDay = {};
-  allUsers.forEach(u => {
+  statUsers.forEach(u => {
     if (getBotEstado(u) !== 'enviado' || !u.botContactadoEn) return;
     const d = new Date(u.botContactadoEn);
     if (d.getTime() < cutoff) return;
@@ -1617,7 +1646,7 @@ function renderEstadisticas() {
 
   // Respondidos bot WS (usuarios) by day
   const respBotByDay = {};
-  allUsers.forEach(u => {
+  statUsers.forEach(u => {
     if (!u.botRespondido || !u.botRespondidoEn) return;
     const d = u.botRespondidoEn?.toDate ? u.botRespondidoEn.toDate() : new Date(u.botRespondidoEn);
     if (!d || d.getTime() < cutoff) return;
@@ -1634,7 +1663,7 @@ function renderEstadisticas() {
 function killChart(ref) { if (ref) ref.destroy(); return null; }
 
 function computeEffectiveDays() {
-  const tss = allSessions.map(s =>
+  const tss = statSessions.map(s =>
     s.timestampEntrada?.toDate?.()?.getTime()
     ?? (s.timestampEntrada ? new Date(s.timestampEntrada).getTime() : 0)
   ).filter(t => t > 0);
@@ -1656,7 +1685,7 @@ function renderDailyChart(sessInRange, clicksInRange, botByDay = {}, campBotByDa
   }
   // Lleno con TODAS las sesiones (no sólo sessInRange) para tener los 7 días previos al rango visible
   const extCutoff = Date.now() - totalDays * 86400000;
-  allSessions.forEach(s => {
+  statSessions.forEach(s => {
     const ts = s.timestampEntrada?.toDate?.() ?? (s.timestampEntrada ? new Date(s.timestampEntrada) : null);
     if (!ts || ts.getTime() < extCutoff) return;
     const key = ts.toLocaleDateString('es-AR', { day:'2-digit', month:'2-digit', year:'2-digit' });
@@ -1835,7 +1864,7 @@ function applyDailyFilter(name) {
 // ── 2. Usuarios por provincia ─────────────────────────────────
 function renderProvinciasChart() {
   const counts = {};
-  allUsers.forEach(u => {
+  statUsers.forEach(u => {
     const p = u.provincia || 'Sin datos';
     counts[p] = (counts[p] || 0) + 1;
   });
@@ -1878,14 +1907,14 @@ function renderPerfilesChart(sessInRange) {
     distribucion_hielo: '🚚 Distribución',
   };
   const data = {};
-  allUsers.forEach(u => {
+  statUsers.forEach(u => {
     const p = u.perfil || 'sin_perfil';
     if (!data[p]) data[p] = { count: 0, sessTotal: 0 };
     data[p].count++;
   });
   const sessByUid = {};
   sessInRange.forEach(s => { sessByUid[s.uid] = (sessByUid[s.uid] || 0) + 1; });
-  allUsers.forEach(u => {
+  statUsers.forEach(u => {
     const p = u.perfil || 'sin_perfil';
     if (data[p]) data[p].sessTotal += (sessByUid[u.uid] || 0);
   });
@@ -1926,8 +1955,8 @@ function renderRetencionChart(sessInRange) {
   const uids     = Object.keys(sessByUid);
   const una      = uids.filter(uid => sessByUid[uid] === 1).length;
   const varios   = uids.filter(uid => sessByUid[uid] > 1).length;
-  const sinSess  = allUsers.length - uids.length;
-  const total    = allUsers.length;
+  const sinSess  = statUsers.length - uids.length;
+  const total    = statUsers.length;
 
   chartRetencion = killChart(chartRetencion);
   chartRetencion = new Chart(document.getElementById('chart-retencion'), {
@@ -1955,7 +1984,7 @@ function renderRetencionChart(sessInRange) {
      </div>`
   ).join('');
 
-  document.getElementById('top-users-tbody').innerHTML = [...allUsers]
+  document.getElementById('top-users-tbody').innerHTML = [...statUsers]
     .filter(u => u.sesiones > 0)
     .sort((a, b) => b.sesiones - a.sesiones)
     .slice(0, 10)
