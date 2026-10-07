@@ -504,14 +504,14 @@
 
 <script>document.getElementById('year').textContent=new Date().getFullYear();</script>
 
-<!-- Conversiones: clics en WhatsApp (principal) y en la calculadora (secundaria).
+<!-- Conversiones: clics en WhatsApp (whatsapp_click, evento clave) y en la calculadora (secundaria).
      Se mandan a Clarity y, cuando esté instalado, a Google Analytics (gtag). -->
 <script>
   document.addEventListener('click', function (e) {
     var a = e.target.closest && e.target.closest('a');
     if (!a || !a.href) return;
     var ev = null;
-    if (a.href.indexOf('wa.me/') > -1) ev = 'click_whatsapp';
+    if (a.href.indexOf('wa.me/') > -1) ev = 'whatsapp_click'; // mismo evento clave que polair.com.ar
     else if (a.href.indexOf('/vending/index.html') > -1) ev = 'click_calculadora';
     if (!ev) return;
     var sec = a.closest('header') ? 'header' : ((a.closest('section') || {}).id || 'otro');
