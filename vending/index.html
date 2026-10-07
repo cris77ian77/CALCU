@@ -24,7 +24,7 @@
   import { initializeApp, getApps, getApp }                          from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js';
   import { getAuth, signOut }                                         from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
   import { getFirestore, collection, addDoc, doc, updateDoc, getDoc,
-           serverTimestamp }                                          from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
+           serverTimestamp, arrayUnion }                                          from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
   import { firebaseConfig }                                           from '../auth/firebase-config.js';
 
   const app  = getApps().length ? getApp() : initializeApp(firebaseConfig);
@@ -33,14 +33,18 @@
 
   auth.authStateReady().then(async () => {
     const user = auth.currentUser;
-    if (!user) { window.location.replace('../auth/index.html'); return; }
+    if (!user) { window.location.replace('../auth/index.html?volver=vending'); return; }
 
     try {
       const snap = await getDoc(doc(db, 'usuarios', user.uid));
       const data = snap.data();
       if (!snap.exists() || (!data?.nombre && data?.rol !== 'admin')) {
-        window.location.replace('../auth/index.html?completar=1');
+        window.location.replace('../auth/index.html?completar=1&volver=vending');
         return;
+      }
+      // Línea de producto: marca en el usuario que usó vending (MH / VEND separados)
+      if (!data?.lineas?.includes('VEND')) {
+        updateDoc(doc(db, 'usuarios', user.uid), { lineas: arrayUnion('VEND') }).catch(() => {});
       }
     } catch(e) {
       console.warn('No se pudo verificar el perfil:', e);
@@ -86,6 +90,7 @@
       uid:              user.uid,
       email:            user.email,
       pagina:           'vending',
+      linea:            'VEND',
       timestampEntrada: serverTimestamp(),
       duracion:         0,
       recalculos:       0,
@@ -109,7 +114,7 @@
 
   document.getElementById('btn-logout-top').addEventListener('click', async () => {
     await signOut(auth);
-    window.location.replace('../auth/index.html');
+    window.location.replace('../auth/index.html?volver=vending');
   });
 
   function trackContactClick(tipo) {
@@ -119,6 +124,7 @@
       email:     u?.email || 'anonimo',
       tipo,
       pagina:    'vending',
+      linea:     'VEND',
       timestamp: serverTimestamp(),
     }).catch(() => {});
   }

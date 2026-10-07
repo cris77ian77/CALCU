@@ -463,6 +463,7 @@ tr:hover td { background: #f8fafc; }
           <option value="consumo_propio">🏠 Consumo propio</option>
           <option value="venta_negocio">🏪 Venta en negocio</option>
           <option value="distribucion_hielo">🚚 Distribución</option>
+          <option value="MV">🏧 MV · Vending</option>
         </select>
         <button class="btn-refresh" id="btn-refresh" title="Actualizar">↻</button>
         <button class="btn-export" id="btn-export">⬇️ Exportar Excel</button>
@@ -478,6 +479,7 @@ tr:hover td { background: #f8fafc; }
               <th data-col="nombre">Nombre <span class="sort-icon">↕</span></th>
               <th>Teléfono</th>
               <th>Perfil</th>
+              <th data-col="linea">Línea <span class="sort-icon">↕</span></th>
               <th data-col="provincia">Provincia <span class="sort-icon">↕</span></th>
               <th data-col="creadoEn">Registro <span class="sort-icon">↕</span></th>
               <th data-col="ultimaVisita">Última visita <span class="sort-icon">↕</span></th>
@@ -517,6 +519,7 @@ tr:hover td { background: #f8fafc; }
             <thead><tr>
               <th>Fecha</th>
               <th data-col="sess">Sesiones</th>
+              <th data-col="vend">🏧 Vend.</th>
               <th data-col="cal">📅</th>
               <th data-col="wsp">💬</th>
               <th data-col="acomp">🚀</th>
@@ -930,12 +933,20 @@ async function loadData() {
       });
       const maqTop = Object.entries(maqCount).sort((a,b) => b[1]-a[1])[0]?.[0] ?? '—';
 
+      // Línea de producto: MH (máquinas de hielo) / VEND (vending)
+      const lineasSet = new Set(Array.isArray(u.lineas) ? u.lineas : []);
+      sess.forEach(s => lineasSet.add(lineaDeSesion(s)));
+      if (u.origen === 'vending') lineasSet.add('VEND');
+      const lineasUso = ['MH', 'VEND'].filter(l => lineasSet.has(l));
+
       return {
         ...u,
         sesiones:       sess.length,
         ultimaVisita,
         recalcTotal,
         maqTop,
+        lineasUso,
+        linea:           lineasUso.length ? lineasUso.join('+') : null,
         botContactado:   u.botContactado === true,
         botContactadoEn: u.botContactadoEn ?? null,
         botPlantilla:    u.botPlantilla   ?? null,
@@ -961,6 +972,13 @@ async function loadData() {
 }
 
 // ── STATS ─────────────────────────────────────────────────────
+// Línea de producto de una sesión: MH (máquinas de hielo) o VEND (vending).
+// Las sesiones nuevas traen el campo `linea`; las viejas se deducen de la página o la máquina.
+function lineaDeSesion(s) {
+  if (s.linea) return s.linea;
+  return (s.pagina === 'vending' || s.valores?.maquina === 'MV-450') ? 'VEND' : 'MH';
+}
+
 function getBotEstado(u) {
   if (u.botEstado) return u.botEstado;
   return u.botContactado === true ? 'enviado' : 'pendiente';
@@ -991,7 +1009,8 @@ function getFilteredUsers() {
       if (bot === 'enviado'    && getBotEstado(u) !== 'enviado') return false;
       if (bot === 'pendiente'  && getBotEstado(u) !== 'pendiente') return false;
       if (bot === 'descartado' && !getBotEstado(u).startsWith('descartado_')) return false;
-      if (perf && u.perfil !== perf) return false;
+      if (perf === 'MV') { if (!u.lineasUso?.includes('VEND')) return false; }
+      else if (perf && u.perfil !== perf) return false;
       if (q) {
         const hay = [u.nombre, u.apellido, u.email, u.provincia, u.telefono].join(' ').toLowerCase();
         if (!hay.includes(q)) return false;
@@ -1044,6 +1063,7 @@ function renderTable() {
       </td>
       <td style="color:#475569;font-size:.82rem">${esc(u.telefono || '—')}</td>
       <td>${badgePerfil(u.perfil)}</td>
+      <td>${badgeLinea(u.lineasUso)}</td>
       <td>${esc(u.provincia || '—')}</td>
       <td>${fmtDate(u.creadoEn)}</td>
       <td>${fmtDate(u.ultimaVisita) || '<span style="color:#94a3b8">Sin visitas</span>'}</td>
@@ -1237,13 +1257,14 @@ $('#btn-export').addEventListener('click', () => {
 
   // Hoja 1: resumen usuarios
   const wsData = [
-    ['Nombre', 'Apellido', 'Email', 'Teléfono', 'Perfil', 'Provincia', 'CUIT',
+    ['Nombre', 'Apellido', 'Email', 'Teléfono', 'Perfil', 'Línea', 'Provincia', 'CUIT',
      'Fecha registro', 'Última visita', 'Sesiones', 'Recálculos', 'Máq. favorita',
      'Bot contactado', 'Bot fecha envío', 'Bot plantilla',
      'Origen', 'Medio', 'Campaña'],
     ...rows.map(u => [
       u.nombre, u.apellido, u.email, u.telefono || '',
       perfLabel[u.perfil] || u.perfil || '',
+      (u.lineasUso || []).join('+'),
       u.provincia || '', u.cuit || '',
       fmtDateExcel(u.creadoEn),
       fmtDateExcel(u.ultimaVisita),
@@ -1259,7 +1280,7 @@ $('#btn-export').addEventListener('click', () => {
 
   // Hoja 2: todas las sesiones
   const wsSessions = [
-    ['Email', 'Nombre', 'Fecha entrada', 'Duración (seg)', 'Recálculos',
+    ['Email', 'Nombre', 'Línea', 'Fecha entrada', 'Duración (seg)', 'Recálculos',
      'Máquina', 'Forma de pago', 'Dólar', 'Precio hielo', 'Alquiler',
      'Horas/día', 'Días/mes'],
     ...allSessions.map(s => {
@@ -1267,6 +1288,7 @@ $('#btn-export').addEventListener('click', () => {
       const ts = s.timestampEntrada?.toDate?.() ?? null;
       return [
         s.email, u ? `${u.nombre} ${u.apellido}` : '',
+        lineaDeSesion(s),
         ts ? ts.toLocaleString('es-AR') : '',
         s.duracion ?? 0, s.recalculos ?? 0,
         s.valores?.maquina ?? '', s.valores?.formaDePago ?? '',
@@ -1320,6 +1342,13 @@ function badgePerfil(p) {
   const cls = { consumo_propio:'bp-consumo', venta_negocio:'bp-negocio', distribucion_hielo:'bp-distrib' };
   const lbl = { consumo_propio:'🏠 Consumo', venta_negocio:'🏪 Negocio', distribucion_hielo:'🚚 Distribución' };
   return `<span class="badge-perfil ${cls[p]||''}">${esc(lbl[p]||p||'—')}</span>`;
+}
+
+function badgeLinea(lineas) {
+  if (!lineas || !lineas.length) return '<span style="color:#94a3b8">—</span>';
+  const st = { MH: 'background:#e0f2fe;color:#0369a1;border:1px solid #bae6fd',
+               VEND: 'background:#ffedd5;color:#c2410c;border:1px solid #fed7aa' };
+  return lineas.map(l => `<span style="display:inline-block;border-radius:20px;padding:1px 8px;font-size:.72rem;font-weight:800;margin-right:3px;white-space:nowrap;${st[l] || ''}">${esc(l)}</span>`).join('');
 }
 
 function badgeBot(u) {
@@ -1650,6 +1679,18 @@ function renderDailyChart(sessInRange, clicksInRange, botByDay = {}, campBotByDa
   });
 
   const sessVals    = labels.map(k => sessAll[k]);
+
+  // Sesiones de vending por día (línea VEND)
+  const vendByDay = {};
+  labels.forEach(k => { vendByDay[k] = 0; });
+  sessInRange.forEach(s => {
+    if (lineaDeSesion(s) !== 'VEND') return;
+    const ts = s.timestampEntrada?.toDate?.() ?? (s.timestampEntrada ? new Date(s.timestampEntrada) : null);
+    if (!ts) return;
+    const key = ts.toLocaleDateString('es-AR', { day:'2-digit', month:'2-digit', year:'2-digit' });
+    if (key in vendByDay) vendByDay[key]++;
+  });
+  const vendVals    = labels.map(k => vendByDay[k]);
   const calVals     = labels.map(k => cal[k]);
   const wspVals     = labels.map(k => wsp[k]);
   const acompVals   = labels.map(k => acomp[k]);
@@ -1687,6 +1728,7 @@ function renderDailyChart(sessInRange, clicksInRange, botByDay = {}, campBotByDa
           borderColor: '#f59e0b', backgroundColor: 'rgba(245,158,11,0.12)',
           borderWidth: 2.5, pointRadius: 3, pointBackgroundColor: '#f59e0b',
           tension: 0.3, fill: false, order: 0, yAxisID: 'y' },
+        { type: 'bar',  label: '🏧 Vending',         data: vendVals,    backgroundColor: 'rgba(234,88,12,0.8)',   borderColor: '#c2410c', borderWidth: 1, borderRadius: 4, order: 3, yAxisID: 'y' },
       ]
     },
     options: {
@@ -1706,7 +1748,7 @@ function renderDailyChart(sessInRange, clicksInRange, botByDay = {}, campBotByDa
     label: l, sess: sessVals[i], cal: calVals[i], wsp: wspVals[i], acomp: acompVals[i],
     bot: botVals[i], respBot: respBotVals[i], pctBot: pctBotVals[i],
     campBot: campBotVals[i], resp: respVals[i], pctCamp: pctCampVals[i],
-    ma7: ma7Vals[i]
+    ma7: ma7Vals[i], vend: vendVals[i]
   })).reverse();
   const pctCell = (v, color) => v !== null ? `<span style="color:${color};font-weight:700">${v}%</span>` : '';
   tbody.innerHTML = rows.map(row => {
@@ -1722,6 +1764,7 @@ function renderDailyChart(sessInRange, clicksInRange, botByDay = {}, campBotByDa
     return `<tr>
       <td>${row.label}</td>
       <td data-col="sess"    style="font-weight:700">${row.sess}</td>
+      <td data-col="vend"    style="color:#c2410c;font-weight:600">${row.vend || ''}</td>
       <td data-col="cal"     style="color:#0d3b66;font-weight:600">${row.cal   || ''}</td>
       <td data-col="wsp"     style="color:#16a34a;font-weight:600">${row.wsp   || ''}</td>
       <td data-col="acomp"   style="color:#00AAFF;font-weight:600">${row.acomp || ''}</td>
@@ -1742,11 +1785,12 @@ function renderDailyChart(sessInRange, clicksInRange, botByDay = {}, campBotByDa
 
 // ── Filtros "Entradas por día" ────────────────────────────────
 const DAILY_FILTERS = {
-  calc:    { label: 'Solo calculadora', dsIdx: new Set([0,2,3,10]),       cols: new Set(['sess','wsp','acomp','ma','var']),                    showY1: false },
+  calc:    { label: 'Solo calculadora', dsIdx: new Set([0,2,3,10,11]),    cols: new Set(['sess','vend','wsp','acomp','ma','var']),             showY1: false },
+  vend:    { label: 'Vending',          dsIdx: new Set([0,11]),           cols: new Set(['sess','vend']),                                      showY1: false },
   botcalc: { label: 'Bot calculadora',  dsIdx: new Set([4,5,8,10]),       cols: new Set(['bot','respbot','pctbot','ma','var']),                 showY1: true  },
   camp:    { label: 'Solo campañas',    dsIdx: new Set([6,7,9]),          cols: new Set(['camp','respcamp','pctcamp','ma','var']),              showY1: true  },
   wpcal:   { label: 'WP + Calendly',   dsIdx: new Set([1,2,10]),         cols: new Set(['cal','wsp','ma','var']),                             showY1: false },
-  todos:   { label: 'Todos',           dsIdx: new Set([0,1,2,3,4,5,6,7,8,9,10]), cols: new Set(['sess','cal','wsp','acomp','bot','respbot','pctbot','camp','respcamp','pctcamp','ma','var']), showY1: true },
+  todos:   { label: 'Todos',           dsIdx: new Set([0,1,2,3,4,5,6,7,8,9,10,11]), cols: new Set(['sess','vend','cal','wsp','acomp','bot','respbot','pctbot','camp','respcamp','pctcamp','ma','var']), showY1: true },
 };
 let activeDailyFilter = 'calc';
 
@@ -1781,7 +1825,7 @@ function applyDailyFilter(name) {
   _applyDailyFilterToChart();
   // Show/hide table columns
   const f = DAILY_FILTERS[name];
-  const ALL_COLS = ['sess','cal','wsp','acomp','bot','respbot','pctbot','camp','respcamp','pctcamp','ma','var'];
+  const ALL_COLS = ['sess','vend','cal','wsp','acomp','bot','respbot','pctbot','camp','respcamp','pctcamp','ma','var'];
   ALL_COLS.forEach(col => {
     const show = f.cols.has(col);
     document.querySelectorAll(`[data-col="${col}"]`).forEach(el => { el.style.display = show ? '' : 'none'; });

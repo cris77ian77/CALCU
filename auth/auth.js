@@ -154,6 +154,16 @@ export async function completarPerfil(uid, email, datos) {
   }, { merge: true }); // merge: true preserva campos existentes (ej: rol)
 }
 
+// ── Guardar desde qué calculadora se registró el usuario ──────
+// Escritura aparte del registro: si falla, el registro no se ve afectado.
+export async function marcarOrigen(uid, origen) {
+  try {
+    await setDoc(doc(db, 'usuarios', uid), { origen }, { merge: true });
+  } catch (e) {
+    console.warn('No se pudo guardar el origen del registro:', e);
+  }
+}
+
 // ── Observador de estado de sesión ────────────────────────────
 export function onAuthChange(callback) {
   return onAuthStateChanged(auth, callback);

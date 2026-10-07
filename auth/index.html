@@ -626,7 +626,7 @@
     validarTelefono,
     registrar, login, cerrarSesion,
     recuperarPassword, obtenerDatosUsuario,
-    completarPerfil, onAuthChange,
+    completarPerfil, marcarOrigen, onAuthChange,
     loginConTelefono, registrarConTelefono, migrarPasswordATelefono
   } from './auth.js';
 
@@ -639,6 +639,11 @@
     sessionStorage.setItem('calcu_utm', JSON.stringify(utmDesdeUrl));
   }
   const utm = JSON.parse(sessionStorage.getItem('calcu_utm') || '{}');
+
+  // ── A dónde volver después del login (por defecto, calculadora de hielo) ──
+  const DESTINOS = { vending: '../vending/' };
+  const volver   = DESTINOS[params.get('volver')] ? params.get('volver') : null;
+  const DESTINO  = volver ? DESTINOS[volver] : '../index.html';
 
   // ── Notificación email al admin (fetch directo, sin SDK) ─────
   async function notificarAdmin({ nombre, apellido, email, telefono, provincia, perfil }) {
@@ -963,9 +968,10 @@
     setLoading(btn, true);
     registrando = true;
     try {
-      await registrar({ nombre, apellido, email, telefono, provincia, cuit, perfil, password, utm });
+      const nuevo = await registrar({ nombre, apellido, email, telefono, provincia, cuit, perfil, password, utm });
       await notificarAdmin({ nombre, apellido, email, telefono, provincia, perfil });
-      window.location.replace('../index.html');
+      if (volver) await marcarOrigen(nuevo.uid, volver);
+      window.location.replace(DESTINO);
     } catch(err) {
       registrando = false;
       showAlert('#reg-error', tradError(err), 'error');
@@ -1030,7 +1036,8 @@
         cuit: cuit || null, perfil, utm,
       });
       await notificarAdmin({ nombre, apellido, email: currentUser.email, telefono, provincia, perfil });
-      window.location.replace('../index.html');
+      if (volver) await marcarOrigen(currentUser.uid, volver);
+      window.location.replace(DESTINO);
     } catch(err) {
       showAlert('#completar-error', tradError(err), 'error');
       setLoading(btn, false);
@@ -1064,7 +1071,7 @@
       } else if (!registrando) {
         // Sesión activa normal → redirigir al simulador
         // (si registrando=true, el form-registro viejo redirige después de setDoc)
-        window.location.replace('../index.html');
+        window.location.replace(DESTINO);
       }
       return;
     } else {

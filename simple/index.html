@@ -16,7 +16,7 @@
   import { initializeApp, getApps, getApp }                          from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js';
   import { getAuth, signOut }                                         from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
   import { getFirestore, collection, addDoc, doc, updateDoc, getDoc,
-           serverTimestamp }                                          from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
+           serverTimestamp, arrayUnion }                                          from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
   import { firebaseConfig }                                           from '../auth/firebase-config.js';
 
   const app  = getApps().length ? getApp() : initializeApp(firebaseConfig);
@@ -33,6 +33,10 @@
       if (!snap.exists() || (!data?.nombre && data?.rol !== 'admin')) {
         window.location.replace('../auth/index.html?completar=1');
         return;
+      }
+      // Línea de producto: marca en el usuario que usó máquinas de hielo (MH / VEND separados)
+      if (!data?.lineas?.includes('MH')) {
+        updateDoc(doc(db, 'usuarios', user.uid), { lineas: arrayUnion('MH') }).catch(() => {});
       }
     } catch(e) {
       console.warn('No se pudo verificar el perfil:', e);
@@ -77,6 +81,7 @@
       uid:              user.uid,
       email:            user.email,
       pagina:           'simple',
+      linea:            'MH',
       timestampEntrada: serverTimestamp(),
       duracion:         0,
       recalculos:       0,
@@ -110,6 +115,7 @@
       email:     u?.email || 'anonimo',
       tipo,
       pagina:    'simple',
+      linea:     'MH',
       timestamp: serverTimestamp(),
     }).catch(() => {});
   }
