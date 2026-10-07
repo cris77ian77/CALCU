@@ -6,6 +6,15 @@
 <title>Máquina autoexpendedora de hielo Polair | Negocio automático 24/7</title>
 <meta name="description" content="Instalá una máquina autoexpendedora de hielo Polair en tu estación de servicio, comercio o vía pública. Funciona sola 24/7, cobra sola (monedas, fichas, billetes y QR) y produce 450 kg de hielo en cubos por día. Entrega inmediata y soporte con repuestos en Argentina.">
 
+<!-- Microsoft Clarity (mismo proyecto que la calculadora) -->
+<script type="text/javascript">
+  (function(c,l,a,r,i,t,y){
+    c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+    t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+    y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+  })(window, document, "clarity", "script", "xuo46dsmox");
+</script>
+
 <!-- ============================================================
      DATOS A COMPLETAR (buscá "TODO" en este archivo):
      · Número de WhatsApp       → links wa.me (bot: 5493412426568)
@@ -485,5 +494,21 @@
 </footer>
 
 <script>document.getElementById('year').textContent=new Date().getFullYear();</script>
+
+<!-- Conversiones: clics en WhatsApp (principal) y en la calculadora (secundaria).
+     Se mandan a Clarity y, cuando esté instalado, a Google Analytics (gtag). -->
+<script>
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('a');
+    if (!a || !a.href) return;
+    var ev = null;
+    if (a.href.indexOf('wa.me/') > -1) ev = 'click_whatsapp';
+    else if (a.href.indexOf('/vending/index.html') > -1) ev = 'click_calculadora';
+    if (!ev) return;
+    var sec = a.closest('header') ? 'header' : ((a.closest('section') || {}).id || 'otro');
+    if (window.clarity) clarity('event', ev);
+    if (window.gtag) gtag('event', ev, { ubicacion: sec, link_url: a.href });
+  });
+</script>
 </body>
 </html>
