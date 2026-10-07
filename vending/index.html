@@ -8,6 +8,14 @@
         y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
     })(window, document, "clarity", "script", "xuo46dsmox");
 </script>
+<!-- Google Analytics 4 (mismo flujo que la landing y polair.com.ar) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-D3P3DLJTW8"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-D3P3DLJTW8');
+</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MV-450 Vending — Simulador de Flujo de Fondos</title>
@@ -1182,6 +1190,17 @@ function updateCharts(months, acumArr, invMes0, fx, mes0Lbl) {
 }
 
 init();
+</script>
+
+<!-- Conversión: clic en WhatsApp = whatsapp_click (evento clave importado en Google Ads) -->
+<script>
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('a');
+    if (!a || !a.href || a.href.indexOf('wa.me/') === -1) return;
+    var lugar = a.closest('.contact-bar-top') ? 'barra_superior' : 'contacto_final';
+    if (window.gtag) gtag('event', 'whatsapp_click', { ubicacion: lugar, pagina: 'calculadora_vending' });
+    if (window.clarity) clarity('event', 'whatsapp_click');
+  });
 </script>
 </body>
 </html>
