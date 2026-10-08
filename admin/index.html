@@ -432,6 +432,7 @@ tr:hover td { background: #f8fafc; }
       <button class="nav-tab-btn active" data-tab="estadisticas">📊 Estadísticas</button>
       <button class="nav-tab-btn" data-tab="campanas">📋 Campañas</button>
       <button class="nav-tab-btn" data-tab="est-campanas">📈 Est. Campañas</button>
+      <button class="nav-tab-btn" data-tab="envio-campanas">⚙️ Config. envío</button>
       <button class="nav-tab-btn" data-tab="plantillas">💬 Plantillas</button>
       <button class="nav-tab-btn" data-tab="blacklist">⛔ Blacklist</button>
       <button class="nav-tab-btn" data-tab="polair">🏢 Polair</button>
@@ -621,18 +622,6 @@ tr:hover td { background: #f8fafc; }
     <div id="tab-est-campanas" class="tab-panel">
       <div style="margin-top:1rem">
 
-        <!-- Configuración de envío por campaña (la lee el bot de WhatsApp) -->
-        <div class="stat-section" style="margin-bottom:1.25rem">
-          <h3 style="margin-bottom:.35rem">⚙️ Configuración de envío</h3>
-          <div style="font-size:.8rem;color:#64748b;margin-bottom:.85rem">
-            El bot de WhatsApp envía cada campaña <b>activa</b> de lunes a viernes, a partir del horario indicado
-            (hora Argentina), hasta la cantidad diaria, siguiendo el orden de prioridad de los leads pendientes.
-          </div>
-          <div id="campcfg-list" style="display:grid;gap:.75rem">
-            <div style="color:#94a3b8;font-size:.85rem">Cargando…</div>
-          </div>
-        </div>
-
         <!-- Stat cards campañas -->
         <div class="stats-grid" id="estcamp-cards" style="grid-template-columns:repeat(4,1fr);margin-bottom:1.25rem">
           <div class="stat-card">
@@ -665,6 +654,7 @@ tr:hover td { background: #f8fafc; }
               <thead>
                 <tr>
                   <th style="padding:.6rem .85rem;text-align:left;color:#64748b;font-size:.72rem;text-transform:uppercase;border-bottom:2px solid #e2e8f0">Campaña</th>
+                  <th style="padding:.6rem .85rem;text-align:left;color:#64748b;font-size:.72rem;text-transform:uppercase;border-bottom:2px solid #e2e8f0">Estado</th>
                   <th style="padding:.6rem .85rem;text-align:right;color:#64748b;font-size:.72rem;text-transform:uppercase;border-bottom:2px solid #e2e8f0">Totales</th>
                   <th style="padding:.6rem .85rem;text-align:right;color:#64748b;font-size:.72rem;text-transform:uppercase;border-bottom:2px solid #e2e8f0">Contactados</th>
                   <th style="padding:.6rem .85rem;text-align:right;color:#64748b;font-size:.72rem;text-transform:uppercase;border-bottom:2px solid #e2e8f0">Descartados</th>
@@ -676,7 +666,7 @@ tr:hover td { background: #f8fafc; }
                 </tr>
               </thead>
               <tbody id="estcamp-tbody">
-                <tr><td colspan="9" style="padding:2rem;text-align:center;color:#94a3b8">Cargando…</td></tr>
+                <tr><td colspan="10" style="padding:2rem;text-align:center;color:#94a3b8">Cargando…</td></tr>
               </tbody>
             </table>
           </div>
@@ -684,6 +674,23 @@ tr:hover td { background: #f8fafc; }
 
       </div>
     </div><!-- /tab-est-campanas -->
+
+    <!-- ── Tab: Configuración de envío de campañas ─────────────── -->
+    <div id="tab-envio-campanas" class="tab-panel">
+      <div style="margin-top:1rem">
+        <!-- Configuración de envío por campaña (la lee el bot de WhatsApp) -->
+        <div class="stat-section">
+          <h3 style="margin-bottom:.35rem">⚙️ Configuración de envío</h3>
+          <div style="font-size:.8rem;color:#64748b;margin-bottom:.85rem">
+            El bot de WhatsApp envía cada campaña <b>activa</b> de lunes a viernes, a partir del horario indicado
+            (hora Argentina), hasta la cantidad diaria, siguiendo el orden de prioridad de los leads pendientes.
+          </div>
+          <div id="campcfg-list" style="display:grid;gap:.75rem">
+            <div style="color:#94a3b8;font-size:.85rem">Cargando…</div>
+          </div>
+        </div>
+      </div>
+    </div><!-- /tab-envio-campanas -->
 
     <!-- ── Tab: Plantillas de WhatsApp ─────────────────────────── -->
     <div id="tab-plantillas" class="tab-panel">
@@ -1415,7 +1422,7 @@ document.querySelectorAll('.nav-tab-btn').forEach(btn => {
     const subnav = document.getElementById('camp-subnav');
     subnav.style.display = (t === 'campanas' || t === 'est-campanas') ? 'flex' : 'none';
     if (t === 'estadisticas' && allSessions.length > 0) renderEstadisticas();
-    if (t === 'campanas' || t === 'est-campanas') campLoad();
+    if (t === 'campanas' || t === 'est-campanas' || t === 'envio-campanas') campLoad();
     if (t === 'plantillas') plantillasLoad();
     if (t === 'blacklist') blacklistLoad();
     if (t === 'polair') polairLoad();
@@ -2050,6 +2057,26 @@ function campUpdateSubnav() {
   });
 }
 
+// Configuración de envío (campanias_config) leída una vez por carga; la usan el Estado y la pestaña de configuración.
+let campCfgs = {}, campPlantillas = [];
+async function campCfgFetch() {
+  const snap = await getDocs(collection(db, 'campanias_config'));
+  campCfgs = {};
+  snap.docs.forEach(d => { campCfgs[d.id] = d.data(); });
+  campPlantillas = (campCfgs._plantillas && campCfgs._plantillas.lista) || [];
+}
+
+// Estado de una campaña a partir de su configuración de envío y de lo que le queda por contactar.
+function campEstadoBadge(cfg, pend, total) {
+  const chip = (txt, bg, fg, sub) => `<span style="display:inline-block;padding:.15rem .6rem;border-radius:20px;background:${bg};color:${fg};font-size:.74rem;font-weight:700;white-space:nowrap">${txt}</span>${sub ? `<div style="font-size:.72rem;color:#64748b;margin-top:.15rem">${sub}</div>` : ''}`;
+  if (total > 0 && pend === 0) return chip('✓ Terminada', '#dcfce7', '#166534', 'sin pendientes');
+  if (!cfg || !cfg.plantilla) return chip('⏸ Sin plantilla', '#fef3c7', '#92400e', 'falta armar la plantilla');
+  const n = cfg.cantidadPorDia || 0;
+  if (!cfg.activa) return chip('⏸ Pausada', '#e2e8f0', '#475569', `${n} por día configurados`);
+  const dias = n ? Math.ceil(pend / n) : 0;
+  return chip(`▶ Enviando ${n} por día`, '#dbeafe', '#1e40af', `desde las ${escHtml(cfg.horaEnvio || '—')} · ${pend} pendientes · ~${dias} día${dias === 1 ? '' : 's'} hábil${dias === 1 ? '' : 'es'}`);
+}
+
 function renderEstCampanas() {
   const data = selectedCampana ? campLeads.filter(l => l.campana === selectedCampana) : campLeads;
   const total = data.length;
@@ -2067,7 +2094,7 @@ function renderEstCampanas() {
     .filter(c => !selectedCampana || c === selectedCampana);
   const tbody = document.getElementById('estcamp-tbody');
   if (!campanas.length) {
-    tbody.innerHTML = '<tr><td colspan="9" style="padding:1.5rem;text-align:center;color:#94a3b8">Sin campañas cargadas</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="10" style="padding:1.5rem;text-align:center;color:#94a3b8">Sin campañas cargadas</td></tr>';
     return;
   }
   tbody.innerHTML = campanas.map(c => {
@@ -2080,6 +2107,7 @@ function renderEstCampanas() {
     const pResp   = cnt ? Math.round(resp / cnt * 100) : 0;
     return `<tr>
       <td style="padding:.6rem .85rem;border-bottom:1px solid #f1f5f9;font-weight:700;color:#0d3b66">${escHtml(c)}</td>
+      <td style="padding:.6rem .85rem;border-bottom:1px solid #f1f5f9">${campEstadoBadge(campCfgs[campSlug(c)], pd, leads.length)}</td>
       <td style="padding:.6rem .85rem;border-bottom:1px solid #f1f5f9;text-align:center;font-weight:700">${leads.length}</td>
       <td style="padding:.6rem .85rem;border-bottom:1px solid #f1f5f9;text-align:center;color:#16a34a;font-weight:700">${cnt}</td>
       <td style="padding:.6rem .85rem;border-bottom:1px solid #f1f5f9;text-align:center;color:#dc2626;font-weight:700">${dsc}</td>
@@ -2193,15 +2221,8 @@ async function campCfgLoad() {
   const cont = document.getElementById('campcfg-list');
   const campanas = [...new Set(campLeads.map(l => l.campana).filter(Boolean))].sort();
   if (!campanas.length) { cont.innerHTML = '<div style="color:#94a3b8;font-size:.85rem">Sin campañas cargadas</div>'; return; }
-  let cfgs = {}, plantillas = [];
-  try {
-    const snap = await getDocs(collection(db, 'campanias_config'));
-    snap.docs.forEach(d => { cfgs[d.id] = d.data(); });
-    plantillas = (cfgs._plantillas && cfgs._plantillas.lista) || [];
-  } catch (err) {
-    cont.innerHTML = `<div style="color:#dc2626;font-size:.85rem">No se pudo leer la configuración: ${escHtml(err.message)}</div>`;
-    return;
-  }
+  // campLoad ya leyó campanias_config (campCfgFetch): no se vuelve a leer, se cuida la cuota de Firestore.
+  const cfgs = campCfgs, plantillas = campPlantillas;
   const inp = 'padding:.38rem .6rem;border:1px solid #cbd5e1;border-radius:.4rem;font-size:.82rem';
   cont.innerHTML = campanas.map(c => {
     const id = campSlug(c);
@@ -2254,6 +2275,8 @@ async function campCfgLoad() {
           campana: card.dataset.camp, plantilla, horaEnvio, cantidadPorDia, activa,
           actualizadoEn: serverTimestamp(),
         }, { merge: true });
+        campCfgs[card.dataset.cfg] = { ...(campCfgs[card.dataset.cfg] || {}), campana: card.dataset.camp, plantilla, horaEnvio, cantidadPorDia, activa };
+        renderEstCampanas();
         toast('✓ Configuración guardada');
       } catch (err) {
         toast('Error: ' + err.message);
@@ -2267,6 +2290,7 @@ async function campLoad() {
   try {
     const snap = await getDocs(collection(db, 'campana_leads'));
     campLeads = snap.docs.map(d => ({ _id: d.id, ...d.data() }));
+    try { await campCfgFetch(); } catch (e) { /* sin configuración: el Estado queda como "Sin plantilla" */ }
     campUpdateSubnav();
     campRender();
     renderEstCampanas();
