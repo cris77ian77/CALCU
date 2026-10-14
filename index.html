@@ -237,6 +237,12 @@ header p  { font-size: 13px; opacity: .8; margin-top: 2px; }
 .model-card.selected .mc-price { background: white; }
 .model-card .mc-spec { font-size: 11px; color: #777; border-top: 1px solid #e0e5ec; padding-top: 8px; margin-top: 4px; }
 .model-card .mc-spec span { display: block; margin-top: 2px; }
+.model-card .mc-3d {
+  display: block; margin-top: 12px; padding: 11px 12px; border-radius: 8px; text-align: center;
+  background: #0d3b66; color: #fff; font-size: 14px; font-weight: 700; text-decoration: none;
+  box-shadow: 0 2px 8px rgba(13,59,102,.25); transition: background .15s, transform .15s;
+}
+.model-card .mc-3d:hover { background: #164f86; transform: translateY(-1px); }
 .mc-badge {
   position: absolute; top: -10px; right: 10px;
   background: #27ae60; color: white; font-size: 10px; font-weight: 800;
@@ -720,6 +726,8 @@ const CAMARAS = {
 };
 
 let selectedModel  = 'I1500';
+// Explorador 3D interactivo por modelo (por ahora solo la I-1.500).
+const FABRICA_VIRTUAL = { I1500: './fabrica-virtual/' };
 let selectedCamara = 'CAM_0';
 let pagoMode      = 'contado';
 let currency      = 'USD';
@@ -819,6 +827,7 @@ function buildModelGrid() {
           <span>📐 USD ${pxKg}/kg capacidad (contado)</span>
           <span>⏱ ${m.hEmbolsado}h embolsado + ${m.hVentas}h ventas = <strong>${m.hEmbolsado + m.hVentas} hs/día</strong> · 👤 ${(() => { const t = m.hEmbolsado + m.hVentas; const e = Math.ceil(t/8); const hxe = (t/e).toFixed(1).replace('.',','); return t <= 8 ? `1 empleado (${t}h/día)` : `${e} empleados · ${hxe}h/día c/u`; })()}</span>
         </div>
+        ${FABRICA_VIRTUAL[key] ? `<a class="mc-3d" href="${FABRICA_VIRTUAL[key]}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Entrá a la Fábrica&nbsp;Virtual&nbsp;→</a>` : ''}
       </div>`;
   });
   g.innerHTML = html;
