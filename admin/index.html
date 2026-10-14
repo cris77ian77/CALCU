@@ -466,6 +466,7 @@ tr:hover td { background: #f8fafc; }
           <option value="distribucion_hielo">🚚 Distribución</option>
           <option value="MV">🏧 MV · Vending</option>
         </select>
+        <span id="hist-note" style="font-size:.74rem;color:#64748b" title="El período «Todo» de Estadísticas carga el historial completo">Sesiones y clicks: últimos 90 días</span>
         <button class="btn-refresh" id="btn-refresh" title="Actualizar">↻</button>
         <button class="btn-export" id="btn-export">⬇️ Exportar Excel</button>
       </div>
@@ -506,6 +507,7 @@ tr:hover td { background: #f8fafc; }
         <button class="range-btn active" data-days="30">30 días</button>
         <button class="range-btn" data-days="90">90 días</button>
         <button class="range-btn" data-days="9999">Todo</button>
+        <span id="hist-loading" style="display:none;font-size:.8rem;color:#0369a1;font-weight:600">⏳ Cargando historial completo… puede tardar unos segundos</span>
         <span id="stats-excluidos" style="margin-left:auto;font-size:.75rem;color:#64748b"></span>
       </div>
 
@@ -895,14 +897,20 @@ $('#btn-adm-logout').addEventListener('click', async () => {
 });
 
 // ── CARGAR DATOS ──────────────────────────────────────────────
+// Sesiones y clicks: por defecto solo los últimos 90 días; el período "Todo" trae el historial completo.
+const HIST_DAYS = 90;
+let historyFull = false;
 async function loadData() {
   showLoading();
   try {
+    const since = new Date(Date.now() - HIST_DAYS * 86400000);
+    const sesRef = historyFull ? collection(db, 'sesiones') : query(collection(db, 'sesiones'), where('timestampEntrada', '>=', since));
+    const clkRef = historyFull ? collection(db, 'clicks')   : query(collection(db, 'clicks'),   where('timestamp', '>=', since));
     // Todas las colecciones en paralelo para minimizar tiempo de carga
     const [usersSnap, sessionsSnap, clicksSnap, campSnap, polSnap] = await Promise.all([
       getDocs(collection(db, 'usuarios')),
-      getDocs(collection(db, 'sesiones')),
-      getDocs(collection(db, 'clicks')).catch(err => {
+      getDocs(sesRef),
+      getDocs(clkRef).catch(err => {
         console.warn('[admin] No se pudo leer clicks:', err.message);
         return { docs: [] };
       }),
@@ -995,6 +1003,8 @@ async function loadData() {
     statClicks   = allClicks.filter(c => !polairUids.has(c.uid));
     statsFresh   = false;
 
+    const hn = document.getElementById('hist-note');
+    if (hn) hn.style.display = historyFull ? 'none' : '';
     updateStats();
     renderTable();
     if (document.getElementById('tab-estadisticas').classList.contains('active')) {
@@ -1613,7 +1623,14 @@ document.querySelectorAll('.range-btn').forEach(btn => {
     document.querySelectorAll('.range-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     statsDays = parseInt(btn.dataset.days, 10);
-    renderEstadisticas();
+    if (statsDays === 9999 && !historyFull) {
+      historyFull = true;
+      const ld = document.getElementById('hist-loading');
+      ld.style.display = '';
+      loadData().finally(() => { ld.style.display = 'none'; });
+    } else {
+      renderEstadisticas();
+    }
   });
 });
 
