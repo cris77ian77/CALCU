@@ -398,7 +398,7 @@ tr:hover td { background: #f8fafc; }
       <div class="stat-card">
         <div class="sc-label">Sesiones totales</div>
         <div class="sc-val" id="st-sessions">—</div>
-        <div class="sc-sub">en toda la plataforma</div>
+        <div class="sc-sub" id="st-sessions-sub">en toda la plataforma</div>
       </div>
     </div>
 
@@ -898,24 +898,45 @@ $('#btn-adm-logout').addEventListener('click', async () => {
 
 // ── CARGAR DATOS ──────────────────────────────────────────────
 // Sesiones y clicks: por defecto solo los últimos 90 días; el período "Todo" trae el historial completo.
+// Se bajan 7 días de más para que la media móvil de los primeros días del período de 90 días no quede subestimada.
 const HIST_DAYS = 90;
+const HIST_FETCH_DAYS = HIST_DAYS + 7;
 let historyFull = false;
+let histCutoff = null;          // fecha desde la cual ya están cargadas sesiones y clicks
+let userDocs = [], telPolair = new Set();
+
+// campana_leads (la lectura más pesada) y campanias_config se leen en segundo plano: no frenan KPIs, Usuarios ni Estadísticas.
+// Las pestañas de campañas esperan esta misma promesa en vez de volver a leer.
+let leadsPromise = null, leadsFetchedAt = 0;
+const LEADS_TTL_MS = 120000;
+function fetchLeads() {
+  leadsPromise = Promise.all([
+    getDocs(collection(db, 'campana_leads')),
+    campCfgFetch().catch(() => { /* sin configuración: el Estado queda como "Sin plantilla" */ }),
+  ]).then(([snap]) => {
+    allCampanaLeads = snap.docs.map(d => ({ id: d.id, _id: d.id, ...d.data() }));
+    campLeads = allCampanaLeads;
+    leadsFetchedAt = Date.now();
+  }).catch(err => {
+    console.warn('[admin] No se pudo leer campana_leads:', err.message);
+    leadsPromise = null;
+  });
+  return leadsPromise;
+}
+
 async function loadData() {
   showLoading();
   try {
-    const since = new Date(Date.now() - HIST_DAYS * 86400000);
-    const sesRef = historyFull ? collection(db, 'sesiones') : query(collection(db, 'sesiones'), where('timestampEntrada', '>=', since));
-    const clkRef = historyFull ? collection(db, 'clicks')   : query(collection(db, 'clicks'),   where('timestamp', '>=', since));
-    // Todas las colecciones en paralelo para minimizar tiempo de carga
-    const [usersSnap, sessionsSnap, clicksSnap, campSnap, polSnap] = await Promise.all([
+    histCutoff = new Date(Date.now() - HIST_FETCH_DAYS * 86400000);
+    const sesRef = historyFull ? collection(db, 'sesiones') : query(collection(db, 'sesiones'), where('timestampEntrada', '>=', histCutoff));
+    const clkRef = historyFull ? collection(db, 'clicks')   : query(collection(db, 'clicks'),   where('timestamp', '>=', histCutoff));
+    const leadsP = fetchLeads();
+    // Colecciones del primer render en paralelo
+    const [usersSnap, sessionsSnap, clicksSnap, polSnap] = await Promise.all([
       getDocs(collection(db, 'usuarios')),
       getDocs(sesRef),
       getDocs(clkRef).catch(err => {
         console.warn('[admin] No se pudo leer clicks:', err.message);
-        return { docs: [] };
-      }),
-      getDocs(collection(db, 'campana_leads')).catch(err => {
-        console.warn('[admin] No se pudo leer campana_leads:', err.message);
         return { docs: [] };
       }),
       getDocs(collection(db, 'telefonos_polair')).catch(err => {
@@ -924,10 +945,47 @@ async function loadData() {
       }),
     ]);
 
-    allSessions     = sessionsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-    allClicks       = clicksSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-    allCampanaLeads = campSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    allSessions = sessionsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    allClicks   = clicksSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    userDocs    = usersSnap.docs.map(d => ({ uid: d.id, ...d.data() }));
+    telPolair   = new Set(polSnap.docs.map(d => d.id));
+    rebuildDerived();
 
+    // Cuando llegan los leads de campañas se refrescan los gráficos que los usan
+    leadsP.then(() => {
+      statsFresh = false;
+      if (document.getElementById('tab-estadisticas').classList.contains('active')) renderEstadisticas();
+    });
+  } catch(e) {
+    console.error(e);
+    toast('Error al cargar datos: ' + e.message);
+    showLoading(false);
+  }
+}
+
+// "Todo": solo se bajan las sesiones y clicks anteriores a lo ya cargado; usuarios y campañas no se vuelven a leer.
+async function loadOlderHistory() {
+  try {
+    const [sOld, cOld] = await Promise.all([
+      getDocs(query(collection(db, 'sesiones'), where('timestampEntrada', '<', histCutoff))),
+      getDocs(query(collection(db, 'clicks'),   where('timestamp', '<', histCutoff))).catch(err => {
+        console.warn('[admin] No se pudo leer clicks:', err.message);
+        return { docs: [] };
+      }),
+    ]);
+    historyFull = true;
+    allSessions = allSessions.concat(sOld.docs.map(d => ({ id: d.id, ...d.data() })));
+    allClicks   = allClicks.concat(cOld.docs.map(d => ({ id: d.id, ...d.data() })));
+    rebuildDerived();
+  } catch (e) {
+    console.error(e);
+    toast('Error al cargar el historial: ' + e.message);
+  }
+}
+
+// Combina usuarios + sesiones + clicks y redibuja. Se usa tras cada carga (inicial o de historial).
+function rebuildDerived() {
+  {
     // Agrupar sesiones por uid
     const sessByUid = {};
     allSessions.forEach(s => {
@@ -946,10 +1004,9 @@ async function loadData() {
     });
 
     // Combinar usuario + stats
-    allUsers = usersSnap.docs.map(d => {
-      const u    = { uid: d.id, ...d.data() };
-      const sess = sessByUid[d.id] || [];
-      const clk  = clicksByUid[d.id] || { calendly: 0, whatsapp: 0, acompanamiento: 0, list: [] };
+    allUsers = userDocs.map(u => {
+      const sess = sessByUid[u.uid] || [];
+      const clk  = clicksByUid[u.uid] || { calendly: 0, whatsapp: 0, acompanamiento: 0, list: [] };
 
       // Última visita
       let ultimaVisita = null;
@@ -996,8 +1053,7 @@ async function loadData() {
     });
 
     // Usuarios de Polair (empresa): quedan afuera de la pestaña Estadísticas
-    const telPolair = new Set(polSnap.docs.map(d => d.id));
-    polairUids   = new Set(allUsers.filter(u => esPolair(u, telPolair)).map(u => u.uid));
+    polairUids   =new Set(allUsers.filter(u => esPolair(u, telPolair)).map(u => u.uid));
     statUsers    = allUsers.filter(u => !polairUids.has(u.uid));
     statSessions = allSessions.filter(s => !polairUids.has(s.uid));
     statClicks   = allClicks.filter(c => !polairUids.has(c.uid));
@@ -1010,10 +1066,6 @@ async function loadData() {
     if (document.getElementById('tab-estadisticas').classList.contains('active')) {
       renderEstadisticas();
     }
-  } catch(e) {
-    console.error(e);
-    toast('Error al cargar datos: ' + e.message);
-    showLoading(false);
   }
 }
 
@@ -1048,6 +1100,7 @@ function updateStats() {
   $('#st-total').textContent    = allUsers.length;
   $('#st-bot-pend').textContent = botPendientes;
   $('#st-sessions').textContent = allSessions.length;
+  $('#st-sessions-sub').textContent = historyFull ? 'en toda la plataforma' : `últimos ${HIST_DAYS} días`;
   document.getElementById('bot-st-cont').textContent = botEnviados;
   document.getElementById('bot-st-desc').textContent = botDescartados;
   document.getElementById('bot-st-pend').textContent = botPendientes;
@@ -1624,10 +1677,9 @@ document.querySelectorAll('.range-btn').forEach(btn => {
     btn.classList.add('active');
     statsDays = parseInt(btn.dataset.days, 10);
     if (statsDays === 9999 && !historyFull) {
-      historyFull = true;
       const ld = document.getElementById('hist-loading');
       ld.style.display = '';
-      loadData().finally(() => { ld.style.display = 'none'; });
+      loadOlderHistory().finally(() => { ld.style.display = 'none'; });
     } else {
       renderEstadisticas();
     }
@@ -2339,7 +2391,7 @@ async function campImport() {
     document.getElementById('camp-preview').style.display = 'none';
     document.getElementById('camp-file').value = '';
     document.getElementById('camp-nombre').value = '';
-    await campLoad();
+    await campLoad(true);
   } catch(err) {
     showToast('Error: ' + err.message);
   } finally {
@@ -2422,11 +2474,12 @@ async function campCfgLoad() {
 }
 
 // ── Cargar leads desde Firestore ──────────────────────────────
-async function campLoad() {
+// Usa lo que ya bajó loadData; solo vuelve a leer si pasaron más de 2 min (el bot sigue enviando) o si se fuerza (importación).
+async function campLoad(force = false) {
   try {
-    const snap = await getDocs(collection(db, 'campana_leads'));
-    campLeads = snap.docs.map(d => ({ _id: d.id, ...d.data() }));
-    try { await campCfgFetch(); } catch (e) { /* sin configuración: el Estado queda como "Sin plantilla" */ }
+    if (force || !leadsPromise || Date.now() - leadsFetchedAt > LEADS_TTL_MS) fetchLeads();
+    await leadsPromise;
+    if (!leadsPromise) throw new Error('no se pudieron leer los leads');
     campUpdateSubnav();
     campRender();
     renderEstCampanas();
