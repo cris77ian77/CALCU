@@ -909,7 +909,10 @@ let userDocs = [], telPolair = new Set();
 // Las pestañas de campañas esperan esta misma promesa en vez de volver a leer.
 let leadsPromise = null, leadsFetchedAt = 0;
 const LEADS_TTL_MS = 120000;
+let leadsInFlight = false;
 function fetchLeads() {
+  if (leadsInFlight) return leadsPromise;
+  leadsInFlight = true;
   leadsPromise = Promise.all([
     getDocs(collection(db, 'campana_leads')),
     campCfgFetch().catch(() => { /* sin configuración: el Estado queda como "Sin plantilla" */ }),
@@ -920,7 +923,7 @@ function fetchLeads() {
   }).catch(err => {
     console.warn('[admin] No se pudo leer campana_leads:', err.message);
     leadsPromise = null;
-  });
+  }).finally(() => { leadsInFlight = false; });
   return leadsPromise;
 }
 
@@ -930,8 +933,8 @@ async function loadData() {
     histCutoff = new Date(Date.now() - HIST_FETCH_DAYS * 86400000);
     const sesRef = historyFull ? collection(db, 'sesiones') : query(collection(db, 'sesiones'), where('timestampEntrada', '>=', histCutoff));
     const clkRef = historyFull ? collection(db, 'clicks')   : query(collection(db, 'clicks'),   where('timestamp', '>=', histCutoff));
-    const leadsP = fetchLeads();
-    // Colecciones del primer render en paralelo
+    // Colecciones del primer render en paralelo. Los leads se piden recién después: comparten el canal de Firestore y,
+    // pedidos a la vez, atrasan todo lo demás (medido: usuarios+sesiones 1,8 s solos vs 3,1 s con los leads en paralelo).
     const [usersSnap, sessionsSnap, clicksSnap, polSnap] = await Promise.all([
       getDocs(collection(db, 'usuarios')),
       getDocs(sesRef),
@@ -952,7 +955,7 @@ async function loadData() {
     rebuildDerived();
 
     // Cuando llegan los leads de campañas se refrescan los gráficos que los usan
-    leadsP.then(() => {
+    fetchLeads().then(() => {
       statsFresh = false;
       if (document.getElementById('tab-estadisticas').classList.contains('active')) renderEstadisticas();
     });
