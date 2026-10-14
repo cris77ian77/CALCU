@@ -676,7 +676,7 @@ tr:hover td { background: #f8fafc; }
         <div class="stat-section">
           <h3 style="margin-bottom:.35rem">🔮 Proyección de envíos por día</h3>
           <div style="font-size:.8rem;color:#64748b;margin-bottom:.75rem">
-            Según los pendientes de cada campaña y la cantidad por día configurada (solo campañas activas con plantilla, lunes a viernes, sin contemplar feriados).
+            Según los pendientes de cada campaña y la cantidad por día configurada (solo campañas activas con plantilla, lunes a viernes, salteando feriados nacionales argentinos).
             Cuando una campaña llega a cero hay que tener lista la próxima plantilla / importación.
           </div>
           <div id="forecast-summary" style="display:flex;flex-wrap:wrap;gap:.5rem;margin-bottom:.75rem"></div>
@@ -993,6 +993,7 @@ async function loadData() {
     statUsers    = allUsers.filter(u => !polairUids.has(u.uid));
     statSessions = allSessions.filter(s => !polairUids.has(s.uid));
     statClicks   = allClicks.filter(c => !polairUids.has(c.uid));
+    statsFresh   = false;
 
     updateStats();
     renderTable();
@@ -1432,7 +1433,7 @@ document.querySelectorAll('.nav-tab-btn').forEach(btn => {
     const t = btn.dataset.tab;
     const subnav = document.getElementById('camp-subnav');
     subnav.style.display = (t === 'campanas' || t === 'est-campanas') ? 'flex' : 'none';
-    if (t === 'estadisticas' && allSessions.length > 0) renderEstadisticas();
+    if (t === 'estadisticas' && allSessions.length > 0 && !statsFresh) renderEstadisticas();
     if (t === 'campanas' || t === 'est-campanas' || t === 'envio-campanas') campLoad();
     if (t === 'plantillas') plantillasLoad();
     if (t === 'blacklist') blacklistLoad();
@@ -1617,7 +1618,9 @@ document.querySelectorAll('.range-btn').forEach(btn => {
 });
 
 // ── Render principal ──────────────────────────────────────────
+let statsFresh = false;
 function renderEstadisticas() {
+  statsFresh = true;
   const exc = document.getElementById('stats-excluidos');
   if (exc) exc.textContent = polairUids.size ? `Sin usuarios de Polair (${polairUids.size} excluidos)` : '';
   const effectiveDays = statsDays === 9999 ? computeEffectiveDays() : statsDays;
@@ -1638,7 +1641,7 @@ function renderEstadisticas() {
     if (getBotEstado(u) !== 'enviado' || !u.botContactadoEn) return;
     const d = new Date(u.botContactadoEn);
     if (d.getTime() < cutoff) return;
-    const key = d.toLocaleDateString('es-AR', { day:'2-digit', month:'2-digit', year:'2-digit' });
+    const key = dayKey(d);
     botByDay[key] = (botByDay[key] || 0) + 1;
   });
 
@@ -1648,7 +1651,7 @@ function renderEstadisticas() {
     if (l.botEstado !== 'enviado' || !l.botContactadoEn) return;
     const d = l.botContactadoEn?.toDate ? l.botContactadoEn.toDate() : new Date(l.botContactadoEn);
     if (!d || d.getTime() < cutoff) return;
-    const key = d.toLocaleDateString('es-AR', { day:'2-digit', month:'2-digit', year:'2-digit' });
+    const key = dayKey(d);
     campBotByDay[key] = (campBotByDay[key] || 0) + 1;
   });
 
@@ -1658,7 +1661,7 @@ function renderEstadisticas() {
     if (!l.botRespondido || !l.botRespondidoEn) return;
     const d = l.botRespondidoEn?.toDate ? l.botRespondidoEn.toDate() : new Date(l.botRespondidoEn);
     if (!d || d.getTime() < cutoff) return;
-    const key = d.toLocaleDateString('es-AR', { day:'2-digit', month:'2-digit', year:'2-digit' });
+    const key = dayKey(d);
     respByDay[key] = (respByDay[key] || 0) + 1;
   });
 
@@ -1668,7 +1671,7 @@ function renderEstadisticas() {
     if (!u.botRespondido || !u.botRespondidoEn) return;
     const d = u.botRespondidoEn?.toDate ? u.botRespondidoEn.toDate() : new Date(u.botRespondidoEn);
     if (!d || d.getTime() < cutoff) return;
-    const key = d.toLocaleDateString('es-AR', { day:'2-digit', month:'2-digit', year:'2-digit' });
+    const key = dayKey(d);
     respBotByDay[key] = (respBotByDay[key] || 0) + 1;
   });
 
@@ -1678,6 +1681,8 @@ function renderEstadisticas() {
   renderRetencionChart(sessInRange);
 }
 
+// dd/mm/aa en hora local (equivale a toLocaleDateString('es-AR', 2-digit) pero sin crear un formateador por llamada)
+const dayKey = d => String(d.getDate()).padStart(2,'0') + '/' + String(d.getMonth()+1).padStart(2,'0') + '/' + String(d.getFullYear()).slice(-2);
 function killChart(ref) { if (ref) ref.destroy(); return null; }
 
 function computeEffectiveDays() {
@@ -1686,7 +1691,8 @@ function computeEffectiveDays() {
     ?? (s.timestampEntrada ? new Date(s.timestampEntrada).getTime() : 0)
   ).filter(t => t > 0);
   if (!tss.length) return 365;
-  return Math.ceil((Date.now() - Math.min(...tss)) / 86400000) + 1;
+  let min = Infinity; for (const t of tss) if (t < min) min = t;
+  return Math.ceil((Date.now() - min) / 86400000) + 1;
 }
 
 // ── 1. Entradas por día ───────────────────────────────────────
@@ -1697,7 +1703,7 @@ function renderDailyChart(sessInRange, clicksInRange, botByDay = {}, campBotByDa
   const sessAll = {};
   for (let i = totalDays - 1; i >= 0; i--) {
     const d = new Date(Date.now() - i * 86400000);
-    const key = d.toLocaleDateString('es-AR', { day:'2-digit', month:'2-digit', year:'2-digit' });
+    const key = dayKey(d);
     allKeys.push(key);
     sessAll[key] = 0;
   }
@@ -1706,7 +1712,7 @@ function renderDailyChart(sessInRange, clicksInRange, botByDay = {}, campBotByDa
   statSessions.forEach(s => {
     const ts = s.timestampEntrada?.toDate?.() ?? (s.timestampEntrada ? new Date(s.timestampEntrada) : null);
     if (!ts || ts.getTime() < extCutoff) return;
-    const key = ts.toLocaleDateString('es-AR', { day:'2-digit', month:'2-digit', year:'2-digit' });
+    const key = dayKey(ts);
     if (key in sessAll) sessAll[key]++;
   });
 
@@ -1719,7 +1725,7 @@ function renderDailyChart(sessInRange, clicksInRange, botByDay = {}, campBotByDa
   clicksInRange.forEach(c => {
     const ts = c.timestamp?.toDate?.() ?? (c.timestamp ? new Date(c.timestamp) : null);
     if (!ts) return;
-    const key = ts.toLocaleDateString('es-AR', { day:'2-digit', month:'2-digit', year:'2-digit' });
+    const key = dayKey(ts);
     if (c.tipo === 'calendly'       && key in cal)   cal[key]++;
     if (c.tipo === 'whatsapp'       && key in wsp)   wsp[key]++;
     if (c.tipo === 'acompanamiento' && key in acomp) acomp[key]++;
@@ -1734,7 +1740,7 @@ function renderDailyChart(sessInRange, clicksInRange, botByDay = {}, campBotByDa
     if (lineaDeSesion(s) !== 'VEND') return;
     const ts = s.timestampEntrada?.toDate?.() ?? (s.timestampEntrada ? new Date(s.timestampEntrada) : null);
     if (!ts) return;
-    const key = ts.toLocaleDateString('es-AR', { day:'2-digit', month:'2-digit', year:'2-digit' });
+    const key = dayKey(ts);
     if (key in vendByDay) vendByDay[key]++;
   });
   const vendVals    = labels.map(k => vendByDay[k]);
@@ -2169,6 +2175,13 @@ document.getElementById('estcamp-thead').addEventListener('click', e => {
 
 // ── Proyección de envíos hacia adelante ───────────────────────
 let chartForecast = null;
+// Feriados nacionales (incluye trasladables y puentes turísticos). Actualizar cada año; de 2027 faltan los puentes que se decreten.
+const ARG_FERIADOS = {
+  '2026-10-12':'Diversidad Cultural','2026-11-23':'Soberanía Nacional (trasladado)','2026-12-07':'Puente turístico','2026-12-08':'Inmaculada Concepción','2026-12-25':'Navidad',
+  '2027-01-01':'Año Nuevo','2027-02-08':'Carnaval','2027-02-09':'Carnaval','2027-03-24':'Día de la Memoria','2027-03-26':'Viernes Santo','2027-04-02':'Malvinas',
+  '2027-05-25':'Revolución de Mayo','2027-06-14':'Güemes (trasladado)','2027-07-09':'Independencia','2027-08-16':'San Martín (trasladado)','2027-10-11':'Diversidad Cultural (trasladado)','2027-12-08':'Inmaculada Concepción'
+};
+const fcKey = x => `${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,'0')}-${String(x.getDate()).padStart(2,'0')}`;
 const FC_COLORS = ['#0ea5e9','#7c3aed','#16a34a','#f59e0b','#dc2626','#0d9488','#db2777','#64748b'];
 function renderForecast(rows) {
   const sum = document.getElementById('forecast-summary');
@@ -2188,9 +2201,11 @@ function renderForecast(rows) {
   const maxDays = Math.max(...act.map(r => Math.ceil(r.pend / r.cfg.cantidadPorDia)));
   const horizon = Math.min(maxDays, 60);
   let first = true;
+  const salteados = [];
   while (days.length < horizon) {
     const wd = d.getDay();
-    if (wd !== 0 && wd !== 6 && !(first && act.every(r => (r.cfg.horaEnvio || '00:00') <= hhmm))) days.push(new Date(d));
+    if (wd !== 0 && wd !== 6 && ARG_FERIADOS[fcKey(d)]) salteados.push(new Date(d));
+    if (wd !== 0 && wd !== 6 && !ARG_FERIADOS[fcKey(d)] && !(first && act.every(r => (r.cfg.horaEnvio || '00:00') <= hhmm))) days.push(new Date(d));
     first = false;
     d.setDate(d.getDate() + 1);
   }
@@ -2224,7 +2239,8 @@ function renderForecast(rows) {
     const urgente = n <= 5;
     return `<span style="font-size:.78rem;border-radius:20px;padding:.2rem .7rem;font-weight:700;border:1.5px solid ${FC_COLORS[i % FC_COLORS.length]};background:${urgente ? '#fef2f2' : '#fff'};color:${urgente ? '#b91c1c' : '#1e293b'}">`
       + `${escHtml(r.c)}: se agota ${fmt(fin)} (${n} día${n === 1 ? '' : 's'} hábil${n === 1 ? '' : 'es'})${urgente ? ' ⚠ preparar plantilla' : ''}</span>`;
-  }).join('') + pausadas.map(r => `<span style="font-size:.78rem;background:#fef3c7;color:#92400e;border-radius:20px;padding:.2rem .7rem;font-weight:700">⏸ ${escHtml(r.c)}: ${r.pend} pendientes sin enviar</span>`).join('');
+  }).join('') + pausadas.map(r => `<span style="font-size:.78rem;background:#fef3c7;color:#92400e;border-radius:20px;padding:.2rem .7rem;font-weight:700">⏸ ${escHtml(r.c)}: ${r.pend} pendientes sin enviar</span>`).join('')
+    + (salteados.length ? `<div style="width:100%;font-size:.74rem;color:#64748b">Feriados salteados: ${salteados.map(x => `${fmt(x)} (${ARG_FERIADOS[fcKey(x)]})`).join(' · ')}</div>` : '');
 }
 
 // ── Parsear archivo HTML ───────────────────────────────────────
@@ -2468,7 +2484,7 @@ function campRender() {
   const fmtTs = ts => {
     if (!ts) return '—';
     const d = ts?.toDate ? ts.toDate() : new Date(ts);
-    return isNaN(d) ? '—' : d.toLocaleDateString('es-AR', { day:'2-digit', month:'2-digit', year:'2-digit' });
+    return isNaN(d) ? '—' : dayKey(d);
   };
 
   document.getElementById('camp-leads-tbody').innerHTML = filtered.length
