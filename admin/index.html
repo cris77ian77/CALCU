@@ -651,17 +651,17 @@ tr:hover td { background: #f8fafc; }
           <h3 style="margin-bottom:.85rem">Detalle por campaña</h3>
           <div style="overflow-x:auto">
             <table style="width:100%;border-collapse:collapse;font-size:.84rem">
-              <thead>
+              <thead id="estcamp-thead">
                 <tr>
-                  <th style="padding:.6rem .85rem;text-align:left;color:#64748b;font-size:.72rem;text-transform:uppercase;border-bottom:2px solid #e2e8f0">Campaña</th>
-                  <th style="padding:.6rem .85rem;text-align:left;color:#64748b;font-size:.72rem;text-transform:uppercase;border-bottom:2px solid #e2e8f0">Estado</th>
-                  <th style="padding:.6rem .85rem;text-align:right;color:#64748b;font-size:.72rem;text-transform:uppercase;border-bottom:2px solid #e2e8f0">Totales</th>
-                  <th style="padding:.6rem .85rem;text-align:right;color:#64748b;font-size:.72rem;text-transform:uppercase;border-bottom:2px solid #e2e8f0">Contactados</th>
-                  <th style="padding:.6rem .85rem;text-align:right;color:#64748b;font-size:.72rem;text-transform:uppercase;border-bottom:2px solid #e2e8f0">Descartados</th>
-                  <th style="padding:.6rem .85rem;text-align:right;color:#64748b;font-size:.72rem;text-transform:uppercase;border-bottom:2px solid #e2e8f0">Pendientes</th>
-                  <th style="padding:.6rem .85rem;text-align:right;color:#64748b;font-size:.72rem;text-transform:uppercase;border-bottom:2px solid #e2e8f0">Avance</th>
-                  <th style="padding:.6rem .85rem;text-align:right;color:#64748b;font-size:.72rem;text-transform:uppercase;border-bottom:2px solid #e2e8f0">Respondidos</th>
-                  <th style="padding:.6rem .85rem;text-align:right;color:#64748b;font-size:.72rem;text-transform:uppercase;border-bottom:2px solid #e2e8f0">% Resp</th>
+                  <th data-sort="campana" data-label="Campaña" style="padding:.6rem .85rem;text-align:left;color:#64748b;font-size:.72rem;text-transform:uppercase;border-bottom:2px solid #e2e8f0;cursor:pointer;user-select:none;white-space:nowrap">Campaña</th>
+                  <th data-sort="estado" data-label="Estado" style="padding:.6rem .85rem;text-align:left;color:#64748b;font-size:.72rem;text-transform:uppercase;border-bottom:2px solid #e2e8f0;cursor:pointer;user-select:none;white-space:nowrap">Estado</th>
+                  <th data-sort="total" data-label="Totales" style="padding:.6rem .85rem;text-align:right;color:#64748b;font-size:.72rem;text-transform:uppercase;border-bottom:2px solid #e2e8f0;cursor:pointer;user-select:none;white-space:nowrap">Totales</th>
+                  <th data-sort="cont" data-label="Contactados" style="padding:.6rem .85rem;text-align:right;color:#64748b;font-size:.72rem;text-transform:uppercase;border-bottom:2px solid #e2e8f0;cursor:pointer;user-select:none;white-space:nowrap">Contactados</th>
+                  <th data-sort="desc" data-label="Descartados" style="padding:.6rem .85rem;text-align:right;color:#64748b;font-size:.72rem;text-transform:uppercase;border-bottom:2px solid #e2e8f0;cursor:pointer;user-select:none;white-space:nowrap">Descartados</th>
+                  <th data-sort="pend" data-label="Pendientes" style="padding:.6rem .85rem;text-align:right;color:#64748b;font-size:.72rem;text-transform:uppercase;border-bottom:2px solid #e2e8f0;cursor:pointer;user-select:none;white-space:nowrap">Pendientes</th>
+                  <th data-sort="pct" data-label="Avance" style="padding:.6rem .85rem;text-align:right;color:#64748b;font-size:.72rem;text-transform:uppercase;border-bottom:2px solid #e2e8f0;cursor:pointer;user-select:none;white-space:nowrap">Avance</th>
+                  <th data-sort="resp" data-label="Respondidos" style="padding:.6rem .85rem;text-align:right;color:#64748b;font-size:.72rem;text-transform:uppercase;border-bottom:2px solid #e2e8f0;cursor:pointer;user-select:none;white-space:nowrap">Respondidos</th>
+                  <th data-sort="pResp" data-label="% Resp" style="padding:.6rem .85rem;text-align:right;color:#64748b;font-size:.72rem;text-transform:uppercase;border-bottom:2px solid #e2e8f0;cursor:pointer;user-select:none;white-space:nowrap">% Resp</th>
                   <th style="padding:.6rem .85rem;text-align:left;color:#64748b;font-size:.72rem;text-transform:uppercase;border-bottom:2px solid #e2e8f0">Barra</th>
                 </tr>
               </thead>
@@ -670,6 +670,17 @@ tr:hover td { background: #f8fafc; }
               </tbody>
             </table>
           </div>
+        </div>
+
+        <!-- Proyección de envíos -->
+        <div class="stat-section">
+          <h3 style="margin-bottom:.35rem">🔮 Proyección de envíos por día</h3>
+          <div style="font-size:.8rem;color:#64748b;margin-bottom:.75rem">
+            Según los pendientes de cada campaña y la cantidad por día configurada (solo campañas activas con plantilla, lunes a viernes, sin contemplar feriados).
+            Cuando una campaña llega a cero hay que tener lista la próxima plantilla / importación.
+          </div>
+          <div id="forecast-summary" style="display:flex;flex-wrap:wrap;gap:.5rem;margin-bottom:.75rem"></div>
+          <div class="chart-canvas-wrap"><canvas id="chart-forecast"></canvas></div>
         </div>
 
       </div>
@@ -2095,33 +2106,125 @@ function renderEstCampanas() {
   const tbody = document.getElementById('estcamp-tbody');
   if (!campanas.length) {
     tbody.innerHTML = '<tr><td colspan="10" style="padding:1.5rem;text-align:center;color:#94a3b8">Sin campañas cargadas</td></tr>';
+    renderForecast([]);
     return;
   }
-  tbody.innerHTML = campanas.map(c => {
-    const leads   = campLeads.filter(l => l.campana === c);
-    const cnt     = leads.filter(l => l.botEstado === 'enviado').length;
-    const dsc     = leads.filter(l => String(l.botEstado||'').startsWith('descartado')).length;
-    const pd      = leads.filter(l => l.botEstado !== 'enviado' && !String(l.botEstado||'').startsWith('descartado')).length;
-    const resp    = leads.filter(l => l.botRespondido === true).length;
-    const p       = leads.length ? Math.round(cnt / leads.length * 100) : 0;
-    const pResp   = cnt ? Math.round(resp / cnt * 100) : 0;
-    return `<tr>
-      <td style="padding:.6rem .85rem;border-bottom:1px solid #f1f5f9;font-weight:700;color:#0d3b66">${escHtml(c)}</td>
-      <td style="padding:.6rem .85rem;border-bottom:1px solid #f1f5f9">${campEstadoBadge(campCfgs[campSlug(c)], pd, leads.length)}</td>
-      <td style="padding:.6rem .85rem;border-bottom:1px solid #f1f5f9;text-align:center;font-weight:700">${leads.length}</td>
-      <td style="padding:.6rem .85rem;border-bottom:1px solid #f1f5f9;text-align:center;color:#16a34a;font-weight:700">${cnt}</td>
-      <td style="padding:.6rem .85rem;border-bottom:1px solid #f1f5f9;text-align:center;color:#dc2626;font-weight:700">${dsc}</td>
-      <td style="padding:.6rem .85rem;border-bottom:1px solid #f1f5f9;text-align:center;color:#d97706;font-weight:700">${pd}</td>
-      <td style="padding:.6rem .85rem;border-bottom:1px solid #f1f5f9;text-align:center;font-weight:700">${p}%</td>
-      <td style="padding:.6rem .85rem;border-bottom:1px solid #f1f5f9;text-align:center;color:#7c3aed;font-weight:700">${resp}</td>
-      <td style="padding:.6rem .85rem;border-bottom:1px solid #f1f5f9;text-align:center;color:#7c3aed;font-weight:700">${pResp}%</td>
-      <td style="padding:.6rem .85rem;border-bottom:1px solid #f1f5f9;min-width:120px">
+  const rows = campanas.map(c => {
+    const leads = campLeads.filter(l => l.campana === c);
+    const cnt   = leads.filter(l => l.botEstado === 'enviado').length;
+    const dsc   = leads.filter(l => String(l.botEstado||'').startsWith('descartado')).length;
+    const pd    = leads.length - cnt - dsc;
+    const resp  = leads.filter(l => l.botRespondido === true).length;
+    const cfg   = campCfgs[campSlug(c)];
+    return { c, cfg, total: leads.length, cont: cnt, desc: dsc, pend: pd, resp,
+      pct: leads.length ? Math.round(cnt / leads.length * 100) : 0,
+      pResp: cnt ? Math.round(resp / cnt * 100) : 0,
+      estado: campEstadoRank(cfg, pd, leads.length) };
+  });
+  const sk = estSortCol === 'campana' ? 'c' : estSortCol;
+  rows.sort((x, y) => {
+    const a = x[sk], b = y[sk];
+    const r = typeof a === 'string' ? a.localeCompare(b, 'es') : a - b;
+    return (r || x.c.localeCompare(y.c, 'es')) * estSortDir;
+  });
+  document.querySelectorAll('#estcamp-thead th[data-sort]').forEach(th => {
+    const act = th.dataset.sort === estSortCol;
+    th.style.color = act ? '#0d3b66' : '#64748b';
+    th.innerHTML = th.dataset.label + (act ? (estSortDir === 1 ? ' ↑' : ' ↓') : ' <span style="opacity:.3">↕</span>');
+  });
+  const td = 'padding:.6rem .85rem;border-bottom:1px solid #f1f5f9;';
+  tbody.innerHTML = rows.map(r => `<tr>
+      <td style="${td}font-weight:700;color:#0d3b66">${escHtml(r.c)}</td>
+      <td style="${td}">${campEstadoBadge(r.cfg, r.pend, r.total)}</td>
+      <td style="${td}text-align:center;font-weight:700">${r.total}</td>
+      <td style="${td}text-align:center;color:#16a34a;font-weight:700">${r.cont}</td>
+      <td style="${td}text-align:center;color:#dc2626;font-weight:700">${r.desc}</td>
+      <td style="${td}text-align:center;color:#d97706;font-weight:700">${r.pend}</td>
+      <td style="${td}text-align:center;font-weight:700">${r.pct}%</td>
+      <td style="${td}text-align:center;color:#7c3aed;font-weight:700">${r.resp}</td>
+      <td style="${td}text-align:center;color:#7c3aed;font-weight:700">${r.pResp}%</td>
+      <td style="${td}min-width:120px">
         <div style="height:8px;background:#e2e8f0;border-radius:4px;overflow:hidden">
-          <div style="height:100%;width:${p}%;background:${p>=80?'#16a34a':p>=50?'#f59e0b':'#0ea5e9'};border-radius:4px"></div>
+          <div style="height:100%;width:${r.pct}%;background:${r.pct>=80?'#16a34a':r.pct>=50?'#f59e0b':'#0ea5e9'};border-radius:4px"></div>
         </div>
       </td>
-    </tr>`;
-  }).join('');
+    </tr>`).join('');
+  renderForecast(rows);
+}
+
+// Orden del Estado: enviando, pausada, sin plantilla, terminada.
+function campEstadoRank(cfg, pend, total) {
+  if (total > 0 && pend === 0) return 3;
+  if (!cfg || !cfg.plantilla) return 2;
+  return cfg.activa ? 0 : 1;
+}
+let estSortCol = 'campana', estSortDir = 1;
+document.getElementById('estcamp-thead').addEventListener('click', e => {
+  const th = e.target.closest('th[data-sort]');
+  if (!th) return;
+  if (estSortCol === th.dataset.sort) estSortDir *= -1;
+  else { estSortCol = th.dataset.sort; estSortDir = th.dataset.sort === 'campana' || th.dataset.sort === 'estado' ? 1 : -1; }
+  renderEstCampanas();
+});
+
+// ── Proyección de envíos hacia adelante ───────────────────────
+let chartForecast = null;
+const FC_COLORS = ['#0ea5e9','#7c3aed','#16a34a','#f59e0b','#dc2626','#0d9488','#db2777','#64748b'];
+function renderForecast(rows) {
+  const sum = document.getElementById('forecast-summary');
+  chartForecast = killChart(chartForecast);
+  const act = rows.filter(r => r.pend > 0 && r.cfg && r.cfg.plantilla && r.cfg.activa && r.cfg.cantidadPorDia > 0);
+  const pausadas = rows.filter(r => r.pend > 0 && !act.includes(r));
+  if (!act.length) {
+    sum.innerHTML = '<span style="font-size:.82rem;color:#94a3b8">No hay campañas activas con pendientes para proyectar.</span>'
+      + pausadas.map(r => `<span style="font-size:.78rem;background:#fef3c7;color:#92400e;border-radius:20px;padding:.15rem .6rem;font-weight:700">⏸ ${escHtml(r.c)}: ${r.pend} pendientes sin enviar</span>`).join('');
+    return;
+  }
+  // Días hábiles desde hoy (hoy solo si todavía no pasó la hora de envío de alguna campaña)
+  const now = new Date();
+  const hhmm = now.toTimeString().slice(0, 5);
+  const days = [];
+  const d = new Date(now); d.setHours(12, 0, 0, 0);
+  const maxDays = Math.max(...act.map(r => Math.ceil(r.pend / r.cfg.cantidadPorDia)));
+  const horizon = Math.min(maxDays, 60);
+  let first = true;
+  while (days.length < horizon) {
+    const wd = d.getDay();
+    if (wd !== 0 && wd !== 6 && !(first && act.every(r => (r.cfg.horaEnvio || '00:00') <= hhmm))) days.push(new Date(d));
+    first = false;
+    d.setDate(d.getDate() + 1);
+  }
+  const fmt = x => x.toLocaleDateString('es-AR', { weekday: 'short', day: '2-digit', month: '2-digit' });
+  const labels = days.map(fmt);
+  const datasets = act.map((r, i) => {
+    let left = r.pend;
+    const data = days.map(() => { const n = Math.min(left, r.cfg.cantidadPorDia); left -= n; return n; });
+    return { type: 'bar', label: r.c, data, stack: 's', backgroundColor: FC_COLORS[i % FC_COLORS.length], borderRadius: 3, yAxisID: 'y' };
+  });
+  let remaining = act.reduce((a, r) => a + r.pend, 0);
+  const restante = datasets.length ? days.map((_, i) => { remaining -= datasets.reduce((a, ds) => a + ds.data[i], 0); return remaining; }) : [];
+  datasets.push({ type: 'line', label: 'Pendientes restantes', data: restante, borderColor: '#64748b', backgroundColor: 'transparent',
+    borderWidth: 2, borderDash: [5, 3], pointRadius: 2, tension: .2, yAxisID: 'y1' });
+  chartForecast = new Chart(document.getElementById('chart-forecast'), {
+    data: { labels, datasets },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: 'top', labels: { font: { size: 11 }, boxWidth: 14 } } },
+      scales: {
+        x:  { stacked: true, grid: { display: false }, ticks: { maxTicksLimit: 14, font: { size: 11 } } },
+        y:  { stacked: true, beginAtZero: true, title: { display: true, text: 'Envíos por día' }, ticks: { font: { size: 11 }, precision: 0 } },
+        y1: { beginAtZero: true, position: 'right', grid: { drawOnChartArea: false }, title: { display: true, text: 'Pendientes' }, ticks: { font: { size: 10 }, precision: 0 } }
+      }
+    }
+  });
+  // Resumen: cuándo se agota cada campaña
+  sum.innerHTML = act.map((r, i) => {
+    const n = Math.ceil(r.pend / r.cfg.cantidadPorDia);
+    const fin = days[Math.min(n, days.length) - 1];
+    const urgente = n <= 5;
+    return `<span style="font-size:.78rem;border-radius:20px;padding:.2rem .7rem;font-weight:700;border:1.5px solid ${FC_COLORS[i % FC_COLORS.length]};background:${urgente ? '#fef2f2' : '#fff'};color:${urgente ? '#b91c1c' : '#1e293b'}">`
+      + `${escHtml(r.c)}: se agota ${fmt(fin)} (${n} día${n === 1 ? '' : 's'} hábil${n === 1 ? '' : 'es'})${urgente ? ' ⚠ preparar plantilla' : ''}</span>`;
+  }).join('') + pausadas.map(r => `<span style="font-size:.78rem;background:#fef3c7;color:#92400e;border-radius:20px;padding:.2rem .7rem;font-weight:700">⏸ ${escHtml(r.c)}: ${r.pend} pendientes sin enviar</span>`).join('');
 }
 
 // ── Parsear archivo HTML ───────────────────────────────────────
