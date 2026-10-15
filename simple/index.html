@@ -387,6 +387,9 @@ thead th.mes0-col { background: #7d4e00 !important; border-right: 2px solid #e8c
 .help-video-placeholder span { display: block; font-size: 28px; margin-bottom: 8px; }
 .help-video-wrap { margin-top: 18px; border-radius: 10px; overflow: hidden; }
 .help-video-wrap iframe { display: block; width: 100%; height: 280px; border: 0; }
+.help-video-wrap video { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; background: #0a1a30; }
+.help-btn.has-video { position: relative; }
+.help-btn.has-video::after { content: '▶'; position: absolute; right: -7px; top: -6px; width: 14px; height: 14px; border-radius: 50%; background: #16a34a; color: #fff; font-size: 7px; line-height: 14px; text-align: center; }
 </style>
 </head>
 <body>
@@ -1013,7 +1016,9 @@ function showHelp(key) {
   document.getElementById('help-title').textContent = h.title;
   document.getElementById('help-body').textContent  = h.text;
   const va = document.getElementById('help-video-area');
-  if (h.videoUrl) {
+  if (h.videoUrl && /\.(mp4|webm)(\?|$)/.test(h.videoUrl)) {
+    va.innerHTML = `<div class="help-video-wrap"><video src="${h.videoUrl}"${h.poster ? ` poster="${h.poster}"` : ''} controls playsinline preload="metadata"></video></div>`;
+  } else if (h.videoUrl) {
     let src = h.videoUrl;
     if (src.includes('youtube.com/watch')) src = src.replace('watch?v=', 'embed/');
     else if (src.includes('youtu.be/'))    src = 'https://www.youtube.com/embed/' + src.split('youtu.be/')[1];
@@ -1026,10 +1031,15 @@ function showHelp(key) {
   document.addEventListener('keydown', _helpKey);
 }
 function closeHelp() {
+  document.querySelector('#help-video-area video')?.pause();
   document.getElementById('help-overlay').classList.remove('open');
   document.removeEventListener('keydown', _helpKey);
 }
 function _helpKey(e) { if (e.key === 'Escape') closeHelp(); }
+document.querySelectorAll('.help-btn[onclick]').forEach(b => {
+  const k = (b.getAttribute('onclick').match(/showHelp\('([^']+)'\)/) || [])[1];
+  if (k && HELP_CONTENT[k]?.videoUrl) { b.classList.add('has-video'); b.title = 'Ver explicación en video'; }
+});
 
 // ── DATA ──
 const MODELS = {
