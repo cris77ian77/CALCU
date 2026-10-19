@@ -497,7 +497,7 @@ thead th.mes0-col { background: #7d4e00 !important; border-right: 2px solid #e8c
 
       <div class="field">
         <label>Alquiler mensual (USD) <button class="help-btn" onclick="showHelp('alquiler')">i</button></label>
-        <input type="number" id="alquiler" value="0" min="0" oninput="recalc()">
+        <input type="number" id="alquiler" value="500" min="0" oninput="recalc()">
         <div class="derived" id="alquiler-ars"></div>
       </div>
 
@@ -1117,6 +1117,8 @@ async function fetchDolarBNA() {
 }
 
 function init() {
+  const prox = new Date(); prox.setDate(1); prox.setMonth(prox.getMonth() + 1);
+  document.getElementById('mesInicio').value = `${prox.getFullYear()}-${String(prox.getMonth() + 1).padStart(2, '0')}`;
   buildModelGrid();
   buildCameraGrid();
   initSliders();
