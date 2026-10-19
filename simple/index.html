@@ -841,7 +841,8 @@ Este número cambia según la forma de pago:
 Porque es un egreso de dinero — una salida de caja que necesitás tener disponible antes de empezar a generar ingresos.
 
 Este valor es la base para calcular el ROI y el Payback.`,
-    videoUrl: null
+    videoUrl: 'videos/resultados.mp4',
+    poster: 'videos/resultados.jpg'
   },
   'kpi-ingresos': {
     title: 'Ingresos Anuales',
@@ -857,7 +858,8 @@ La producción de cada mes depende de:
 • El porcentaje de utilización del slider de ese mes
 
 El subtítulo muestra la producción total en kg, que te da una idea del volumen físico del negocio independientemente del precio.`,
-    videoUrl: null
+    videoUrl: 'videos/resultados.mp4#t=11.2',
+    poster: 'videos/resultados.jpg'
   },
   'kpi-resultado': {
     title: 'Resultado Operativo (EBITDA)',
@@ -876,7 +878,8 @@ Qué NO resta:
 Es el equivalente al EBITDA (Earnings Before Interest, Taxes, Depreciation and Amortization) — mide cuánto genera la operación antes de considerar cómo se financió.
 
 Un resultado operativo positivo significa que el negocio cubre todos sus costos operativos y genera excedente. Si es negativo, la operación pierde dinero incluso antes de considerar la inversión.`,
-    videoUrl: null
+    videoUrl: 'videos/resultados.mp4#t=16.9',
+    poster: 'videos/resultados.jpg'
   },
   'kpi-flujo': {
     title: 'Flujo Neto 12 meses',
@@ -889,7 +892,8 @@ En modo Financiado: es el Resultado Operativo menos las 12 cuotas mensuales del 
 NO incluye la inversión inicial del Mes 0 (eso se refleja en el Flujo Acumulado).
 
 Este número responde la pregunta: "al final del primer año, ¿cuánta plata generó el negocio mes a mes?" Si es positivo, el negocio genera caja mes a mes. Si es negativo, necesitás capital de trabajo adicional para sostenerlo.`,
-    videoUrl: null
+    videoUrl: 'videos/resultados.mp4#t=27.2',
+    poster: 'videos/resultados.jpg'
   },
   'kpi-roi': {
     title: 'ROI Anual (Retorno sobre Inversión)',
@@ -909,7 +913,8 @@ Interpretación:
 • ROI 20-50%: negocio rentable, recupero en 2-3 años
 • ROI < 20%: rentable pero lento, necesitás analizar el escenario a más largo plazo
 • ROI negativo: el negocio no cubre sus costos en este escenario`,
-    videoUrl: null
+    videoUrl: 'videos/resultados.mp4#t=32.4',
+    poster: 'videos/resultados.jpg'
   },
   'kpi-payback': {
     title: 'Payback (Período de Recupero)',
@@ -928,7 +933,8 @@ Ejemplo:
 Si el modelo muestra ">12 meses", no significa que el negocio sea malo — solo que el recupero es más lento y necesitás analizar a un horizonte de 24 o 36 meses.
 
 El gráfico "Flujo Acumulado" muestra visualmente el punto exacto de recupero.`,
-    videoUrl: null
+    videoUrl: 'videos/resultados.mp4#t=37.5',
+    poster: 'videos/resultados.jpg'
   },
   'kpi-acumulado': {
     title: 'Acumulado Final (Mes 12)',
@@ -942,7 +948,8 @@ Si es positivo: recuperaste la inversión y generaste ganancia adicional durante
 Si es negativo: todavía no recuperaste la inversión, pero esto no necesariamente significa que el negocio sea malo — podés estar muy cerca del recupero.
 
 Es el valor que muestra la línea del gráfico "Flujo Acumulado" en el último punto (Mes 12).`,
-    videoUrl: null
+    videoUrl: 'videos/resultados.mp4#t=40.6',
+    poster: 'videos/resultados.jpg'
   },
   'tabla': {
     title: '💰 Flujo de Fondos Mensual',
@@ -961,7 +968,8 @@ La tabla se divide en secciones:
 ▸ Inversión / Acumulado: la inversión inicial y cómo evoluciona el acumulado
 
 Los números en rojo son egresos o resultados negativos. Los números en negro o verde son positivos.`,
-    videoUrl: null
+    videoUrl: 'videos/resultados.mp4#t=45.5',
+    poster: 'videos/resultados.jpg'
   },
   'chart-stacked': {
     title: '💰 Gráfico: Ingresos · Costos · Resultado',
@@ -975,7 +983,8 @@ Cómo leerlo:
 Cuando las barras de costos superan la barra de ingresos, el resultado es negativo (rojo). Cuando los ingresos superan los costos, el resultado es positivo (verde).
 
 En los meses de arranque (baja utilización), es normal que el resultado sea negativo o muy pequeño — la operación todavía no alcanzó el punto de equilibrio.`,
-    videoUrl: null
+    videoUrl: 'videos/resultados.mp4#t=56.9',
+    poster: 'videos/resultados.jpg'
   },
   'chart-flujo': {
     title: '📊 Gráfico: Resultado Operativo Mensual',
@@ -990,7 +999,8 @@ Sirve para identificar rápidamente:
 • Los meses de temporada alta donde el negocio es más rentable
 • Los meses críticos donde la operación puede dar pérdida
 • La estacionalidad general del negocio`,
-    videoUrl: null
+    videoUrl: 'videos/resultados.mp4#t=60.6',
+    poster: 'videos/resultados.jpg'
   },
   'chart-acum': {
     title: '📉 Gráfico: Flujo Acumulado',
@@ -1006,7 +1016,8 @@ Zona roja/bajo cero: todavía no recuperaste la inversión.
 Zona verde/sobre cero: ya recuperaste la inversión y estás generando ganancia neta.
 
 Si la línea nunca cruza el eje 0 en los 12 meses, el indicador Payback muestra ">12 meses".`,
-    videoUrl: null
+    videoUrl: 'videos/resultados.mp4#t=66.6',
+    poster: 'videos/resultados.jpg'
   }
 };
 
@@ -1017,7 +1028,7 @@ function showHelp(key) {
   document.getElementById('help-title').textContent = h.title;
   document.getElementById('help-body').textContent  = h.text;
   const va = document.getElementById('help-video-area');
-  if (h.videoUrl && /\.(mp4|webm)(\?|$)/.test(h.videoUrl)) {
+  if (h.videoUrl && /\.(mp4|webm)([?#]|$)/.test(h.videoUrl)) {
     va.innerHTML = `<div class="help-video-wrap"><video src="${h.videoUrl}"${h.poster ? ` poster="${h.poster}"` : ''} controls playsinline preload="metadata"></video></div>`;
   } else if (h.videoUrl) {
     let src = h.videoUrl;
@@ -1299,7 +1310,7 @@ function fmt(v, dec=0) {
 function fmtKg(v)  { return Number(v).toLocaleString('es-AR') + ' kg'; }
 function fmtPct(v) { return v.toFixed(1) + '%'; }
 
-function h(key) { return `<button class="help-btn" onclick="showHelp('${key}')">i</button>`; }
+function h(key) { const v = HELP_CONTENT[key]?.videoUrl ? ' has-video" title="Ver explicación en video' : ''; return `<button class="help-btn${v}" onclick="showHelp('${key}')">i</button>`; }
 
 function recalc() {
   const m            = MODELS[selectedModel];
