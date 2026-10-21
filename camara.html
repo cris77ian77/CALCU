@@ -882,8 +882,8 @@
         <div class="eq-row">
           <span class="eq-lbl">Piso</span>
           <div class="toggle-btn-group" style="width:170px">
-            <button class="active" data-val="no" onclick="setEqToggle('eq-piso',this); calcularCarga()">Sin piso</button>
-            <button               data-val="si"  onclick="setEqToggle('eq-piso',this); calcularCarga()">Con piso</button>
+            <button               data-val="no" onclick="setEqToggle('eq-piso',this); calcularCarga()">Sin piso</button>
+            <button class="active" data-val="si"  onclick="setEqToggle('eq-piso',this); calcularCarga()">Con piso</button>
           </div>
         </div>
         <div class="eq-row">
@@ -936,7 +936,13 @@
         </div>
         <div class="eq-row">
           <span class="eq-lbl">Aperturas / día</span>
-          <input class="eq-inp" type="number" id="eq-p-apert" value="10" oninput="calcularCarga()">
+          <input class="eq-inp" type="number" id="eq-p-apert" value="" oninput="this.dataset.manual='1';calcularCarga()">
+          <span class="eq-unit">por día <a href="#" id="eq-p-apert-auto" onclick="event.preventDefault();delete document.getElementById('eq-p-apert').dataset.manual;calcularCarga()" style="color:#4fc3f7;display:none">↺ auto</a></span>
+        </div>
+        <div class="eq-row">
+          <span class="eq-lbl">Kg por apertura</span>
+          <input class="eq-inp" type="number" id="eq-p-kgap" value="58" min="1" oninput="calcularCarga()">
+          <span class="eq-unit">kg de hielo que entran cada vez</span>
         </div>
         <div class="eq-row">
           <span class="eq-lbl">Duración c/apertura</span>
@@ -1600,7 +1606,7 @@ _Forma de pago:_ Anticipo 50% al pedido con transferencia bancaria dentro de los
   };
 
   // Estado toggles solapa 2
-  const EQ_STATE = { panel:'60', piso:'no', puerta:'batiente' };
+  const EQ_STATE = { panel:'60', piso:'si', puerta:'batiente' };
 
   // ── Tabs ─────────────────────────────────────────────────────
   function switchTab(n) {
@@ -1716,10 +1722,26 @@ _Forma de pago:_ Anticipo 50% al pedido con transferencia bancaria dentro de los
     const Q_piso = EQ_STATE.piso==='si' ? U * A_piso * DT : 0;
     const Q_trans = Q_pt + Q_piso;
 
+    // Recambio diario proporcional al tamaño: volumen interior × densidad de estiba × % recambio
+    const esp    = (+EQ_STATE.panel||60)/1000;
+    const V_int  = Math.max(0,a-2*esp) * Math.max(0,l-2*esp) * Math.max(0,h-(EQ_STATE.piso==='si'?2:1)*esp);
+    const dens   = parseFloat(document.getElementById('eq-prod-dens').value)||0;
+    const recPct = parseFloat(document.getElementById('eq-prod-rec').value)||0;
+    const kgInp  = document.getElementById('eq-prod-kg');
+    const kgAuto = Math.round(V_int * dens * recPct / 100);
+    if (kgInp.dataset.manual !== '1') kgInp.value = kgAuto;
+    document.getElementById('eq-prod-auto').style.display = kgInp.dataset.manual === '1' ? '' : 'none';
+    const kg    = parseFloat(kgInp.value)||0;
+
     // ── 2. Infiltración (ASHRAE gravity flow) ────────────────
     const Pw = parseFloat(document.getElementById('eq-p-ancho').value)||900;
     const Ph = parseFloat(document.getElementById('eq-p-alto').value) ||2000;
-    const nAp  = parseFloat(document.getElementById('eq-p-apert').value)||10;
+    // Aperturas por día: una cada "kg por apertura" de hielo que entra (editable a mano)
+    const apInp = document.getElementById('eq-p-apert');
+    const kgAp  = parseFloat(document.getElementById('eq-p-kgap').value)||58;
+    if (apInp.dataset.manual !== '1') apInp.value = (kg / kgAp).toFixed(1);
+    document.getElementById('eq-p-apert-auto').style.display = apInp.dataset.manual === '1' ? '' : 'none';
+    const nAp  = parseFloat(apInp.value)||0;
     const tMin = parseFloat(document.getElementById('eq-p-dur').value) ||2;
 
     const pw=Pw/1000, ph=Ph/1000;
@@ -1738,16 +1760,6 @@ _Forma de pago:_ Anticipo 50% al pedido con transferencia bancaria dentro de los
 
     // ── 3. Producto ──────────────────────────────────────────
     const tipo  = document.getElementById('eq-prod-tipo').value;
-    // Recambio diario proporcional al tamaño: volumen interior × densidad de estiba × % recambio
-    const esp    = (+EQ_STATE.panel||60)/1000;
-    const V_int  = Math.max(0,a-2*esp) * Math.max(0,l-2*esp) * Math.max(0,h-(EQ_STATE.piso==='si'?2:1)*esp);
-    const dens   = parseFloat(document.getElementById('eq-prod-dens').value)||0;
-    const recPct = parseFloat(document.getElementById('eq-prod-rec').value)||0;
-    const kgInp  = document.getElementById('eq-prod-kg');
-    const kgAuto = Math.round(V_int * dens * recPct / 100);
-    if (kgInp.dataset.manual !== '1') kgInp.value = kgAuto;
-    document.getElementById('eq-prod-auto').style.display = kgInp.dataset.manual === '1' ? '' : 'none';
-    const kg    = parseFloat(kgInp.value)||0;
     const Tent  = parseFloat(document.getElementById('eq-prod-tentry').value)||0;
     const Hop   = parseFloat(document.getElementById('eq-prod-hop').value)||16;
     const prod  = PROD[tipo];
