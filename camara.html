@@ -1816,10 +1816,10 @@ _Forma de pago:_ Anticipo 50% al pedido con transferencia bancaria dentro de los
     document.getElementById('carga-kw').textContent   = kw.toFixed(2);
     document.getElementById('carga-kcal').textContent = Math.round(kcal).toLocaleString('es-AR');
 
-    // Capacidad de diseño recomendada (+10% margen)
-    const kw_recom = kw * 1.10;
+    // La carga total ya incluye el 10% de seguridad: no se vuelve a sumar margen
+    const kw_recom = kw;
     document.getElementById('carga-recom').innerHTML =
-      `Capacidad de diseño: <span>${kw.toFixed(2)} kW</span> · con 10% margen: <span>${kw_recom.toFixed(2)} kW</span><br>` +
+      `Capacidad requerida: <span>${kw.toFixed(2)} kW</span> (incluye 10% de seguridad) · evaporación ${(Tin - EVAP_DT).toFixed(0)} °C<br>` +
       `<span style="font-size:.7rem;color:#546e7a">` +
       `U panel ${EQ_STATE.panel}mm = ${U.toFixed(3)} W/m²K · ΔT = ${DT.toFixed(0)}°C · Producto: ${Qprod_kJ.toFixed(0)} kJ/día` +
       `</span>`;
@@ -1827,6 +1827,9 @@ _Forma de pago:_ Anticipo 50% al pedido con transferencia bancaria dentro de los
     // Selección de equipo
     document.getElementById('eq-selector').innerHTML = renderEquipos(Tin, kw_recom);
   }
+
+  // Salto entre cámara y evaporación (R404A: cámara −12 °C → evaporación −15 °C, condensación 40 °C)
+  const EVAP_DT = 3;
 
   // ── Catálogo Copeland (kcal/h por T_evap) ──────────────────
   const EQ_CAT = {
@@ -1855,24 +1858,26 @@ _Forma de pago:_ Anticipo 50% al pedido con transferencia bancaria dentro de los
   }
 
   function renderEquipos(T_room, kw_recom) {
-    const T_evap = T_room - 8;
+    const T_evap = T_room - EVAP_DT;
     const rangMin = kw_recom * 0.75;
     const rangMax = kw_recom * 1.25;
     const opciones = [];
 
+    const todas = [];
     for (const [nombre, eq] of Object.entries(EQ_CAT)) {
       for (const n of [1, 2, 3]) {
         const kcal = interpEq(eq.d, T_evap) * n;
         const kw   = kcal * 1.163 / 1000;
         if (kw <= 0) continue;
         const diff = (kw - kw_recom) / kw_recom * 100;
-        if (kw >= rangMin && kw <= rangMax) {
-          opciones.push({ label: n===1 ? nombre : `${n}×${nombre}`, hp: eq.hp*n, kw, diff, pc: eq.pc*n, pf: eq.pf*n });
-        }
+        todas.push({ label: n===1 ? nombre : `${n}×${nombre}`, hp: eq.hp*n, kw, diff, pc: eq.pc*n, pf: eq.pf*n });
       }
     }
-
-    opciones.sort((a,b) => a.kw - b.kw);
+    todas.sort((a,b) => a.kw - b.kw);
+    // Recomendado: el más chico que cubre la carga; alternativas: el resto dentro de ±25%
+    const rec = todas.find(o => o.kw >= kw_recom);
+    if (rec) { rec.rec = true; opciones.push(rec); }
+    opciones.push(...todas.filter(o => o !== rec && o.kw >= rangMin && o.kw <= rangMax));
 
     if (!opciones.length) {
       return `<div style="background:#16213e;border:1px solid #1e3a5f;border-radius:10px;padding:14px;font-size:.78rem;color:#90a4ae;">
@@ -1881,7 +1886,7 @@ _Forma de pago:_ Anticipo 50% al pedido con transferencia bancaria dentro de los
       </div>`;
     }
 
-    let html = `<div style="font-size:.68rem;color:#90a4ae;letter-spacing:1.5px;text-transform:uppercase;padding:2px 0 8px">Selección de equipo — dentro de ±25% de ${kw_recom.toFixed(2)} kW</div>`;
+    let html = `<div style="font-size:.68rem;color:#90a4ae;letter-spacing:1.5px;text-transform:uppercase;padding:2px 0 8px">Selección de equipo para ${kw_recom.toFixed(2)} kW · evaporación ${T_evap.toFixed(0)} °C · alternativas dentro de ±25%</div>`;
     html += `<div style="display:flex;flex-direction:column;gap:8px;">`;
 
     for (const op of opciones) {
@@ -1901,7 +1906,7 @@ _Forma de pago:_ Anticipo 50% al pedido con transferencia bancaria dentro de los
             <span style="font-size:.95rem;font-weight:800;color:#e0e0e0">${op.label}</span>
             <span style="font-size:.72rem;color:#546e7a;margin-left:6px">${op.hp} HP · 380V/3F/50Hz</span>
           </div>
-          ${badge}
+          <span style="display:flex;gap:6px;flex-wrap:wrap">${op.rec ? '<span style="background:#4fc3f7;color:#0b1d33;border-radius:5px;padding:2px 7px;font-size:.65rem;font-weight:800">★ RECOMENDADO</span>' : ''}${badge}</span>
         </div>
         <div style="display:flex;gap:16px;font-size:.8rem;color:#4fc3f7;font-weight:700;margin-top:2px;flex-wrap:wrap;">
           <span>${op.kw.toFixed(2)} kW</span>
