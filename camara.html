@@ -966,12 +966,27 @@
         </div>
         <div class="eq-row">
           <span class="eq-lbl">Recambio diario</span>
-          <input class="eq-inp wide" type="number" id="eq-prod-kg" value="500" oninput="calcularCarga()">
-          <span class="eq-unit">kg/día</span>
+          <input class="eq-inp wide" type="number" id="eq-prod-kg" value="" oninput="this.dataset.manual='1';calcularCarga()">
+          <span class="eq-unit">kg/día <a href="#" id="eq-prod-auto" onclick="event.preventDefault();delete document.getElementById('eq-prod-kg').dataset.manual;calcularCarga()" style="color:#4fc3f7;display:none">↺ auto</a></span>
+        </div>
+        <div class="eq-row">
+          <span class="eq-lbl">Densidad de estiba</span>
+          <input class="eq-inp" type="number" id="eq-prod-dens" value="300" min="0" oninput="calcularCarga()">
+          <span class="eq-unit">kg/m³</span>
+        </div>
+        <div class="eq-row">
+          <span class="eq-lbl">Recambio diario</span>
+          <input class="eq-inp" type="number" id="eq-prod-rec" value="10" min="0" max="100" oninput="calcularCarga()">
+          <span class="eq-unit">% del stock</span>
+        </div>
+        <div class="eq-row">
+          <span class="eq-lbl">Agua libre (hielo)</span>
+          <input class="eq-inp" type="number" id="eq-prod-agua" value="5" min="0" max="100" oninput="calcularCarga()">
+          <span class="eq-unit">% sin congelar al entrar</span>
         </div>
         <div class="eq-row">
           <span class="eq-lbl">Temp. de entrada</span>
-          <input class="eq-inp" type="number" id="eq-prod-tentry" value="0" oninput="calcularCarga()">
+          <input class="eq-inp" type="number" id="eq-prod-tentry" value="-2" oninput="calcularCarga()">
           <span class="eq-unit">°C</span>
         </div>
         <div class="eq-row">
@@ -1608,7 +1623,7 @@ _Forma de pago:_ Anticipo 50% al pedido con transferencia bancaria dentro de los
   }
 
   function setEqToggle(key, btn) {
-    EQ_STATE[key] = btn.dataset.val;
+    EQ_STATE[key.replace(/^eq-/, '')] = btn.dataset.val;
     btn.parentElement.querySelectorAll('button')
       .forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
@@ -1723,7 +1738,16 @@ _Forma de pago:_ Anticipo 50% al pedido con transferencia bancaria dentro de los
 
     // ── 3. Producto ──────────────────────────────────────────
     const tipo  = document.getElementById('eq-prod-tipo').value;
-    const kg    = parseFloat(document.getElementById('eq-prod-kg').value)||0;
+    // Recambio diario proporcional al tamaño: volumen interior × densidad de estiba × % recambio
+    const esp    = (+EQ_STATE.panel||60)/1000;
+    const V_int  = Math.max(0,a-2*esp) * Math.max(0,l-2*esp) * Math.max(0,h-(EQ_STATE.piso==='si'?2:1)*esp);
+    const dens   = parseFloat(document.getElementById('eq-prod-dens').value)||0;
+    const recPct = parseFloat(document.getElementById('eq-prod-rec').value)||0;
+    const kgInp  = document.getElementById('eq-prod-kg');
+    const kgAuto = Math.round(V_int * dens * recPct / 100);
+    if (kgInp.dataset.manual !== '1') kgInp.value = kgAuto;
+    document.getElementById('eq-prod-auto').style.display = kgInp.dataset.manual === '1' ? '' : 'none';
+    const kg    = parseFloat(kgInp.value)||0;
     const Tent  = parseFloat(document.getElementById('eq-prod-tentry').value)||0;
     const Hop   = parseFloat(document.getElementById('eq-prod-hop').value)||16;
     const prod  = PROD[tipo];
@@ -1739,6 +1763,11 @@ _Forma de pago:_ Anticipo 50% al pedido con transferencia bancaria dentro de los
       // Producto ya congelado: solo sensible
       Qprod_kJ = kg * prod.Cps * Math.abs(Tent - Tin);
     }
+    // Hielo húmedo: el agua libre se congela y baja hasta la temperatura de la cámara
+    const aguaPct = tipo==='hielo' ? (parseFloat(document.getElementById('eq-prod-agua').value)||0) : 0;
+    const Qagua_kJ = kg * aguaPct/100 * (prod.L + prod.Cps * Math.max(0, prod.Tf - Tin));
+    Qprod_kJ += Qagua_kJ;
+    const Q_agua = Qagua_kJ*1000 / (Hop*3600);
     const Q_resp = prod.Qresp * kg / 1000;       // W (Qresp en W/ton)
     const Q_prod = Qprod_kJ*1000 / (Hop*3600) + Q_resp;  // W
 
@@ -1772,7 +1801,8 @@ _Forma de pago:_ Anticipo 50% al pedido con transferencia bancaria dentro de los
       <div class="carga-row"><span>Transmisión paredes+techo</span><span class="val">${fmtW(Q_pt)}</span></div>
       ${Q_piso>0?`<div class="carga-row sub"><span>· Piso</span><span class="val">${fmtW(Q_piso)}</span></div>`:''}
       <div class="carga-row sep"><span>Infiltración por puerta</span><span class="val">${fmtW(Q_inf)}</span></div>
-      <div class="carga-row"><span>Producto (${kg} kg/día · ${tipo})</span><span class="val">${fmtW(Q_prod)}</span></div>
+      <div class="carga-row"><span>Producto (${kg} kg/día · ${tipo}${kgInp.dataset.manual==='1'?'':` · ${V_int.toFixed(1)} m³ × ${dens} kg/m³ × ${recPct}%`})</span><span class="val">${fmtW(Q_prod)}</span></div>
+      ${Q_agua>0?`<div class="carga-row sub"><span>· Agua libre del hielo (${aguaPct}%)</span><span class="val">${fmtW(Q_agua)}</span></div>`:''}
       ${Q_resp>0?`<div class="carga-row sub"><span>· Calor de respiración</span><span class="val">${fmtW(Q_resp)}</span></div>`:''}
       <div class="carga-row sep"><span>Iluminación</span><span class="val">${fmtW(Q_luz)}</span></div>
       ${Q_pers>0?`<div class="carga-row sub"><span>· Personas (${nPers} × ${Qpers_unit} W)</span><span class="val">${fmtW(Q_pers)}</span></div>`:''}
