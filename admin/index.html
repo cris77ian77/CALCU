@@ -377,6 +377,7 @@ tr:hover td { background: #f8fafc; }
     <span class="admin-badge">⚙️ Admin</span>
     <div class="header-right-admin">
       <span class="admin-email" id="adm-email-display"></span>
+      <button class="btn-logout-admin" id="btn-export-todo" title="Usuarios, campañas, blacklist y Polair en un Excel">⬇️ Exportar bases</button>
       <button class="btn-logout-admin" id="btn-adm-logout">Salir</button>
     </div>
   </div>
@@ -1356,6 +1357,45 @@ function closeDrawer() {
 }
 $('#drawer-close').addEventListener('click', closeDrawer);
 $('#drawer-overlay').addEventListener('click', closeDrawer);
+
+// ── EXPORTAR TODAS LAS BASES ──────────────────────────────────
+// Lee cada colección completa al momento de exportar y aplana los campos (objetos anidados → "padre.hijo").
+function aplanarDoc(obj, pref = '', out = {}) {
+  for (const [k, v] of Object.entries(obj || {})) {
+    const key = pref ? `${pref}.${k}` : k;
+    if (v && typeof v.toDate === 'function') out[key] = v.toDate().toLocaleString('es-AR');
+    else if (Array.isArray(v)) out[key] = v.map(x => (x && typeof x === 'object') ? JSON.stringify(x) : x).join(', ');
+    else if (v && typeof v === 'object') aplanarDoc(v, key, out);
+    else out[key] = v ?? '';
+  }
+  return out;
+}
+function hojaDeDocs(docs, idCol) {
+  const filas = docs.map(d => ({ [idCol]: d.id, ...aplanarDoc(d.data()) }));
+  const cols = [...new Set(filas.flatMap(f => Object.keys(f)))];
+  return XLSX.utils.aoa_to_sheet([cols, ...filas.map(f => cols.map(c => f[c] ?? ''))]);
+}
+$('#btn-export-todo').addEventListener('click', async () => {
+  const btn = $('#btn-export-todo');
+  btn.disabled = true; btn.textContent = '⏳ Exportando…';
+  try {
+    const bases = [['Usuarios', 'usuarios', 'uid'], ['Campañas', 'campana_leads', 'id'],
+                   ['Blacklist', 'blacklist', 'id'], ['Polair', 'telefonos_polair', 'id']];
+    const snaps = await Promise.all(bases.map(([, col]) => getDocs(collection(db, col)).catch(e => ({ error: e, docs: [] }))));
+    const wb = XLSX.utils.book_new();
+    const resumen = [];
+    bases.forEach(([hoja, col, idCol], i) => {
+      XLSX.utils.book_append_sheet(wb, hojaDeDocs(snaps[i].docs, idCol), hoja);
+      resumen.push(`${hoja}: ${snaps[i].error ? 'sin acceso' : snaps[i].docs.length}`);
+    });
+    XLSX.writeFile(wb, `bases_polair_${new Date().toISOString().slice(0,10)}.xlsx`);
+    toast('✅ Excel exportado · ' + resumen.join(' · '), 5000);
+  } catch (e) {
+    toast('No se pudo exportar: ' + e.message);
+  } finally {
+    btn.disabled = false; btn.textContent = '⬇️ Exportar bases';
+  }
+});
 
 // ── EXPORTAR EXCEL ────────────────────────────────────────────
 $('#btn-export').addEventListener('click', () => {
