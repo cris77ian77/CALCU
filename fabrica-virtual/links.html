@@ -68,13 +68,13 @@
 </main>
 <script>
 const BASE = 'https://calculadora.frigoinsumos.com/fabrica-virtual/';
-const TABS_CHICAS = ['inicio', 'maquina', 'ciclo', 'frio', 'simulador', 'negocio', 'fabrica', 'preguntas', 'ficha'];
+const TABS_CHICAS = ['inicio', 'maquina', 'ciclo', 'frio', 'simulador', 'negocio', 'fabrica', 'preguntas', 'comparar', 'ficha'];
 const MODELOS = {
   i500: { n: 'I-500', ruta: 'i500/', tabs: TABS_CHICAS },
   i1000: { n: 'I-1.000', ruta: 'i1000/', tabs: TABS_CHICAS },
-  i1500: { n: 'I-1.500', ruta: '', tabs: ['inicio', 'maquina', 'ciclo', 'frio', 'llenado', 'simulador', 'negocio', 'fabrica', 'preguntas', 'ficha'] },
+  i1500: { n: 'I-1.500', ruta: '', tabs: ['inicio', 'maquina', 'ciclo', 'frio', 'llenado', 'simulador', 'negocio', 'fabrica', 'preguntas', 'comparar', 'ficha'] },
 };
-const PESTANAS = { inicio: 'Inicio', maquina: 'Máquina', ciclo: 'Ciclo', frio: 'Frío', llenado: 'Llenado', simulador: 'Rendimiento', negocio: 'Tu negocio', fabrica: 'Tu fábrica', preguntas: 'Preguntas', ficha: 'Ficha y precio' };
+const PESTANAS = { inicio: 'Inicio', maquina: 'Máquina', ciclo: 'Ciclo', frio: 'Frío', llenado: 'Llenado', simulador: 'Rendimiento', negocio: 'Tu negocio', fabrica: 'Tu fábrica', preguntas: 'Preguntas', comparar: 'Comparar modelos', ficha: 'Ficha y precio' };
 const PIEZAS = { '': 'Ninguno', tubos: 'Tubos formadores', agua: 'Bomba de agua', corte: 'Sistema de corte', separador: 'Separador agua/hielo', contenedor: 'Contenedor refrigerado', sinfin: 'Sinfín de embolsado', frigorifico: 'Equipo frigorífico', tablero: 'Tablero de comando', estructura: 'Estructura' };
 const ETAPAS = { arranque: 'Arranque', congelado: 'Congelado', desmolde: 'Desmolde', corte: 'Corte', almacenado: 'Almacenado', embolsado: 'Embolsado' };
 const INST = { compacta: 'Compacta', remota: 'Condensadora remota', torre: 'Condensación por agua' };
