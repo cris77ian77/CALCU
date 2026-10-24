@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="es-AR">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#8247f5">
+  <meta name="description" content="Agendá una reunión con Cristián Polla para conversar sobre tu proyecto de fábrica de hielo.">
+  <title>Reunión Informativa · Polair</title>
+  <link rel="stylesheet" href="styles.css">
+  <script defer src="config.js"></script><script defer src="slots.js"></script><script defer src="app.js"></script>
+</head>
+<body>
+<header class="topbar"><a href="./" aria-label="Polair, inicio"><img src="logo.png" alt="Refrigeración Polair SRL"></a><span>CONVERSEMOS SOBRE TU PROYECTO</span></header>
+<main>
+  <div class="intro"><span class="eyebrow">EL PRIMER PASO, JUNTOS</span><h1>Tu proyecto de hielo<br>empieza con una charla.</h1><p>Elegí un momento y veamos cómo hacerlo realidad.</p></div>
+  <div id="mock-banner" class="mock" hidden>Modo demostración · Los turnos son de ejemplo y no se envían invitaciones.</div>
+  <article class="booking">
+    <aside class="details">
+      <div class="person"><span class="avatar" aria-hidden="true">CP</span><div><strong>Cristián Polla</strong><span>Refrigeración Polair SRL</span></div></div>
+      <h2>Reunión Informativa</h2>
+      <ul class="facts"><li><span aria-hidden="true">◷</span>30 minutos</li><li><span aria-hidden="true">▣</span>Google Meet</li><li><span aria-hidden="true">◎</span>Rosario, Argentina</li></ul>
+      <p>Reunión de 30 minutos para conversar sobre tu proyecto de fábrica de hielo. Vemos juntos qué equipo se ajusta mejor (producción diaria, espacio, inversión), resolvemos dudas técnicas y, si querés, armamos un número estimado de retorno. Sin compromiso. Si tenés fotos del lugar o ya pensaste en una zona, traelas a mano.</p>
+      <div class="small-note">Una charla para darle forma a tu próxima idea.</div>
+    </aside>
+    <section class="scheduler" aria-label="Reservá tu reunión">
+      <ol class="steps"><li id="step-date" class="active">1 <span>Fecha y hora</span></li><li id="step-form">2 <span>Tus datos</span></li></ol>
+      <div id="status" role="status" aria-live="polite"></div>
+      <div id="choose-view">
+        <h2>Elegí un día y horario</h2><p class="muted">Todos los horarios son de Rosario (UTC−3).</p>
+        <div class="picker"><div class="calendar"><div class="month-nav"><button id="prev-month" aria-label="Mes anterior">‹</button><h3 id="month-label"></h3><button id="next-month" aria-label="Mes siguiente">›</button></div><div class="weekdays" aria-hidden="true"><span>L</span><span>M</span><span>M</span><span>J</span><span>V</span><span>S</span><span>D</span></div><div id="calendar-grid" class="calendar-grid"></div></div>
+        <div class="times"><h3 id="selected-day">Seleccioná una fecha</h3><div id="slot-list"><p class="muted">Los horarios disponibles aparecerán acá.</p></div></div></div>
+        <button id="reload" class="text-button" hidden>Volver a cargar horarios</button>
+      </div>
+      <div id="form-view" hidden><button class="text-button" id="back">← Cambiar horario</button><h2>Contanos sobre vos</h2><p id="chosen-summary" class="chosen"></p>
+        <form id="booking-form">
+          <label>Nombre <span>*</span><input name="name" autocomplete="name" required maxlength="120"></label>
+          <label>Email <span>*</span><input name="email" type="email" autocomplete="email" required maxlength="254"></label>
+          <label>¿De dónde sos? <span>*</span><input name="location" autocomplete="address-level2" required maxlength="300"></label>
+          <label>¿Ya fabricás hielo o querés emprender? <span>*</span><textarea name="experience" required maxlength="1500" rows="3"></textarea></label>
+          <label>Número de WhatsApp <span>*</span><input name="whatsapp" type="tel" autocomplete="tel" required maxlength="60" placeholder="Ej.: +54 9 341 123 4567"></label>
+          <label>Invitados <small>Opcional · hasta 5 emails, separados por coma</small><input name="guests" maxlength="1300" placeholder="persona@empresa.com"></label>
+          <p class="muted privacy">Usamos estos datos para coordinar la reunión. Te va a llegar una invitación con el enlace de Google Meet.</p>
+          <button type="submit" class="primary" id="submit">Confirmar reunión →</button>
+        </form>
+      </div>
+      <div id="confirmation-view" hidden tabindex="-1"><div class="success-icon">✓</div><h2>¡Listo, ya tenemos una cita!</h2><p id="confirmation-summary" class="chosen"></p><p id="confirmation-message"></p><a id="meet-link" class="primary" hidden target="_blank" rel="noopener">Abrir Google Meet</a><button id="start-over" class="text-button">Elegir otra reunión</button></div>
+    </section>
+  </article>
+  <p class="bottom-note">Fábricas de hielo con el respaldo de Polair.</p>
+</main>
+<footer>Última edición 24/10/2026 01:20 (hora de Rosario) · Hecho con Codex</footer>
+</body>
+</html>
