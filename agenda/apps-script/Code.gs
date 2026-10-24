@@ -55,7 +55,7 @@ function doPost(e) {
     var p = JSON.parse(e.postData.contents);
     var name = text_(p.name, 120), email = email_(p.email), location = text_(p.location, 300), experience = text_(p.experience, 1500), whatsapp = text_(p.whatsapp, 60);
     if (!Array.isArray(p.guests) || p.guests.length > SETTINGS.MAX_GUESTS) throw new Error('Podés agregar hasta 5 invitados.');
-    var attendees = [email].concat(p.guests.map(email_)).filter(function (value, index, list) { return list.map(function (v) { return v.toLowerCase(); }).indexOf(value.toLowerCase()) === index; }).map(function (value) { return { email: value }; });
+    var attendees = [email].concat(p.guests.map(email_), [SETTINGS.NOTIFY_EMAIL]).filter(function (value, index, list) { return list.map(function (v) { return v.toLowerCase(); }).indexOf(value.toLowerCase()) === index; }).map(function (value) { return { email: value }; });
     if (typeof p.start !== 'string' || isNaN(Date.parse(p.start))) throw new Error('Horario inválido.');
     var start = new Date(p.start).toISOString(), date = day_(new Date(start));
     lock.waitLock(30000); locked = true;
@@ -99,9 +99,10 @@ function doPost(e) {
     } catch (mailError) { console.error(mailError); }
     // 2) Aviso interno a Cristián
     try {
+      var dueno = Session.getEffectiveUser().getEmail();
       MailApp.sendEmail({
         to: SETTINGS.NOTIFY_EMAIL,
-        replyTo: email,
+        cc: dueno && dueno.toLowerCase() !== SETTINGS.NOTIFY_EMAIL.toLowerCase() ? dueno : '',
         name: 'Agenda Polair',
         subject: 'Nueva reserva: ' + name + ' · ' + cuando,
         body: 'Nueva ' + SETTINGS.EVENT_NAME + ' agendada.\n\nCuándo: ' + cuando + ' (hora de Rosario)\n' + datos +
