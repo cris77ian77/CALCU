@@ -9,6 +9,8 @@ var SETTINGS = {
   FIRST_HOUR: 9,
   LAST_HOUR: 16,
   MAX_GUESTS: 5,
+  NOTIFY_EMAIL: 'cristian@polair.com.ar',   // recibe el aviso de cada reserva y las respuestas del cliente
+  SENDER_NAME: 'Cristián Polla · Polair',
   DESCRIPTION: 'Reunión de 30 minutos para conversar sobre tu proyecto de fábrica de hielo. Vemos juntos qué equipo se ajusta mejor (producción diaria, espacio, inversión), resolvemos dudas técnicas y, si querés, armamos un número estimado de retorno. Sin compromiso. Si tenés fotos del lugar o ya pensaste en una zona, traelas a mano.'
 };
 function json_(data) { return ContentService.createTextOutput(JSON.stringify(data)).setMimeType(ContentService.MimeType.JSON); }
@@ -43,6 +45,7 @@ function doGet(e) {
     return json_({ ok: true, timeZone: SETTINGS.TIME_ZONE, slots: freeSlots_(p.from, p.to, new Date()) });
   } catch (error) { console.error(error); return json_({ ok: false, error: error.message || 'No pudimos consultar la agenda.' }); }
 }
+function esc_(v) { return String(v).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
 function text_(value, max) { if (typeof value !== 'string' || !value.trim() || value.trim().length > max) throw new Error('Completá los campos obligatorios con datos válidos.'); return value.trim(); }
 function email_(value) { value = text_(value, 254); if (!/^[^\s@,]+@[^\s@,]+\.[^\s@,]+$/.test(value)) throw new Error('Ingresá un email válido.'); return value; }
 function doPost(e) {
@@ -65,14 +68,47 @@ function doPost(e) {
       attendees: attendees,
       conferenceData: { createRequest: { requestId: Utilities.getUuid(), conferenceSolutionKey: { type: 'hangoutsMeet' } } }
     }, SETTINGS.CALENDAR_ID, { conferenceDataVersion: 1, sendUpdates: 'all' });
+    // El link de Meet puede tardar unos segundos en generarse
+    if (!event.hangoutLink) { try { Utilities.sleep(2000); event = Calendar.Events.get(SETTINGS.CALENDAR_ID, event.id); } catch (getError) { console.error(getError); } }
+    var dias = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+    var cuando = dias[new Date(slot.date + 'T12:00:00Z').getUTCDay()] + ' ' + Utilities.formatDate(new Date(slot.start), SETTINGS.TIME_ZONE, "dd/MM/yyyy 'a las' HH:mm");
+    var meet = event.hangoutLink || '';
+    var datos = 'Nombre: ' + name + '\nEmail: ' + email + '\n¿De dónde sos?: ' + location +
+      '\n¿Ya fabricás hielo o querés emprender?: ' + experience + '\nWhatsApp: ' + whatsapp +
+      (p.guests.length ? '\nInvitados: ' + p.guests.join(', ') : '');
+    // 1) Confirmación al cliente
     try {
-      var cuando = Utilities.formatDate(new Date(slot.start), SETTINGS.TIME_ZONE, "EEEE dd/MM/yyyy HH:mm");
-      MailApp.sendEmail(Session.getEffectiveUser().getEmail(), 'Nueva reserva: ' + name + ' · ' + cuando,
-        'Nueva Reunión Informativa agendada.\n\nCuándo: ' + cuando + ' (hora de Rosario)\nNombre: ' + name + '\nEmail: ' + email +
-        '\n¿De dónde sos?: ' + location + '\n¿Ya fabricás hielo o querés emprender?: ' + experience + '\nWhatsApp: ' + whatsapp +
-        '\nMeet: ' + (event.hangoutLink || '-') + '\nEvento: ' + (event.htmlLink || '-'));
+      MailApp.sendEmail({
+        to: email,
+        replyTo: SETTINGS.NOTIFY_EMAIL,
+        name: SETTINGS.SENDER_NAME,
+        subject: 'Confirmado: ' + SETTINGS.EVENT_NAME + ' con Polair · ' + cuando,
+        body: 'Hola ' + name + ',\n\nTu ' + SETTINGS.EVENT_NAME + ' quedó confirmada para el ' + cuando + ' (hora de Rosario), por Google Meet.\n\n' +
+          (meet ? 'Link de la reunión: ' + meet + '\n\n' : 'El link de Meet está en la invitación de Google Calendar que te llegó.\n\n') +
+          'Duración: ' + SETTINGS.DURATION_MINUTES + ' minutos. Si tenés fotos del lugar o ya pensaste en una zona, traelas a mano.\n\n' +
+          'Si necesitás cambiar el horario, respondé este mail.\n\nCristián Polla\nRefrigeración Polair SRL',
+        htmlBody: '<div style="font-family:Arial,sans-serif;font-size:15px;color:#1e293b;max-width:560px">' +
+          '<p>Hola ' + esc_(name) + ',</p>' +
+          '<p>Tu <b>' + SETTINGS.EVENT_NAME + '</b> quedó confirmada para el <b>' + esc_(cuando) + '</b> (hora de Rosario), por Google Meet.</p>' +
+          (meet ? '<p><a href="' + meet + '" style="display:inline-block;background:#8247f5;color:#fff;text-decoration:none;padding:10px 18px;border-radius:8px;font-weight:bold">Entrar a la reunión</a><br><span style="font-size:13px;color:#64748b">' + meet + '</span></p>'
+                : '<p>El link de Meet está en la invitación de Google Calendar que te llegó.</p>') +
+          '<p>Duración: ' + SETTINGS.DURATION_MINUTES + ' minutos. Si tenés fotos del lugar o ya pensaste en una zona, traelas a mano.</p>' +
+          '<p>Si necesitás cambiar el horario, respondé este mail.</p>' +
+          '<p>Cristián Polla<br><span style="color:#64748b">Refrigeración Polair SRL</span></p></div>'
+      });
     } catch (mailError) { console.error(mailError); }
-    return json_({ ok: true, start: slot.start, end: slot.end, meetUrl: event.hangoutLink || '', eventId: event.id });
+    // 2) Aviso interno a Cristián
+    try {
+      MailApp.sendEmail({
+        to: SETTINGS.NOTIFY_EMAIL,
+        replyTo: email,
+        name: 'Agenda Polair',
+        subject: 'Nueva reserva: ' + name + ' · ' + cuando,
+        body: 'Nueva ' + SETTINGS.EVENT_NAME + ' agendada.\n\nCuándo: ' + cuando + ' (hora de Rosario)\n' + datos +
+          '\nMeet: ' + (meet || '-') + '\nEvento: ' + (event.htmlLink || '-')
+      });
+    } catch (mailError) { console.error(mailError); }
+    return json_({ ok: true, start: slot.start, end: slot.end, meetUrl: meet, eventId: event.id });
   } catch (error) { console.error(error); return json_({ ok: false, error: error.message || 'No pudimos reservar. Revisá tu correo antes de reintentar.' }); }
   finally { if (locked) lock.releaseLock(); }
 }
