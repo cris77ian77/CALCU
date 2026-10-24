@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Links de la Fábrica Virtual</title>
+<!-- Generador de links preconfigurados para vendedores (uso interno de Polair).
+     Se publica como calculadora.frigoinsumos.com/fabrica-virtual/links.html -->
+<style>
+  :root { --bg: #0a1830; --card: #11264a; --borde: #23406e; --txt: #e8eef7; --muted: #9fb3d1; --azul: #3d8bff; --verde: #25d366; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--txt); font: 16px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 640px; margin: 0 auto; padding: 24px 16px 48px; }
+  h1 { font-size: 1.5rem; margin: 0 0 4px; }
+  p.sub { color: var(--muted); margin: 0 0 20px; }
+  .card { background: var(--card); border: 1px solid var(--borde); border-radius: 14px; padding: 16px; margin-bottom: 14px; }
+  label { display: block; font-size: .8rem; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin: 0 0 8px; font-weight: 600; }
+  .opts { display: flex; flex-wrap: wrap; gap: 8px; }
+  .opts button { background: transparent; color: var(--txt); border: 1px solid var(--borde); border-radius: 999px; padding: 8px 14px; font: inherit; font-size: .95rem; cursor: pointer; }
+  .opts button.on { background: var(--azul); border-color: var(--azul); }
+  input[type=text] { width: 100%; background: #0d1f3d; color: var(--txt); border: 1px solid var(--borde); border-radius: 10px; padding: 10px 12px; font: inherit; }
+  .hint { color: var(--muted); font-size: .85rem; margin: 8px 0 0; }
+  [hidden] { display: none !important; }
+  .link { word-break: break-all; background: #0d1f3d; border: 1px dashed var(--borde); border-radius: 10px; padding: 12px; font-family: ui-monospace, Consolas, monospace; font-size: .85rem; }
+  .acciones { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+  .acciones a, .acciones button { flex: 1 1 160px; text-align: center; text-decoration: none; border: 0; border-radius: 10px; padding: 12px; font: inherit; font-weight: 700; cursor: pointer; }
+  .copiar { background: var(--azul); color: #fff; }
+  .wa { background: var(--verde); color: #06270f; }
+  .ver { background: transparent; color: var(--txt); border: 1px solid var(--borde) !important; }
+  .ok { color: var(--verde); font-size: .9rem; min-height: 1.3em; margin-top: 8px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Links de la Fábrica Virtual</h1>
+  <p class="sub">Elegí qué querés mostrarle al cliente y mandale el link: se abre directo en esa vista.</p>
+
+  <div class="card"><label>Modelo</label><div class="opts" id="modelo"></div></div>
+  <div class="card"><label>Pestaña</label><div class="opts" id="pestana"></div></div>
+
+  <div class="card" id="op-maquina" hidden>
+    <label>Vista</label><div class="opts" id="rayos"></div>
+    <label style="margin-top:14px">Sistema destacado</label><div class="opts" id="pieza"></div>
+  </div>
+  <div class="card" id="op-ciclo" hidden><label>Etapa del ciclo</label><div class="opts" id="etapa"></div></div>
+  <div class="card" id="op-fabrica" hidden>
+    <label>Instalación</label><div class="opts" id="inst"></div>
+    <label style="margin-top:14px">Agua del lugar</label><div class="opts" id="agua"></div>
+  </div>
+
+  <div class="card">
+    <label for="cliente">Cliente (opcional)</label>
+    <input type="text" id="cliente" placeholder="Ej.: Juan Pérez Cañada de Gómez" autocomplete="off">
+    <p class="hint">Si lo completás, en Google Analytics vas a ver cuándo abrió el link ese cliente.</p>
+  </div>
+
+  <div class="card">
+    <label>Link</label>
+    <div class="link" id="link"></div>
+    <div class="acciones">
+      <button class="copiar" id="copiar" type="button">Copiar link</button>
+      <a class="wa" id="wa" target="_blank" rel="noopener">Mandar por WhatsApp</a>
+      <a class="ver" id="ver" target="_blank" rel="noopener">Probar</a>
+    </div>
+    <div class="ok" id="ok"></div>
+  </div>
+</main>
+<script>
+const BASE = 'https://calculadora.frigoinsumos.com/fabrica-virtual/';
+const TABS_CHICAS = ['inicio', 'maquina', 'ciclo', 'frio', 'simulador', 'negocio', 'fabrica', 'preguntas', 'ficha'];
+const MODELOS = {
+  i500: { n: 'I-500', ruta: 'i500/', tabs: TABS_CHICAS },
+  i1000: { n: 'I-1.000', ruta: 'i1000/', tabs: TABS_CHICAS },
+  i1500: { n: 'I-1.500', ruta: '', tabs: ['inicio', 'maquina', 'ciclo', 'frio', 'llenado', 'simulador', 'negocio', 'fabrica', 'preguntas', 'ficha'] },
+};
+const PESTANAS = { inicio: 'Inicio', maquina: 'Máquina', ciclo: 'Ciclo', frio: 'Frío', llenado: 'Llenado', simulador: 'Rendimiento', negocio: 'Tu negocio', fabrica: 'Tu fábrica', preguntas: 'Preguntas', ficha: 'Ficha y precio' };
+const PIEZAS = { '': 'Ninguno', tubos: 'Tubos formadores', agua: 'Bomba de agua', corte: 'Sistema de corte', separador: 'Separador agua/hielo', contenedor: 'Contenedor refrigerado', sinfin: 'Sinfín de embolsado', frigorifico: 'Equipo frigorífico', tablero: 'Tablero de comando', estructura: 'Estructura' };
+const ETAPAS = { arranque: 'Arranque', congelado: 'Congelado', desmolde: 'Desmolde', corte: 'Corte', almacenado: 'Almacenado', embolsado: 'Embolsado' };
+const INST = { compacta: 'Compacta', remota: 'Condensadora remota', torre: 'Condensación por agua' };
+const AGUA = { '': 'Sin elegir', blanda: 'Blanda', dura: 'Dura (con ósmosis)' };
+const RAYOS = { '': 'Exterior', '1': 'Rayos X' };
+
+const estado = { modelo: 'i1500', pestana: 'inicio', rayos: '', pieza: '', etapa: 'arranque', inst: 'compacta', agua: '' };
+const $ = id => document.getElementById(id);
+
+function botones(id, opciones, clave) {
+  const cont = $(id);
+  cont.replaceChildren(...Object.entries(opciones).map(([v, txt]) => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.textContent = txt; b.dataset.v = v;
+    b.onclick = () => { estado[clave] = v; pintar(); };
+    return b;
+  }));
+}
+function marcar(id, valor) { for (const b of $(id).children) b.classList.toggle('on', b.dataset.v === valor); }
+
+// Nombre del cliente → identificador corto para el link (sin tildes ni espacios).
+const slug = t => t.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40);
+
+function armarLink() {
+  const m = MODELOS[estado.modelo];
+  const q = new URLSearchParams();
+  if (estado.pestana === 'maquina') { if (estado.rayos) q.set('rayos', '1'); if (estado.pieza) q.set('pieza', estado.pieza); }
+  if (estado.pestana === 'ciclo' && estado.etapa !== 'arranque') q.set('etapa', estado.etapa);
+  if (estado.pestana === 'fabrica') { if (estado.inst !== 'compacta') q.set('inst', estado.inst); if (estado.agua) q.set('agua', estado.agua); }
+  const c = slug($('cliente').value);
+  if (c) q.set('c', c);
+  const qs = q.toString();
+  return BASE + m.ruta + (qs ? '?' + qs : '') + (estado.pestana !== 'inicio' ? '#' + estado.pestana : '');
+}
+
+function pintar() {
+  const m = MODELOS[estado.modelo];
+  if (!m.tabs.includes(estado.pestana)) estado.pestana = 'inicio';
+  botones('pestana', Object.fromEntries(m.tabs.map(t => [t, PESTANAS[t]])), 'pestana');
+  for (const [id, v] of [['modelo', estado.modelo], ['pestana', estado.pestana], ['rayos', estado.rayos], ['pieza', estado.pieza], ['etapa', estado.etapa], ['inst', estado.inst], ['agua', estado.agua]]) marcar(id, v);
+  $('op-maquina').hidden = estado.pestana !== 'maquina';
+  $('op-ciclo').hidden = estado.pestana !== 'ciclo';
+  $('op-fabrica').hidden = estado.pestana !== 'fabrica';
+  const link = armarLink();
+  $('link').textContent = link;
+  $('ver').href = link;
+  const texto = `Te paso la Fábrica Virtual de la Roll Ice ${m.n}, para que la veas en 3D por dentro: ${link}`;
+  $('wa').href = 'https://wa.me/?text=' + encodeURIComponent(texto);
+  $('ok').textContent = '';
+}
+
+botones('modelo', Object.fromEntries(Object.entries(MODELOS).map(([k, v]) => [k, v.n])), 'modelo');
+botones('rayos', RAYOS, 'rayos');
+botones('pieza', PIEZAS, 'pieza');
+botones('etapa', ETAPAS, 'etapa');
+botones('inst', INST, 'inst');
+botones('agua', AGUA, 'agua');
+$('cliente').addEventListener('input', pintar);
+$('copiar').onclick = async () => {
+  try { await navigator.clipboard.writeText(armarLink()); $('ok').textContent = 'Link copiado.'; }
+  catch { $('ok').textContent = 'No se pudo copiar: mantené apretado el link y copialo a mano.'; }
+};
+pintar();
+</script>
+</body>
+</html>
