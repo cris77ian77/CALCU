@@ -1,3 +1,3 @@
 window.BOOKING_CONFIG = {
-  APPS_SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbzxF_ddmtx0g3cpNoKwvVyIxVHXYcJuSfzJ9W0bmRuHO4oMV7scSextnRYYQfpkI6Ny/exec' // Pegá acá la URL /exec de la aplicación web desplegada.
+  APPS_SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbwpKP2jLhlExq-qwiLvAD2rm-znhsPWO_8d4cmeeRXhNy1CIxhGkFrRxqx3zE-u87ii/exec' // Pegá acá la URL /exec de la aplicación web desplegada.
 };
