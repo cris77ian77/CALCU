@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Métricas de links · Polair</title>
+<link rel="icon" href="/assets/links/perfil.png">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Poppins', Arial, sans-serif; background: #f0f2f5; color: #1d2433; font-size: 14px; }
+header {
+  background: linear-gradient(135deg, #0d3b66 0%, #1a6fa8 100%); color: #fff;
+  padding: 16px 24px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+}
+header img { width: 40px; height: 40px; border-radius: 50%; border: 2px solid #fff; }
+header h1 { font-size: 1.15rem; font-weight: 600; }
+header .sub { font-size: .8rem; opacity: .8; }
+header .der { margin-left: auto; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+header a, header button {
+  color: #fff; background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.3);
+  border-radius: 8px; padding: 6px 12px; font: inherit; font-size: .8rem; cursor: pointer; text-decoration: none;
+}
+main { max-width: 1200px; margin: 0 auto; padding: 18px 16px 40px; }
+
+.barra { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 16px; }
+.barra button {
+  border: 1px solid #c9d3e0; background: #fff; border-radius: 20px; padding: 6px 14px;
+  font: inherit; font-size: .82rem; cursor: pointer; color: #1d2433;
+}
+.barra button.on { background: #0d3b66; color: #fff; border-color: #0d3b66; }
+.barra select { border: 1px solid #c9d3e0; border-radius: 20px; padding: 6px 12px; font: inherit; font-size: .82rem; background: #fff; }
+.barra .estado { font-size: .78rem; color: #66708a; margin-left: auto; }
+
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 16px; }
+.kpi { background: #fff; border-radius: 12px; padding: 14px 16px; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+.kpi .n { font-size: 1.6rem; font-weight: 700; color: #0d3b66; line-height: 1.1; }
+.kpi .l { font-size: .75rem; color: #66708a; text-transform: uppercase; letter-spacing: .5px; margin-top: 4px; }
+.kpi .d { font-size: .75rem; margin-top: 4px; }
+.kpi .d.up { color: #138a4a; } .kpi .d.down { color: #c0392b; } .kpi .d.eq { color: #66708a; }
+
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 14px; }
+.card { background: #fff; border-radius: 12px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,.06); min-width: 0; }
+.card.ancha { grid-column: 1 / -1; }
+.card h2 { font-size: .95rem; font-weight: 600; margin-bottom: 4px; }
+.card .ayuda { font-size: .75rem; color: #66708a; margin-bottom: 10px; }
+.graf { position: relative; height: 260px; }
+
+table { width: 100%; border-collapse: collapse; font-size: .82rem; }
+th, td { padding: 7px 6px; text-align: right; border-bottom: 1px solid #eef1f5; white-space: nowrap; }
+th:first-child, td:first-child { text-align: left; white-space: normal; }
+th { font-size: .72rem; text-transform: uppercase; letter-spacing: .4px; color: #66708a; font-weight: 600; }
+.barrita { display: inline-block; height: 6px; border-radius: 3px; background: #1a6fa8; vertical-align: middle; margin-right: 6px; }
+.vacio { color: #66708a; font-size: .85rem; padding: 10px 0; }
+
+.mapa { display: grid; grid-template-columns: 34px repeat(24, 1fr); gap: 2px; font-size: .62rem; color: #66708a; }
+.mapa div { aspect-ratio: 1; border-radius: 2px; }
+.mapa .et { aspect-ratio: auto; display: flex; align-items: center; }
+.mapa .hr { aspect-ratio: auto; text-align: center; }
+
+.feed td { font-size: .78rem; }
+.chip { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: .7rem; font-weight: 600; }
+.chip.vista { background: #e3eefb; color: #1a6fa8; }
+.chip.click { background: #dff5e8; color: #138a4a; }
+.chip.salida { background: #f1f1f4; color: #66708a; }
+
+#login { max-width: 360px; margin: 60px auto; background: #fff; border-radius: 14px; padding: 26px; box-shadow: 0 4px 18px rgba(0,0,0,.08); }
+#login h2 { font-size: 1.1rem; margin-bottom: 14px; }
+#login input { width: 100%; padding: 10px 12px; border: 1px solid #c9d3e0; border-radius: 8px; font: inherit; margin-bottom: 10px; }
+#login button { width: 100%; padding: 10px; border: 0; border-radius: 8px; background: #0d3b66; color: #fff; font: inherit; font-weight: 600; cursor: pointer; }
+#login .err { color: #c0392b; font-size: .82rem; min-height: 1.2em; margin-top: 8px; }
+#panel { display: none; }
+</style>
+</head>
+<body>
+<header>
+  <img src="/assets/links/perfil.png" alt="">
+  <div><h1>Métricas de la página de links</h1><div class="sub">calculadora.frigoinsumos.com/links</div></div>
+  <div class="der">
+    <a href="/links/" target="_blank" rel="noopener">Ver página</a>
+    <a href="/admin/">Panel admin</a>
+    <button id="btn-salir" style="display:none">Salir</button>
+  </div>
+</header>
+
+<section id="login">
+  <h2>Ingresar (admin)</h2>
+  <input id="email" type="email" placeholder="Email" autocomplete="username">
+  <input id="pass" type="password" placeholder="Contraseña" autocomplete="current-password">
+  <button id="btn-login">Ingresar</button>
+  <div class="err" id="err"></div>
+</section>
+
+<main id="panel">
+  <div class="barra">
+    <button data-dias="1">Hoy</button>
+    <button data-dias="7">7 días</button>
+    <button data-dias="30" class="on">30 días</button>
+    <button data-dias="90">90 días</button>
+    <button data-dias="0">Todo</button>
+    <select id="f-fuente"><option value="">Todas las fuentes</option></select>
+    <button id="btn-csv">Descargar CSV</button>
+    <span class="estado" id="estado">Cargando…</span>
+  </div>
+
+  <div class="kpis" id="kpis"></div>
+
+  <div class="grid">
+    <div class="card ancha">
+      <h2>Vistas y clics por día</h2>
+      <div class="ayuda">Vistas = veces que se abrió la página. Visitantes = personas distintas (mismo celular/navegador cuenta una vez).</div>
+      <div class="graf"><canvas id="g-dias"></canvas></div>
+    </div>
+
+    <div class="card ancha">
+      <h2>Rendimiento de cada botón</h2>
+      <div class="ayuda">CTR = clics del botón ÷ vistas de la página. Personas = visitantes distintos que lo tocaron.</div>
+      <div id="t-links"></div>
+    </div>
+
+    <div class="card">
+      <h2>De dónde vienen</h2>
+      <div class="ayuda">Por parámetro utm_source / src, navegador de la app (TikTok, Instagram…) o sitio de origen.</div>
+      <div id="t-fuentes"></div>
+    </div>
+
+    <div class="card">
+      <h2>Campañas (UTM)</h2>
+      <div class="ayuda">Usá links tipo <code>/links/?src=tiktok&amp;utm_campaign=video-rollice</code> para distinguir cada publicación.</div>
+      <div id="t-campanias"></div>
+    </div>
+
+    <div class="card">
+      <h2>Dispositivos</h2>
+      <div class="graf" style="height:200px"><canvas id="g-disp"></canvas></div>
+    </div>
+
+    <div class="card">
+      <h2>Sistema y navegador</h2>
+      <div id="t-nav"></div>
+    </div>
+
+    <div class="card">
+      <h2>Ubicación aproximada</h2>
+      <div class="ayuda">Según la zona horaria del dispositivo (país/región). Para ciudades, GA4 → Informes → Datos demográficos.</div>
+      <div id="t-ubic"></div>
+    </div>
+
+    <div class="card">
+      <h2>Comportamiento</h2>
+      <div id="t-comp"></div>
+    </div>
+
+    <div class="card ancha">
+      <h2>Cuándo entran</h2>
+      <div class="ayuda">Vistas por día de la semana y hora (hora de Argentina). Más oscuro = más visitas.</div>
+      <div class="mapa" id="mapa"></div>
+    </div>
+
+    <div class="card ancha">
+      <h2>Últimos movimientos</h2>
+      <div id="t-feed" class="feed"></div>
+    </div>
+  </div>
+</main>
+
+<script type="module">
+import { initializeApp }  from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js';
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged }
+                          from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
+import { getFirestore, collection, getDocs, doc, getDoc, query, where }
+                          from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
+import { firebaseConfig } from '../auth/firebase-config.js';
+
+const app  = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db   = getFirestore(app);
+const $    = s => document.querySelector(s);
+
+const NOMBRES = {
+  calculadora: 'Calculadora de inversión', tu_negocio: 'Montá tu fábrica (polair.com.ar)',
+  ultrafrix: 'Abatidores Ultra Frix', frigoinsumos: 'Frigoinsumos', whatsapp: 'WhatsApp',
+  agenda: 'Agendar reunión', tiktok_icono: 'Ícono TikTok', instagram_icono: 'Ícono Instagram',
+  youtube_icono: 'Ícono YouTube'
+};
+const DIAS_SEM = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+
+let eventos = [];           // todos los eventos cargados (período + período anterior)
+let dias = 30, filtroFuente = '';
+const graficos = {};
+
+// ── Login ─────────────────────────────────────────────────────
+$('#btn-login').addEventListener('click', async () => {
+  $('#err').textContent = '';
+  try { await signInWithEmailAndPassword(auth, $('#email').value.trim(), $('#pass').value); }
+  catch (e) { $('#err').textContent = 'Email o contraseña incorrectos.'; }
+});
+$('#pass').addEventListener('keydown', e => { if (e.key === 'Enter') $('#btn-login').click(); });
+$('#btn-salir').addEventListener('click', () => signOut(auth));
+
+onAuthStateChanged(auth, async user => {
+  if (!user) { $('#login').style.display = 'block'; $('#panel').style.display = 'none'; $('#btn-salir').style.display = 'none'; return; }
+  const snap = await getDoc(doc(db, 'usuarios', user.uid));
+  if (!snap.exists() || snap.data().rol !== 'admin') {
+    $('#err').textContent = 'No tenés permisos de administrador.';
+    await signOut(auth); return;
+  }
+  $('#login').style.display = 'none'; $('#panel').style.display = 'block'; $('#btn-salir').style.display = '';
+  cargar();
+});
+
+// ── Carga ─────────────────────────────────────────────────────
+async function cargar() {
+  $('#estado').textContent = 'Cargando…';
+  try {
+    // Se trae el doble del período para comparar contra el período anterior
+    const ref = dias ? query(collection(db, 'links_eventos'), where('ts', '>=', new Date(Date.now() - 2 * dias * 864e5)))
+                     : collection(db, 'links_eventos');
+    const snap = await getDocs(ref);
+    eventos = snap.docs.map(d => ({ ...d.data(), _t: d.data().ts?.toDate?.() || new Date(0) }))
+                       .sort((a, b) => a._t - b._t);
+    const fuentes = [...new Set(eventos.map(e => e.fuente || 'directo'))].sort();
+    $('#f-fuente').innerHTML = '<option value="">Todas las fuentes</option>' +
+      fuentes.map(f => `<option ${f === filtroFuente ? 'selected' : ''}>${esc(f)}</option>`).join('');
+    $('#estado').textContent = `Actualizado ${new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}`;
+    pintar();
+  } catch (e) {
+    console.error(e);
+    $('#estado').textContent = 'Error al leer: ' + (e.code || e.message);
+  }
+}
+
+document.querySelectorAll('.barra [data-dias]').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('.barra [data-dias]').forEach(x => x.classList.remove('on'));
+  b.classList.add('on'); dias = +b.dataset.dias; cargar();
+}));
+$('#f-fuente').addEventListener('change', e => { filtroFuente = e.target.value; pintar(); });
+
+// ── Cálculos ──────────────────────────────────────────────────
+function inicioPeriodo() {
+  if (dias === 1) { const h = new Date(); h.setHours(0, 0, 0, 0); return h; }
+  return dias ? new Date(Date.now() - dias * 864e5) : new Date(0);
+}
+function delPeriodo() {
+  const ini = inicioPeriodo();
+  return eventos.filter(e => e._t >= ini && (!filtroFuente || (e.fuente || 'directo') === filtroFuente));
+}
+function delAnterior() {
+  if (!dias) return null;
+  const ini = inicioPeriodo(), antIni = new Date(ini - (dias === 1 ? 864e5 : dias * 864e5));
+  return eventos.filter(e => e._t >= antIni && e._t < ini && (!filtroFuente || (e.fuente || 'directo') === filtroFuente));
+}
+function resumen(ev) {
+  const vistas = ev.filter(e => e.tipo === 'vista'), clics = ev.filter(e => e.tipo === 'click');
+  const salidas = ev.filter(e => e.tipo === 'salida');
+  const vis = new Set(vistas.map(e => e.vid)).size;
+  const visClic = new Set(clics.map(e => e.vid)).size;
+  const durs = salidas.map(e => e.dur || 0).filter(d => d > 0 && d < 3600).sort((a, b) => a - b);
+  const sesConClic = new Set(clics.map(e => e.sid)).size;
+  return {
+    vistas: vistas.length, visitantes: vis, clics: clics.length,
+    ctr: vistas.length ? clics.length / vistas.length : 0,
+    conversion: vis ? visClic / vis : 0,
+    rebote: vistas.length ? 1 - sesConClic / new Set(vistas.map(e => e.sid)).size : 0,
+    durMediana: durs.length ? durs[Math.floor(durs.length / 2)] : 0,
+    nuevos: new Set(vistas.filter(e => e.nuevo).map(e => e.vid)).size,
+    whatsapp: clics.filter(e => e.link === 'whatsapp').length,
+    agenda: clics.filter(e => e.link === 'agenda').length,
+  };
+}
+
+// ── Pintado ───────────────────────────────────────────────────
+function pintar() {
+  const ev = delPeriodo(), ant = delAnterior();
+  const r = resumen(ev), ra = ant ? resumen(ant) : null;
+  pintarKpis(r, ra);
+  pintarDias(ev);
+  pintarLinks(ev, r);
+  pintarTablaGrupo('#t-fuentes', ev, e => e.fuente || 'directo', 'Fuente');
+  pintarTablaGrupo('#t-campanias', ev.filter(e => e.utm_campaign), e => e.utm_campaign, 'Campaña', 'Sin campañas todavía: agregá ?utm_campaign=… al link.');
+  pintarDisp(ev);
+  pintarTablaGrupo('#t-nav', ev, e => `${e.so || '?'} · ${e.nav || '?'}`, 'Sistema · navegador');
+  pintarTablaGrupo('#t-ubic', ev, e => ubicacion(e.tz), 'Zona');
+  pintarComp(r, ev);
+  pintarMapa(ev);
+  pintarFeed(ev);
+}
+
+function pintarKpis(r, ra) {
+  const pct = v => (v * 100).toFixed(1) + '%';
+  const seg = s => s >= 60 ? `${Math.floor(s / 60)}m ${s % 60}s` : `${s}s`;
+  const items = [
+    ['Vistas', r.vistas, ra?.vistas, String],
+    ['Visitantes únicos', r.visitantes, ra?.visitantes, String],
+    ['Clics totales', r.clics, ra?.clics, String],
+    ['CTR de la página', r.ctr, ra?.ctr, pct],
+    ['Visitantes que tocaron algo', r.conversion, ra?.conversion, pct],
+    ['Clics a WhatsApp', r.whatsapp, ra?.whatsapp, String],
+    ['Clics en agendar reunión', r.agenda, ra?.agenda, String],
+    ['Tiempo en página (mediana)', r.durMediana, ra?.durMediana, seg],
+  ];
+  $('#kpis').innerHTML = items.map(([l, v, a, f]) => {
+    let d = '';
+    if (a !== undefined && a !== null) {
+      if (!a && !v) d = '<div class="d eq">= período anterior</div>';
+      else if (!a) d = '<div class="d up">nuevo vs. período anterior</div>';
+      else {
+        const c = (v - a) / a;
+        d = `<div class="d ${c > 0.005 ? 'up' : c < -0.005 ? 'down' : 'eq'}">${c > 0 ? '▲' : c < 0 ? '▼' : '='} ${Math.abs(c * 100).toFixed(0)}% vs. anterior</div>`;
+      }
+    }
+    return `<div class="kpi"><div class="n">${f(v)}</div><div class="l">${l}</div>${d}</div>`;
+  }).join('');
+}
+
+function claveDia(t) { return t.toLocaleDateString('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' }); }
+function pintarDias(ev) {
+  const porDia = {};
+  const ini = dias ? inicioPeriodo() : (ev[0]?._t || new Date());
+  for (let d = new Date(ini); d <= new Date(); d = new Date(d.getTime() + 864e5)) porDia[claveDia(d)] = { v: 0, c: 0, u: new Set() };
+  porDia[claveDia(new Date())] ??= { v: 0, c: 0, u: new Set() };
+  ev.forEach(e => {
+    const k = claveDia(e._t); porDia[k] ??= { v: 0, c: 0, u: new Set() };
+    if (e.tipo === 'vista') { porDia[k].v++; porDia[k].u.add(e.vid); }
+    if (e.tipo === 'click') porDia[k].c++;
+  });
+  const ks = Object.keys(porDia).sort();
+  const etiquetas = ks.map(k => { const [, m, d] = k.split('-'); return `${d}/${m}`; });
+  graficos.dias?.destroy();
+  graficos.dias = new Chart($('#g-dias'), {
+    type: 'line',
+    data: { labels: etiquetas, datasets: [
+      { label: 'Vistas', data: ks.map(k => porDia[k].v), borderColor: '#1a6fa8', backgroundColor: 'rgba(26,111,168,.12)', fill: true, tension: .3, pointRadius: ks.length > 45 ? 0 : 3 },
+      { label: 'Visitantes', data: ks.map(k => porDia[k].u.size), borderColor: '#7fb3e0', borderDash: [4, 3], tension: .3, pointRadius: 0 },
+      { label: 'Clics', data: ks.map(k => porDia[k].c), borderColor: '#25a55f', backgroundColor: 'rgba(37,165,95,.12)', fill: true, tension: .3, pointRadius: ks.length > 45 ? 0 : 3 },
+    ]},
+    options: { maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
+               scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }, plugins: { legend: { position: 'bottom' } } }
+  });
+}
+
+function pintarLinks(ev, r) {
+  const clics = ev.filter(e => e.tipo === 'click');
+  const filas = {};
+  Object.keys(NOMBRES).forEach(k => filas[k] = { c: 0, u: new Set(), seg: [] });
+  clics.forEach(e => { const f = filas[e.link] ??= { c: 0, u: new Set(), seg: [] }; f.c++; f.u.add(e.vid); if (e.dur) f.seg.push(e.dur); });
+  const max = Math.max(1, ...Object.values(filas).map(f => f.c));
+  const orden = Object.entries(filas).sort((a, b) => b[1].c - a[1].c);
+  $('#t-links').innerHTML = `<table><thead><tr><th>Botón</th><th>Clics</th><th>Personas</th><th>CTR</th><th>% de los clics</th><th>Seg. hasta el clic</th></tr></thead><tbody>` +
+    orden.map(([k, f]) => {
+      const med = f.seg.length ? f.seg.sort((a, b) => a - b)[Math.floor(f.seg.length / 2)] + 's' : '—';
+      return `<tr><td><span class="barrita" style="width:${Math.round(f.c / max * 80)}px"></span>${esc(NOMBRES[k] || k)}</td>
+        <td>${f.c}</td><td>${f.u.size}</td><td>${r.vistas ? (f.c / r.vistas * 100).toFixed(1) + '%' : '—'}</td>
+        <td>${clics.length ? (f.c / clics.length * 100).toFixed(0) + '%' : '—'}</td><td>${med}</td></tr>`;
+    }).join('') + '</tbody></table>';
+}
+
+function pintarTablaGrupo(sel, ev, clave, titulo, msjVacio) {
+  const g = {};
+  ev.forEach(e => {
+    const k = clave(e) || '—'; g[k] ??= { v: 0, c: 0, u: new Set() };
+    if (e.tipo === 'vista') { g[k].v++; g[k].u.add(e.vid); }
+    if (e.tipo === 'click') g[k].c++;
+  });
+  const orden = Object.entries(g).filter(([, f]) => f.v || f.c).sort((a, b) => b[1].v - a[1].v || b[1].c - a[1].c);
+  if (!orden.length) { $(sel).innerHTML = `<div class="vacio">${msjVacio || 'Sin datos en este período.'}</div>`; return; }
+  const max = Math.max(1, ...orden.map(([, f]) => f.v));
+  $(sel).innerHTML = `<table><thead><tr><th>${titulo}</th><th>Vistas</th><th>Visit.</th><th>Clics</th><th>CTR</th></tr></thead><tbody>` +
+    orden.slice(0, 15).map(([k, f]) => `<tr><td><span class="barrita" style="width:${Math.round(f.v / max * 50)}px"></span>${esc(k)}</td>
+      <td>${f.v}</td><td>${f.u.size}</td><td>${f.c}</td><td>${f.v ? (f.c / f.v * 100).toFixed(0) + '%' : '—'}</td></tr>`).join('') +
+    '</tbody></table>';
+}
+
+function pintarDisp(ev) {
+  const g = {};
+  ev.filter(e => e.tipo === 'vista').forEach(e => g[e.disp || '?'] = (g[e.disp || '?'] || 0) + 1);
+  graficos.disp?.destroy();
+  graficos.disp = new Chart($('#g-disp'), {
+    type: 'doughnut',
+    data: { labels: Object.keys(g), datasets: [{ data: Object.values(g), backgroundColor: ['#1a6fa8', '#25a55f', '#f0a030', '#9aa5b8'] }] },
+    options: { maintainAspectRatio: false, plugins: { legend: { position: 'right' } } }
+  });
+}
+
+function pintarComp(r, ev) {
+  const pct = v => (v * 100).toFixed(1) + '%';
+  const vistas = ev.filter(e => e.tipo === 'vista');
+  const recurrentes = r.visitantes - r.nuevos;
+  const porVis = {}; vistas.forEach(e => porVis[e.vid] = (porVis[e.vid] || 0) + 1);
+  const volvieron = Object.values(porVis).filter(n => n > 1).length;
+  $('#t-comp').innerHTML = `<table><tbody>
+    <tr><td>Visitantes nuevos</td><td>${r.nuevos}</td></tr>
+    <tr><td>Visitantes que ya habían entrado antes</td><td>${Math.max(0, recurrentes)}</td></tr>
+    <tr><td>Entraron más de una vez en el período</td><td>${volvieron}</td></tr>
+    <tr><td>Se fueron sin tocar nada (rebote)</td><td>${pct(r.rebote)}</td></tr>
+    <tr><td>Clics por visita</td><td>${r.vistas ? (r.clics / r.vistas).toFixed(2) : '—'}</td></tr>
+    <tr><td>Tiempo en página (mediana)</td><td>${r.durMediana}s</td></tr>
+  </tbody></table>`;
+}
+
+function pintarMapa(ev) {
+  const m = Array.from({ length: 7 }, () => Array(24).fill(0));
+  ev.filter(e => e.tipo === 'vista').forEach(e => {
+    const p = new Intl.DateTimeFormat('en-US', { timeZone: 'America/Argentina/Buenos_Aires', weekday: 'short', hour: 'numeric', hour12: false }).formatToParts(e._t);
+    const wd = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].indexOf(p.find(x => x.type === 'weekday').value);
+    const h = +p.find(x => x.type === 'hour').value % 24;
+    m[wd][h]++;
+  });
+  const max = Math.max(1, ...m.flat());
+  let html = '<span></span>' + Array.from({ length: 24 }, (_, h) => `<span class="hr">${h % 3 === 0 ? h : ''}</span>`).join('');
+  [1, 2, 3, 4, 5, 6, 0].forEach(d => {
+    html += `<span class="et">${DIAS_SEM[d]}</span>` + m[d].map((n, h) =>
+      `<div title="${DIAS_SEM[d]} ${h}h: ${n} vistas" style="background:${n ? `rgba(13,59,102,${0.12 + 0.88 * n / max})` : '#f1f3f7'}"></div>`).join('');
+  });
+  $('#mapa').innerHTML = html;
+}
+
+function pintarFeed(ev) {
+  const ult = ev.slice(-40).reverse();
+  if (!ult.length) { $('#t-feed').innerHTML = '<div class="vacio">Todavía no hay movimientos en este período.</div>'; return; }
+  $('#t-feed').innerHTML = `<table><thead><tr><th>Cuándo</th><th>Qué</th><th>Botón</th><th>Fuente</th><th>Dispositivo</th><th>Zona</th></tr></thead><tbody>` +
+    ult.map(e => `<tr><td>${e._t.toLocaleString('es-AR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</td>
+      <td><span class="chip ${e.tipo}">${e.tipo}${e.tipo === 'salida' ? ' · ' + (e.dur || 0) + 's' : ''}</span></td>
+      <td>${esc(NOMBRES[e.link] || e.link || '')}</td><td>${esc(e.fuente || '')}</td>
+      <td>${esc((e.disp || '') + ' · ' + (e.nav || ''))}</td><td>${esc(ubicacion(e.tz))}</td></tr>`).join('') + '</tbody></table>';
+}
+
+// Zona horaria → país / región aproximada
+function ubicacion(tz) {
+  if (!tz) return 'desconocida';
+  if (tz.startsWith('America/Argentina/')) {
+    const z = tz.split('/')[2].replace(/_/g, ' ');
+    return z === 'Buenos Aires' ? 'Argentina' : `Argentina (${z})`;
+  }
+  const paises = { 'America/Montevideo': 'Uruguay', 'America/Santiago': 'Chile', 'America/Asuncion': 'Paraguay',
+    'America/La_Paz': 'Bolivia', 'America/Lima': 'Perú', 'America/Bogota': 'Colombia', 'America/Mexico_City': 'México',
+    'America/Sao_Paulo': 'Brasil', 'America/Caracas': 'Venezuela', 'America/Guayaquil': 'Ecuador', 'Europe/Madrid': 'España',
+    'America/Panama': 'Panamá', 'America/Costa_Rica': 'Costa Rica', 'America/Santo_Domingo': 'Rep. Dominicana' };
+  return paises[tz] || tz.replace(/_/g, ' ');
+}
+
+function esc(s) { return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+
+// ── CSV ───────────────────────────────────────────────────────
+$('#btn-csv').addEventListener('click', () => {
+  const cols = ['fecha', 'tipo', 'link', 'pos', 'dur', 'fuente', 'ref', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_content',
+                'disp', 'so', 'nav', 'tz', 'idioma', 'pantalla', 'nuevo', 'vid', 'sid'];
+  const filas = delPeriodo().map(e => cols.map(c => {
+    const v = c === 'fecha' ? e._t.toLocaleString('es-AR') : (e[c] ?? '');
+    return '"' + String(v).replace(/"/g, '""') + '"';
+  }).join(';'));
+  const blob = new Blob(['﻿' + cols.join(';') + '\n' + filas.join('\n')], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = `links_eventos_${new Date().toISOString().slice(0, 10)}.csv`; a.click();
+});
+</script>
+</body>
+</html>

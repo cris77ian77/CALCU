@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Cristian · Polair — Fábricas de hielo</title>
+<meta name="description" content="Calculadora de inversión, fábricas de hielo, abatidores Ultra Frix, repuestos Frigoinsumos y contacto directo con Polair.">
+<meta name="theme-color" content="#0b2545">
+<meta property="og:title" content="Cristian · Polair">
+<meta property="og:description" content="Montá tu propia fábrica de hielo: calculadora de inversión, equipos y contacto directo.">
+<meta property="og:image" content="https://calculadora.frigoinsumos.com/assets/links/perfil.png">
+<meta property="og:url" content="https://calculadora.frigoinsumos.com/links/">
+<meta property="og:type" content="website">
+<link rel="icon" href="/assets/links/perfil.png">
+
+<!-- Google Analytics 4 (mismo flujo que polair.com.ar) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-D3P3DLJTW8"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-D3P3DLJTW8');
+</script>
+<!-- Microsoft Clarity (mismo proyecto que la calculadora) -->
+<script>
+  (function(c,l,a,r,i,t,y){
+    c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+    t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+    y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+  })(window, document, "clarity", "script", "xuo46dsmox");
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --azul: #0b2545;
+  --celeste: #1aa3ff;
+  --texto: #fff;
+  --card: rgba(255,255,255,.12);
+  --card-borde: rgba(255,255,255,.22);
+}
+html, body { min-height: 100%; }
+body {
+  font-family: 'Poppins', sans-serif; color: var(--texto);
+  background: var(--azul);
+  -webkit-font-smoothing: antialiased;
+}
+.fondo { position: fixed; inset: 0; z-index: -2; overflow: hidden; }
+.fondo video { width: 100%; height: 100%; object-fit: cover; }
+.fondo::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(180deg, rgba(11,37,69,.55) 0%, rgba(11,37,69,.78) 45%, rgba(6,20,40,.94) 100%);
+}
+main { max-width: 560px; margin: 0 auto; padding: 44px 16px 40px; }
+
+.perfil { text-align: center; }
+.perfil img {
+  width: 104px; height: 104px; border-radius: 50%; object-fit: cover;
+  border: 3px solid rgba(255,255,255,.85); box-shadow: 0 8px 28px rgba(0,0,0,.35);
+}
+.perfil h1 { font-size: 1.55rem; font-weight: 700; margin-top: 12px; letter-spacing: .2px; }
+.perfil p { font-size: .92rem; opacity: .85; margin-top: 4px; }
+
+.redes { display: flex; justify-content: center; gap: 14px; margin: 16px 0 26px; }
+.redes a {
+  width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--card); border: 1px solid var(--card-borde); color: #fff;
+  transition: transform .15s, background .15s;
+}
+.redes a:hover { transform: translateY(-2px); background: rgba(255,255,255,.22); }
+.redes svg { width: 21px; height: 21px; fill: currentColor; }
+
+.links { display: flex; flex-direction: column; gap: 12px; }
+.link {
+  display: flex; align-items: center; gap: 14px; min-height: 72px;
+  padding: 10px 16px 10px 10px; border-radius: 18px; text-decoration: none; color: #fff;
+  background: var(--card); border: 1px solid var(--card-borde);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  transition: transform .15s, background .15s, box-shadow .15s;
+}
+.link:hover { transform: translateY(-2px); background: rgba(255,255,255,.2); box-shadow: 0 10px 26px rgba(0,0,0,.25); }
+.link:active { transform: scale(.985); }
+.link .ico {
+  width: 52px; height: 52px; border-radius: 12px; flex-shrink: 0; overflow: hidden;
+  background: #fff; display: grid; place-items: center;
+}
+.link .ico img { width: 100%; height: 100%; object-fit: cover; }
+.link .ico svg { width: 30px; height: 30px; }
+.link .txt { flex: 1; min-width: 0; }
+.link .tit, .link .sub { display: block; }
+.link .tit { font-weight: 600; font-size: 1rem; line-height: 1.25; }
+.link .sub { font-size: .8rem; opacity: .8; margin-top: 2px; line-height: 1.3; }
+.link .flecha { opacity: .6; font-size: 1.2rem; }
+
+.link.destacado { background: linear-gradient(135deg, #1aa3ff 0%, #0a6fd1 100%); border-color: transparent; }
+.link.destacado:hover { background: linear-gradient(135deg, #34afff 0%, #0f7be6 100%); }
+.link.wa { background: linear-gradient(135deg, #25d366 0%, #128c7e 100%); border-color: transparent; }
+.link.wa .ico { background: rgba(255,255,255,.18); }
+.link.wa .ico svg { fill: #fff; }
+
+.seccion { font-size: .78rem; text-transform: uppercase; letter-spacing: 1.4px; opacity: .7; margin: 22px 4px 2px; }
+
+.video { margin-top: 28px; border-radius: 18px; overflow: hidden; background: #000; aspect-ratio: 9 / 16; max-height: 640px; margin-left: auto; margin-right: auto; width: min(100%, 360px); }
+.video iframe { width: 100%; height: 100%; border: 0; display: block; }
+
+footer { text-align: center; font-size: .75rem; opacity: .6; margin-top: 30px; }
+footer a { color: inherit; }
+
+@media (prefers-reduced-motion: reduce) { .fondo video { display: none; } }
+</style>
+</head>
+<body>
+<div class="fondo" aria-hidden="true">
+  <video autoplay muted loop playsinline preload="metadata" poster="">
+    <source src="/assets/links/fondo.mp4" type="video/mp4">
+  </video>
+</div>
+
+<main>
+  <header class="perfil">
+    <img src="/assets/links/perfil.png" alt="Cristian, de Polair" width="104" height="104">
+    <h1>Cristian · Polair</h1>
+    <p>Fábricas de hielo hechas en Argentina</p>
+  </header>
+
+  <nav class="redes" aria-label="Redes sociales">
+    <a href="https://www.tiktok.com/@cristian_polair" data-link="tiktok_icono" aria-label="TikTok">
+      <svg viewBox="0 0 24 24"><path d="M16.6 5.82A4.28 4.28 0 0 1 15.54 3h-3.09v12.4a2.59 2.59 0 0 1-2.59 2.5 2.59 2.59 0 0 1-2.59-2.59 2.59 2.59 0 0 1 3.4-2.46V9.69a5.73 5.73 0 0 0-.81-.06A5.68 5.68 0 0 0 4.18 15.3a5.68 5.68 0 0 0 5.68 5.68 5.68 5.68 0 0 0 5.68-5.68V9.01a7.35 7.35 0 0 0 4.3 1.38V7.3a4.3 4.3 0 0 1-3.24-1.48z"/></svg>
+    </a>
+    <a href="https://www.instagram.com/polair.refrigeracion" data-link="instagram_icono" aria-label="Instagram">
+      <svg viewBox="0 0 24 24"><path d="M12 2.16c3.2 0 3.58.01 4.85.07 1.17.05 1.8.25 2.23.41.56.22.96.48 1.38.9.42.42.68.82.9 1.38.16.42.36 1.06.41 2.23.06 1.27.07 1.65.07 4.85s-.01 3.58-.07 4.85c-.05 1.17-.25 1.8-.41 2.23-.22.56-.48.96-.9 1.38-.42.42-.82.68-1.38.9-.42.16-1.06.36-2.23.41-1.27.06-1.65.07-4.85.07s-3.58-.01-4.85-.07c-1.17-.05-1.8-.25-2.23-.41a3.72 3.72 0 0 1-1.38-.9 3.72 3.72 0 0 1-.9-1.38c-.16-.42-.36-1.06-.41-2.23C2.17 15.58 2.16 15.2 2.16 12s.01-3.58.07-4.85c.05-1.17.25-1.8.41-2.23.22-.56.48-.96.9-1.38.42-.42.82-.68 1.38-.9.42-.16 1.06-.36 2.23-.41C8.42 2.17 8.8 2.16 12 2.16M12 0C8.74 0 8.33.01 7.05.07 5.78.13 4.9.33 4.14.63c-.79.3-1.46.72-2.12 1.38A5.88 5.88 0 0 0 .63 4.14C.33 4.9.13 5.78.07 7.05.01 8.33 0 8.74 0 12s.01 3.67.07 4.95c.06 1.27.26 2.15.56 2.91.3.79.72 1.46 1.38 2.12.66.66 1.33 1.08 2.12 1.38.76.3 1.64.5 2.91.56C8.33 23.99 8.74 24 12 24s3.67-.01 4.95-.07c1.27-.06 2.15-.26 2.91-.56a5.88 5.88 0 0 0 2.12-1.38 5.88 5.88 0 0 0 1.38-2.12c.3-.76.5-1.64.56-2.91.06-1.28.07-1.69.07-4.95s-.01-3.67-.07-4.95c-.06-1.27-.26-2.15-.56-2.91a5.88 5.88 0 0 0-1.38-2.12A5.88 5.88 0 0 0 19.86.63C19.1.33 18.22.13 16.95.07 15.67.01 15.26 0 12 0zm0 5.84a6.16 6.16 0 1 0 0 12.32 6.16 6.16 0 0 0 0-12.32zM12 16a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm6.41-11.85a1.44 1.44 0 1 0 0 2.88 1.44 1.44 0 0 0 0-2.88z"/></svg>
+    </a>
+    <a href="https://youtube.com/@PolairRefrigeracion" data-link="youtube_icono" aria-label="YouTube">
+      <svg viewBox="0 0 24 24"><path d="M23.5 6.19a3.02 3.02 0 0 0-2.12-2.14C19.5 3.55 12 3.55 12 3.55s-7.5 0-9.38.5A3.02 3.02 0 0 0 .5 6.19 31.6 31.6 0 0 0 0 12a31.6 31.6 0 0 0 .5 5.81 3.02 3.02 0 0 0 2.12 2.14c1.88.5 9.38.5 9.38.5s7.5 0 9.38-.5a3.02 3.02 0 0 0 2.12-2.14A31.6 31.6 0 0 0 24 12a31.6 31.6 0 0 0-.5-5.81zM9.55 15.57V8.43L15.82 12l-6.27 3.57z"/></svg>
+    </a>
+  </nav>
+
+  <section class="links">
+    <a class="link destacado" href="https://calculadora.frigoinsumos.com/" data-link="calculadora">
+      <span class="ico"><img src="/assets/links/t1.webp" alt=""></span>
+      <span class="txt"><span class="tit">Calculadora de inversión</span><span class="sub">Simulá tu fábrica de hielo: inversión, costos y ganancia</span></span>
+      <span class="flecha">›</span>
+    </a>
+    <a class="link" href="https://polair.com.ar/tu-negocio" data-link="tu_negocio">
+      <span class="ico"><img src="/assets/links/t2.webp" alt=""></span>
+      <span class="txt"><span class="tit">Montá tu propia fábrica de hielo</span><span class="sub">polair.com.ar</span></span>
+      <span class="flecha">›</span>
+    </a>
+    <a class="link" href="https://www.polair.com.ar/ultrafrix" data-link="ultrafrix">
+      <span class="ico"><img src="/assets/links/t3.webp" alt=""></span>
+      <span class="txt"><span class="tit">Abatidores y ultracongeladores</span><span class="sub">Línea Ultra Frix · polair.com.ar</span></span>
+      <span class="flecha">›</span>
+    </a>
+    <a class="link" href="https://www.frigoinsumos.com.ar/" data-link="frigoinsumos">
+      <span class="ico"><img src="/assets/links/t4.webp" alt=""></span>
+      <span class="txt"><span class="tit">Frigoinsumos</span><span class="sub">Repuestos, torres de enfriamiento e intercambiadores</span></span>
+      <span class="flecha">›</span>
+    </a>
+
+    <p class="seccion">Hablemos</p>
+    <a class="link wa" href="https://wa.me/5493417070894?text=Hola%20Cristian%2C%20vengo%20de%20tus%20redes" data-link="whatsapp">
+      <span class="ico"><svg viewBox="0 0 24 24"><path d="M17.47 14.38c-.3-.15-1.75-.86-2.02-.96-.27-.1-.47-.15-.67.15-.2.3-.77.96-.94 1.16-.17.2-.35.22-.64.07-.3-.15-1.25-.46-2.38-1.47-.88-.79-1.47-1.76-1.65-2.06-.17-.3-.02-.46.13-.6.13-.14.3-.35.45-.52.15-.17.2-.3.3-.5.1-.2.05-.37-.03-.52-.07-.15-.67-1.6-.92-2.2-.24-.58-.49-.5-.67-.51h-.57c-.2 0-.52.07-.79.37-.27.3-1.04 1.02-1.04 2.48s1.07 2.88 1.21 3.08c.15.2 2.1 3.2 5.08 4.49.71.31 1.26.49 1.7.63.71.22 1.36.19 1.87.12.57-.09 1.75-.72 2-1.41.25-.69.25-1.29.17-1.41-.07-.13-.27-.2-.57-.35zM12.04 21.8h-.01a9.84 9.84 0 0 1-5.02-1.37l-.36-.21-3.73.98 1-3.64-.24-.37A9.82 9.82 0 0 1 2.2 12C2.2 6.58 6.61 2.17 12.05 2.17c2.63 0 5.1 1.03 6.96 2.89A9.79 9.79 0 0 1 21.9 12c0 5.43-4.42 9.8-9.86 9.8zm8.4-18.2A11.8 11.8 0 0 0 12.04 0C5.5 0 .16 5.33.16 11.9c0 2.1.55 4.14 1.6 5.95L0 24l6.3-1.65a11.88 11.88 0 0 0 5.73 1.46h.01c6.55 0 11.89-5.33 11.89-11.9 0-3.18-1.24-6.17-3.48-8.4z"/></svg></span>
+      <span class="txt"><span class="tit">Hablanos por WhatsApp</span><span class="sub">Te respondemos al toque</span></span>
+      <span class="flecha">›</span>
+    </a>
+    <a class="link" href="/agenda/" data-link="agenda">
+      <span class="ico"><img src="/assets/links/t5.webp" alt=""></span>
+      <span class="txt"><span class="tit">Agendá una reunión</span><span class="sub">30 minutos con el equipo de ventas de Polair</span></span>
+      <span class="flecha">›</span>
+    </a>
+  </section>
+
+  <div class="video">
+    <iframe src="https://www.tiktok.com/player/v1/7632356432234433800?music_info=0&description=0" title="Video de TikTok de Polair" allow="fullscreen" loading="lazy"></iframe>
+  </div>
+
+  <footer>Refrigeración Polair · Rosario, Argentina</footer>
+</main>
+
+<!-- ── Métricas propias ──────────────────────────────────────────
+     Cada vista, clic y salida se guarda en Firestore (colección links_eventos)
+     por la API REST con keepalive, así el registro sale aunque el link navegue.
+     Las reglas de Firestore validan los campos; solo el admin puede leerlos.
+     Además: GA4 (whatsapp_click es evento clave/conversión en Ads) y Clarity. -->
+<script>
+(function () {
+  var PROYECTO = 'calcula-tu-maquina';
+  var API_KEY  = 'AIzaSyCsbCcfDTKGOqn5CtyrNxXJJos37vKiunU';
+  var URL_COMMIT = 'https://firestore.googleapis.com/v1/projects/' + PROYECTO +
+                   '/databases/(default)/documents:commit?key=' + API_KEY;
+
+  function idAzar(n) {
+    var c = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789', s = '';
+    var r = (window.crypto && crypto.getRandomValues) ? crypto.getRandomValues(new Uint8Array(n)) : null;
+    for (var i = 0; i < n; i++) s += c[(r ? r[i] : Math.floor(Math.random() * 256)) % c.length];
+    return s;
+  }
+  function leer(k) { try { return localStorage.getItem(k); } catch (_) { return null; } }
+  function guardar(k, v) { try { localStorage.setItem(k, v); } catch (_) {} }
+
+  // Visitante (persistente) y sesión (por pestaña)
+  var vid = leer('pl_vid'), nuevo = !vid;
+  if (!vid) { vid = idAzar(16); guardar('pl_vid', vid); }
+  var sid = idAzar(12);
+
+  var ua = navigator.userAgent || '';
+  var qs = new URLSearchParams(location.search);
+  var refHost = '';
+  try { refHost = document.referrer ? new URL(document.referrer).hostname.replace(/^www\./, '') : ''; } catch (_) {}
+
+  // Navegador dentro de una app (las redes no siempre mandan referrer)
+  var inapp = /musical_ly|BytedanceWebview|TikTok/i.test(ua) ? 'tiktok'
+            : /Instagram/i.test(ua) ? 'instagram'
+            : /FBAN|FBAV|FB_IAB/i.test(ua) ? 'facebook'
+            : /LinkedInApp/i.test(ua) ? 'linkedin'
+            : '';
+
+  function fuenteDe() {
+    var u = (qs.get('utm_source') || qs.get('src') || '').toLowerCase();
+    if (u) return u;
+    if (inapp) return inapp;
+    var r = refHost;
+    if (!r) return 'directo';
+    if (/tiktok/.test(r)) return 'tiktok';
+    if (/instagram/.test(r)) return 'instagram';
+    if (/facebook|fb\.com|fb\.me/.test(r)) return 'facebook';
+    if (/youtube|youtu\.be/.test(r)) return 'youtube';
+    if (/whatsapp|wa\.me/.test(r)) return 'whatsapp';
+    if (/google\./.test(r)) return 'google';
+    if (/polair/.test(r)) return 'polair.com.ar';
+    if (/frigoinsumos/.test(r)) return 'frigoinsumos';
+    if (/linkedin|lnkd/.test(r)) return 'linkedin';
+    if (/t\.co$|twitter|x\.com/.test(r)) return 'x';
+    return r;
+  }
+
+  var disp = /iPad|Tablet/i.test(ua) || (/Android/i.test(ua) && !/Mobile/i.test(ua)) ? 'tablet'
+           : /Mobi|iPhone|Android/i.test(ua) ? 'celular' : 'computadora';
+  var so = /iPhone|iPad|iPod/i.test(ua) ? 'iOS' : /Android/i.test(ua) ? 'Android'
+         : /Windows/i.test(ua) ? 'Windows' : /Mac OS/i.test(ua) ? 'macOS' : /Linux/i.test(ua) ? 'Linux' : 'otro';
+  var nav = inapp ? 'app ' + inapp
+          : /Edg\//.test(ua) ? 'Edge' : /OPR\//.test(ua) ? 'Opera' : /SamsungBrowser/.test(ua) ? 'Samsung'
+          : /Chrome\//.test(ua) ? 'Chrome' : /Firefox\//.test(ua) ? 'Firefox' : /Safari\//.test(ua) ? 'Safari' : 'otro';
+  var tz = '';
+  try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch (_) {}
+
+  var base = {
+    vid: vid, sid: sid, nuevo: nuevo,
+    fuente: fuenteDe().slice(0, 60), ref: refHost.slice(0, 100),
+    utm_source:   (qs.get('utm_source')   || '').slice(0, 100),
+    utm_medium:   (qs.get('utm_medium')   || '').slice(0, 100),
+    utm_campaign: (qs.get('utm_campaign') || '').slice(0, 100),
+    utm_content:  (qs.get('utm_content')  || '').slice(0, 100),
+    disp: disp, so: so, nav: nav.slice(0, 30), tz: tz.slice(0, 60),
+    idioma: (navigator.language || '').slice(0, 20),
+    pantalla: (screen.width + 'x' + screen.height).slice(0, 20)
+  };
+
+  function aCampo(v) {
+    if (typeof v === 'boolean') return { booleanValue: v };
+    if (typeof v === 'number')  return { integerValue: String(Math.round(v)) };
+    return { stringValue: String(v) };
+  }
+  function registrar(datos) {
+    var campos = {}, todo = Object.assign({}, base, datos);
+    Object.keys(todo).forEach(function (k) { campos[k] = aCampo(todo[k]); });
+    var cuerpo = JSON.stringify({ writes: [{
+      update: { name: 'projects/' + PROYECTO + '/databases/(default)/documents/links_eventos/' + idAzar(20), fields: campos },
+      updateTransforms: [{ fieldPath: 'ts', setToServerValue: 'REQUEST_TIME' }],
+      currentDocument: { exists: false }
+    }]});
+    try {
+      fetch(URL_COMMIT, { method: 'POST', body: cuerpo, keepalive: true,
+                          headers: { 'Content-Type': 'application/json' } }).catch(function () {});
+    } catch (_) {}
+  }
+
+  // Vista
+  var inicio = Date.now(), clics = 0;
+  registrar({ tipo: 'vista', link: '', pos: 0, dur: 0 });
+
+  // Clics en cada link
+  var todos = Array.prototype.slice.call(document.querySelectorAll('[data-link]'));
+  todos.forEach(function (a, i) {
+    a.setAttribute('target', '_blank');
+    a.setAttribute('rel', 'noopener');
+    a.addEventListener('click', function () {
+      var id = a.getAttribute('data-link');
+      clics++;
+      registrar({ tipo: 'click', link: id, pos: i + 1, dur: Math.round((Date.now() - inicio) / 1000) });
+      var ev = id === 'whatsapp' ? 'whatsapp_click' : id === 'agenda' ? 'agenda_click' : 'link_click';
+      if (window.gtag) gtag('event', ev, { pagina: 'links', link_id: id, link_url: a.href, fuente: base.fuente });
+      if (window.clarity) { clarity('event', ev); clarity('set', 'link', id); }
+    });
+  });
+
+  // Salida: tiempo en página (una sola vez por sesión)
+  var salio = false;
+  function salida() {
+    if (salio) return; salio = true;
+    registrar({ tipo: 'salida', link: '', pos: clics, dur: Math.min(86400, Math.round((Date.now() - inicio) / 1000)) });
+  }
+  document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'hidden') salida(); });
+  window.addEventListener('pagehide', salida);
+
+  if (window.clarity) { clarity('set', 'fuente', base.fuente); clarity('set', 'pagina', 'links'); }
+})();
+</script>
+</body>
+</html>
