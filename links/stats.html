@@ -183,8 +183,16 @@ const NOMBRES = {
   calculadora: 'Calculadora de inversión', tu_negocio: 'Montá tu fábrica (polair.com.ar)',
   ultrafrix: 'Abatidores Ultra Frix', frigoinsumos: 'Frigoinsumos', whatsapp: 'WhatsApp',
   agenda: 'Agendar reunión', tiktok_icono: 'Ícono TikTok', instagram_icono: 'Ícono Instagram',
-  youtube_icono: 'Ícono YouTube'
+  youtube_icono: 'Ícono YouTube', fabrica_virtual: 'Entrá a la fábrica virtual (botón grande)',
+  hist_fabrica: 'Círculo Fábrica virtual', hist_calculadora: 'Círculo Calculadora',
+  hist_como_funciona: 'Círculo Cómo funciona', hist_ultrafrix: 'Círculo Ultra Frix',
+  hist_repuestos: 'Círculo Repuestos', hist_agenda: 'Círculo Agendar',
+  '3d_i500': 'Máquina 3D: vio la I-500', '3d_i1000': 'Máquina 3D: vio la I-1.000',
+  '3d_i1500': 'Máquina 3D: vio la I-1.500', '3d_realidad_aumentada': 'Máquina 3D: realidad aumentada'
 };
+// Los toques en la máquina 3D no sacan al visitante de la página: van aparte y no suman al CTR
+const es3d = e => (e.link || '').startsWith('3d_');
+const esClic = e => e.tipo === 'click' && !es3d(e);
 const DIAS_SEM = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 
 let eventos = [];           // todos los eventos cargados (período + período anterior)
@@ -253,7 +261,7 @@ function delAnterior() {
   return eventos.filter(e => e._t >= antIni && e._t < ini && (!filtroFuente || (e.fuente || 'directo') === filtroFuente));
 }
 function resumen(ev) {
-  const vistas = ev.filter(e => e.tipo === 'vista'), clics = ev.filter(e => e.tipo === 'click');
+  const vistas = ev.filter(e => e.tipo === 'vista'), clics = ev.filter(esClic);
   const salidas = ev.filter(e => e.tipo === 'salida');
   const vis = new Set(vistas.map(e => e.vid)).size;
   const visClic = new Set(clics.map(e => e.vid)).size;
@@ -267,7 +275,8 @@ function resumen(ev) {
     durMediana: durs.length ? durs[Math.floor(durs.length / 2)] : 0,
     nuevos: new Set(vistas.filter(e => e.nuevo).map(e => e.vid)).size,
     whatsapp: clics.filter(e => e.link === 'whatsapp').length,
-    agenda: clics.filter(e => e.link === 'agenda').length,
+    agenda: clics.filter(e => e.link === 'agenda' || e.link === 'hist_agenda').length,
+    uso3d: new Set(ev.filter(e => e.tipo === 'click' && es3d(e)).map(e => e.sid)).size,
   };
 }
 
@@ -300,6 +309,7 @@ function pintarKpis(r, ra) {
     ['Clics a WhatsApp', r.whatsapp, ra?.whatsapp, String],
     ['Clics en agendar reunión', r.agenda, ra?.agenda, String],
     ['Tiempo en página (mediana)', r.durMediana, ra?.durMediana, seg],
+    ['Visitas que tocaron la máquina 3D', r.uso3d, ra?.uso3d, String],
   ];
   $('#kpis').innerHTML = items.map(([l, v, a, f]) => {
     let d = '';
@@ -324,7 +334,7 @@ function pintarDias(ev) {
   ev.forEach(e => {
     const k = claveDia(e._t); porDia[k] ??= { v: 0, c: 0, u: new Set() };
     if (e.tipo === 'vista') { porDia[k].v++; porDia[k].u.add(e.vid); }
-    if (e.tipo === 'click') porDia[k].c++;
+    if (esClic(e)) porDia[k].c++;
   });
   const ks = Object.keys(porDia).sort();
   const etiquetas = ks.map(k => { const [, m, d] = k.split('-'); return `${d}/${m}`; });
@@ -342,10 +352,10 @@ function pintarDias(ev) {
 }
 
 function pintarLinks(ev, r) {
-  const clics = ev.filter(e => e.tipo === 'click');
+  const todos = ev.filter(e => e.tipo === 'click'), clics = todos.filter(esClic);
   const filas = {};
   Object.keys(NOMBRES).forEach(k => filas[k] = { c: 0, u: new Set(), seg: [] });
-  clics.forEach(e => { const f = filas[e.link] ??= { c: 0, u: new Set(), seg: [] }; f.c++; f.u.add(e.vid); if (e.dur) f.seg.push(e.dur); });
+  todos.forEach(e => { const f = filas[e.link] ??= { c: 0, u: new Set(), seg: [] }; f.c++; f.u.add(e.vid); if (e.dur) f.seg.push(e.dur); });
   const max = Math.max(1, ...Object.values(filas).map(f => f.c));
   const orden = Object.entries(filas).sort((a, b) => b[1].c - a[1].c);
   $('#t-links').innerHTML = `<table><thead><tr><th>Botón</th><th>Clics</th><th>Personas</th><th>CTR</th><th>% de los clics</th><th>Seg. hasta el clic</th></tr></thead><tbody>` +
@@ -353,7 +363,7 @@ function pintarLinks(ev, r) {
       const med = f.seg.length ? f.seg.sort((a, b) => a - b)[Math.floor(f.seg.length / 2)] + 's' : '—';
       return `<tr><td><span class="barrita" style="width:${Math.round(f.c / max * 80)}px"></span>${esc(NOMBRES[k] || k)}</td>
         <td>${f.c}</td><td>${f.u.size}</td><td>${r.vistas ? (f.c / r.vistas * 100).toFixed(1) + '%' : '—'}</td>
-        <td>${clics.length ? (f.c / clics.length * 100).toFixed(0) + '%' : '—'}</td><td>${med}</td></tr>`;
+        <td>${clics.length && !k.startsWith('3d_') ? (f.c / clics.length * 100).toFixed(0) + '%' : '—'}</td><td>${med}</td></tr>`;
     }).join('') + '</tbody></table>';
 }
 
@@ -362,7 +372,7 @@ function pintarTablaGrupo(sel, ev, clave, titulo, msjVacio) {
   ev.forEach(e => {
     const k = clave(e) || '—'; g[k] ??= { v: 0, c: 0, u: new Set() };
     if (e.tipo === 'vista') { g[k].v++; g[k].u.add(e.vid); }
-    if (e.tipo === 'click') g[k].c++;
+    if (esClic(e)) g[k].c++;
   });
   const orden = Object.entries(g).filter(([, f]) => f.v || f.c).sort((a, b) => b[1].v - a[1].v || b[1].c - a[1].c);
   if (!orden.length) { $(sel).innerHTML = `<div class="vacio">${msjVacio || 'Sin datos en este período.'}</div>`; return; }

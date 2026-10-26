@@ -4,10 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Cristian · Polair — Fábricas de hielo</title>
-<meta name="description" content="Calculadora de inversión, fábricas de hielo, abatidores Ultra Frix, repuestos Frigoinsumos y contacto directo con Polair.">
-<meta name="theme-color" content="#0b2545">
+<meta name="description" content="Tu fábrica de hielo armada antes de comprarla: máquinas Roll Ice en 3D, fábrica virtual, calculadora de inversión y contacto directo con Polair.">
+<meta name="theme-color" content="#0f2b52">
 <meta property="og:title" content="Cristian · Polair">
-<meta property="og:description" content="Montá tu propia fábrica de hielo: calculadora de inversión, equipos y contacto directo.">
+<meta property="og:description" content="Tu fábrica de hielo, armada antes de comprarla: máquina en 3D, fábrica virtual y calculadora de inversión.">
 <meta property="og:image" content="https://calculadora.frigoinsumos.com/assets/links/perfil.png">
 <meta property="og:url" content="https://calculadora.frigoinsumos.com/links/">
 <meta property="og:type" content="website">
@@ -32,158 +32,190 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"></script>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-:root {
-  --azul: #0b2545;
-  --celeste: #1aa3ff;
-  --texto: #fff;
-  --card: rgba(255,255,255,.12);
-  --card-borde: rgba(255,255,255,.22);
-}
-html, body { min-height: 100%; }
 body {
-  font-family: 'Poppins', sans-serif; color: var(--texto);
-  background: var(--azul);
-  -webkit-font-smoothing: antialiased;
+  font-family: 'Poppins', sans-serif; color: #fff; min-height: 100vh; -webkit-font-smoothing: antialiased;
+  background:
+    radial-gradient(120% 60% at 50% 18%, #1f4f8f 0%, rgba(31,79,143,0) 60%),
+    linear-gradient(180deg, #0f2b52 0%, #0a1d38 55%, #071427 100%);
+  background-color: #0a1d38;
 }
-.fondo { position: fixed; inset: 0; z-index: -2; overflow: hidden; }
-.fondo video { width: 100%; height: 100%; object-fit: cover; }
-.fondo::after {
-  content: ''; position: absolute; inset: 0;
-  background: linear-gradient(180deg, rgba(11,37,69,.55) 0%, rgba(11,37,69,.78) 45%, rgba(6,20,40,.94) 100%);
+body::before { /* grilla tipo fábrica virtual */
+  content: ''; position: fixed; inset: 0; pointer-events: none; opacity: .18;
+  background-image: linear-gradient(rgba(255,255,255,.12) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.12) 1px, transparent 1px);
+  background-size: 28px 28px; -webkit-mask-image: linear-gradient(180deg, #000 0%, transparent 60%); mask-image: linear-gradient(180deg, #000 0%, transparent 60%);
 }
-main { max-width: 560px; margin: 0 auto; padding: 44px 16px 40px; }
+main { position: relative; max-width: 480px; margin: 0 auto; padding: 18px 16px 120px; }
 
-.perfil { text-align: center; }
-.perfil img {
-  width: 104px; height: 104px; border-radius: 50%; object-fit: cover;
-  border: 3px solid rgba(255,255,255,.85); box-shadow: 0 8px 28px rgba(0,0,0,.35);
+.top { display: flex; align-items: center; gap: 10px; }
+.top img { width: 40px; height: 40px; border-radius: 50%; border: 2px solid rgba(255,255,255,.8); }
+.top .n { font-weight: 600; font-size: .95rem; line-height: 1.1; }
+.top .s { font-size: .72rem; opacity: .7; }
+.top .redes { margin-left: auto; display: flex; gap: 6px; }
+.top .redes a { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; background: rgba(255,255,255,.1); color: #fff; }
+.top .redes svg { width: 15px; height: 15px; fill: currentColor; }
+
+h1 { font-size: 1.7rem; font-weight: 800; line-height: 1.12; margin: 22px 0 4px; letter-spacing: -.3px; }
+h1 em { font-style: normal; color: #5cc8ff; }
+.lead { font-size: .88rem; opacity: .8; }
+
+.escena { position: relative; margin: 8px -16px 0; height: 330px; }
+model-viewer { width: 100%; height: 100%; --poster-color: transparent; }
+.escena .cargando { position: absolute; inset: 0; display: grid; place-items: center; font-size: .78rem; opacity: .6; pointer-events: none; }
+.escena.listo .cargando { display: none; }
+.escena .tag {
+  position: absolute; left: 16px; bottom: 14px; background: rgba(7,20,39,.75); border: 1px solid rgba(255,255,255,.15);
+  border-radius: 12px; padding: 8px 12px; -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
 }
-.perfil h1 { font-size: 1.55rem; font-weight: 700; margin-top: 12px; letter-spacing: .2px; }
-.perfil p { font-size: .92rem; opacity: .85; margin-top: 4px; }
+.tag b { font-size: 1.15rem; display: block; line-height: 1.1; }
+.tag span { font-size: .7rem; opacity: .75; }
+.escena .gira { position: absolute; right: 16px; bottom: 18px; font-size: .7rem; opacity: .7; }
 
-.redes { display: flex; justify-content: center; gap: 14px; margin: 16px 0 26px; }
-.redes a {
-  width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center;
-  background: var(--card); border: 1px solid var(--card-borde); color: #fff;
-  transition: transform .15s, background .15s;
+.modelos { display: flex; gap: 8px; justify-content: center; margin: 6px 0 16px; }
+.modelos button {
+  flex: 1; border: 1px solid rgba(255,255,255,.2); background: rgba(255,255,255,.06); color: #fff;
+  border-radius: 12px; padding: 9px 4px; font: inherit; font-size: .82rem; font-weight: 600; cursor: pointer;
 }
-.redes a:hover { transform: translateY(-2px); background: rgba(255,255,255,.22); }
-.redes svg { width: 21px; height: 21px; fill: currentColor; }
+.modelos button small { display: block; font-weight: 400; font-size: .68rem; opacity: .7; }
+.modelos button.on { background: #fff; color: #0a1d38; border-color: #fff; }
 
-.links { display: flex; flex-direction: column; gap: 12px; }
-.link {
-  display: flex; align-items: center; gap: 14px; min-height: 72px;
-  padding: 10px 16px 10px 10px; border-radius: 18px; text-decoration: none; color: #fff;
-  background: var(--card); border: 1px solid var(--card-borde);
-  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-  transition: transform .15s, background .15s, box-shadow .15s;
+.cta {
+  display: flex; align-items: center; gap: 14px; text-decoration: none; color: #0a1d38;
+  background: linear-gradient(135deg, #7fe0ff 0%, #2fa8ff 100%); border-radius: 18px; padding: 16px 18px;
+  box-shadow: 0 12px 30px rgba(47,168,255,.35);
 }
-.link:hover { transform: translateY(-2px); background: rgba(255,255,255,.2); box-shadow: 0 10px 26px rgba(0,0,0,.25); }
-.link:active { transform: scale(.985); }
-.link .ico {
-  width: 52px; height: 52px; border-radius: 12px; flex-shrink: 0; overflow: hidden;
-  background: #fff; display: grid; place-items: center;
+.cta .ic { width: 46px; height: 46px; border-radius: 12px; background: #0a1d38; display: grid; place-items: center; flex-shrink: 0; }
+.cta .ic svg { width: 26px; height: 26px; stroke: #7fe0ff; fill: none; stroke-width: 1.8; }
+.cta b { font-size: 1.05rem; display: block; }
+.cta span { font-size: .78rem; opacity: .85; }
+.cta .fl { margin-left: auto; font-size: 1.4rem; }
+.ar { display: block; text-align: center; margin: 10px 0 22px; font-size: .8rem; color: #9fdcff; text-decoration: none; }
+
+.hist { display: flex; gap: 14px; overflow-x: auto; margin: 0 -16px 18px; padding: 2px 16px 4px; scrollbar-width: none; }
+.hist::-webkit-scrollbar { display: none; }
+.hist a { text-decoration: none; color: #fff; text-align: center; flex-shrink: 0; width: 70px; }
+.hist .anillo { width: 66px; height: 66px; border-radius: 50%; padding: 3px; background: conic-gradient(#2fa8ff, #7fe0ff, #0a6fd1, #2fa8ff); margin: 0 auto; }
+.hist .anillo img, .hist .anillo div { width: 100%; height: 100%; border-radius: 50%; border: 3px solid #0c2344; object-fit: cover; background: #0a1d38; display: grid; place-items: center; font-size: 1.3rem; }
+.hist span { font-size: .68rem; display: block; margin-top: 5px; line-height: 1.15; opacity: .9; }
+
+.grilla { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.tile {
+  text-decoration: none; color: #fff; border-radius: 16px; padding: 14px; min-height: 118px;
+  background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.13);
+  display: flex; flex-direction: column; justify-content: space-between;
 }
-.link .ico img { width: 100%; height: 100%; object-fit: cover; }
-.link .ico svg { width: 30px; height: 30px; }
-.link .txt { flex: 1; min-width: 0; }
-.link .tit, .link .sub { display: block; }
-.link .tit { font-weight: 600; font-size: 1rem; line-height: 1.25; }
-.link .sub { font-size: .8rem; opacity: .8; margin-top: 2px; line-height: 1.3; }
-.link .flecha { opacity: .6; font-size: 1.2rem; }
+.tile img { width: 40px; height: 40px; border-radius: 10px; background: #fff; object-fit: cover; }
+.tile b { font-size: .9rem; line-height: 1.2; }
+.tile span { font-size: .7rem; opacity: .7; display: block; margin-top: 2px; }
 
-.link.destacado { background: linear-gradient(135deg, #1aa3ff 0%, #0a6fd1 100%); border-color: transparent; }
-.link.destacado:hover { background: linear-gradient(135deg, #34afff 0%, #0f7be6 100%); }
-.link.wa { background: linear-gradient(135deg, #25d366 0%, #128c7e 100%); border-color: transparent; }
-.link.wa .ico { background: rgba(255,255,255,.18); }
-.link.wa .ico svg { fill: #fff; }
+footer { text-align: center; font-size: .72rem; opacity: .5; margin-top: 26px; }
 
-.seccion { font-size: .78rem; text-transform: uppercase; letter-spacing: 1.4px; opacity: .7; margin: 22px 4px 2px; }
-
-.video { margin-top: 28px; border-radius: 18px; overflow: hidden; background: #000; aspect-ratio: 9 / 16; max-height: 640px; margin-left: auto; margin-right: auto; width: min(100%, 360px); }
-.video iframe { width: 100%; height: 100%; border: 0; display: block; }
-
-footer { text-align: center; font-size: .75rem; opacity: .6; margin-top: 30px; }
-footer a { color: inherit; }
-
-@media (prefers-reduced-motion: reduce) { .fondo video { display: none; } }
+.barra {
+  position: fixed; left: 0; right: 0; bottom: 0; padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+  background: rgba(7,20,39,.88); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); border-top: 1px solid rgba(255,255,255,.1);
+  display: flex; gap: 10px; max-width: 480px; margin: 0 auto;
+}
+.barra a { flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; text-decoration: none; font-weight: 600; font-size: .9rem; border-radius: 14px; padding: 13px 8px; }
+.barra svg { width: 18px; height: 18px; fill: currentColor; }
+.barra .wa { background: #25d366; color: #fff; flex: 1.4; }
+.barra .ag { background: rgba(255,255,255,.1); color: #fff; border: 1px solid rgba(255,255,255,.2); }
 </style>
 </head>
 <body>
-<div class="fondo" aria-hidden="true">
-  <video autoplay muted loop playsinline preload="metadata" poster="">
-    <source src="/assets/links/fondo.mp4" type="video/mp4">
-  </video>
-</div>
-
 <main>
-  <header class="perfil">
-    <img src="/assets/links/perfil.png" alt="Cristian, de Polair" width="104" height="104">
-    <h1>Cristian · Polair</h1>
-    <p>Fábricas de hielo hechas en Argentina</p>
-  </header>
+  <div class="top">
+    <img src="/assets/links/perfil.png" alt="Cristian, de Polair">
+    <div><div class="n">Cristian · Polair</div><div class="s">Fábricas de hielo hechas en Argentina</div></div>
+    <nav class="redes" aria-label="Redes sociales">
+      <a href="https://www.tiktok.com/@cristian_polair" data-link="tiktok_icono" aria-label="TikTok"><svg viewBox="0 0 24 24"><path d="M16.6 5.82A4.28 4.28 0 0 1 15.54 3h-3.09v12.4a2.59 2.59 0 1 1-1.78-2.46V9.69A5.68 5.68 0 1 0 15.54 15.3V9.01a7.35 7.35 0 0 0 4.3 1.38V7.3a4.3 4.3 0 0 1-3.24-1.48z"/></svg></a>
+      <a href="https://www.instagram.com/polair.refrigeracion" data-link="instagram_icono" aria-label="Instagram"><svg viewBox="0 0 24 24"><path d="M12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10zm0 8.2a3.2 3.2 0 1 1 0-6.4 3.2 3.2 0 0 1 0 6.4zM17.3 5.5a1.2 1.2 0 1 0 0 2.4 1.2 1.2 0 0 0 0-2.4zM12 2c-2.7 0-3 0-4.1.1C4.3 2.3 2.3 4.3 2.1 7.9 2 9 2 9.3 2 12s0 3 .1 4.1c.2 3.6 2.2 5.6 5.8 5.8 1.1.1 1.4.1 4.1.1s3 0 4.1-.1c3.6-.2 5.6-2.2 5.8-5.8.1-1.1.1-1.4.1-4.1s0-3-.1-4.1c-.2-3.6-2.2-5.6-5.8-5.8C15 2 14.7 2 12 2z"/></svg></a>
+      <a href="https://youtube.com/@PolairRefrigeracion" data-link="youtube_icono" aria-label="YouTube"><svg viewBox="0 0 24 24"><path d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.6 12 3.6 12 3.6s-7.5 0-9.4.5A3 3 0 0 0 .5 6.2 31 31 0 0 0 0 12a31 31 0 0 0 .5 5.8 3 3 0 0 0 2.1 2.1c1.9.5 9.4.5 9.4.5s7.5 0 9.4-.5a3 3 0 0 0 2.1-2.1A31 31 0 0 0 24 12a31 31 0 0 0-.5-5.8zM9.6 15.6V8.4l6.2 3.6-6.2 3.6z"/></svg></a>
+    </nav>
+  </div>
 
-  <nav class="redes" aria-label="Redes sociales">
-    <a href="https://www.tiktok.com/@cristian_polair" data-link="tiktok_icono" aria-label="TikTok">
-      <svg viewBox="0 0 24 24"><path d="M16.6 5.82A4.28 4.28 0 0 1 15.54 3h-3.09v12.4a2.59 2.59 0 0 1-2.59 2.5 2.59 2.59 0 0 1-2.59-2.59 2.59 2.59 0 0 1 3.4-2.46V9.69a5.73 5.73 0 0 0-.81-.06A5.68 5.68 0 0 0 4.18 15.3a5.68 5.68 0 0 0 5.68 5.68 5.68 5.68 0 0 0 5.68-5.68V9.01a7.35 7.35 0 0 0 4.3 1.38V7.3a4.3 4.3 0 0 1-3.24-1.48z"/></svg>
-    </a>
-    <a href="https://www.instagram.com/polair.refrigeracion" data-link="instagram_icono" aria-label="Instagram">
-      <svg viewBox="0 0 24 24"><path d="M12 2.16c3.2 0 3.58.01 4.85.07 1.17.05 1.8.25 2.23.41.56.22.96.48 1.38.9.42.42.68.82.9 1.38.16.42.36 1.06.41 2.23.06 1.27.07 1.65.07 4.85s-.01 3.58-.07 4.85c-.05 1.17-.25 1.8-.41 2.23-.22.56-.48.96-.9 1.38-.42.42-.82.68-1.38.9-.42.16-1.06.36-2.23.41-1.27.06-1.65.07-4.85.07s-3.58-.01-4.85-.07c-1.17-.05-1.8-.25-2.23-.41a3.72 3.72 0 0 1-1.38-.9 3.72 3.72 0 0 1-.9-1.38c-.16-.42-.36-1.06-.41-2.23C2.17 15.58 2.16 15.2 2.16 12s.01-3.58.07-4.85c.05-1.17.25-1.8.41-2.23.22-.56.48-.96.9-1.38.42-.42.82-.68 1.38-.9.42-.16 1.06-.36 2.23-.41C8.42 2.17 8.8 2.16 12 2.16M12 0C8.74 0 8.33.01 7.05.07 5.78.13 4.9.33 4.14.63c-.79.3-1.46.72-2.12 1.38A5.88 5.88 0 0 0 .63 4.14C.33 4.9.13 5.78.07 7.05.01 8.33 0 8.74 0 12s.01 3.67.07 4.95c.06 1.27.26 2.15.56 2.91.3.79.72 1.46 1.38 2.12.66.66 1.33 1.08 2.12 1.38.76.3 1.64.5 2.91.56C8.33 23.99 8.74 24 12 24s3.67-.01 4.95-.07c1.27-.06 2.15-.26 2.91-.56a5.88 5.88 0 0 0 2.12-1.38 5.88 5.88 0 0 0 1.38-2.12c.3-.76.5-1.64.56-2.91.06-1.28.07-1.69.07-4.95s-.01-3.67-.07-4.95c-.06-1.27-.26-2.15-.56-2.91a5.88 5.88 0 0 0-1.38-2.12A5.88 5.88 0 0 0 19.86.63C19.1.33 18.22.13 16.95.07 15.67.01 15.26 0 12 0zm0 5.84a6.16 6.16 0 1 0 0 12.32 6.16 6.16 0 0 0 0-12.32zM12 16a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm6.41-11.85a1.44 1.44 0 1 0 0 2.88 1.44 1.44 0 0 0 0-2.88z"/></svg>
-    </a>
-    <a href="https://youtube.com/@PolairRefrigeracion" data-link="youtube_icono" aria-label="YouTube">
-      <svg viewBox="0 0 24 24"><path d="M23.5 6.19a3.02 3.02 0 0 0-2.12-2.14C19.5 3.55 12 3.55 12 3.55s-7.5 0-9.38.5A3.02 3.02 0 0 0 .5 6.19 31.6 31.6 0 0 0 0 12a31.6 31.6 0 0 0 .5 5.81 3.02 3.02 0 0 0 2.12 2.14c1.88.5 9.38.5 9.38.5s7.5 0 9.38-.5a3.02 3.02 0 0 0 2.12-2.14A31.6 31.6 0 0 0 24 12a31.6 31.6 0 0 0-.5-5.81zM9.55 15.57V8.43L15.82 12l-6.27 3.57z"/></svg>
-    </a>
+  <h1>Tu fábrica de hielo,<br><em>armada antes de comprarla</em></h1>
+  <p class="lead">Girá la máquina, recorré la planta y calculá cuánto ganás.</p>
+
+  <div class="escena" id="escena">
+    <!-- El modelo (5-6 MB) se pide recién cuando la página terminó de cargar -->
+    <model-viewer id="mv" data-src="/fabrica-virtual/ar/i1500.glb" camera-controls auto-rotate rotation-per-second="18deg"
+      interaction-prompt="none" shadow-intensity="1.1" exposure="1.05" camera-orbit="35deg 72deg auto" ar ar-modes="scene-viewer quick-look"
+      alt="Máquina de hielo Roll Ice en 3D"><button slot="ar-button" hidden></button></model-viewer>
+    <div class="cargando">Cargando la máquina en 3D…</div>
+    <div class="tag"><b id="cap">1.500 kg/día</b><span id="nom">Roll Ice I-1.500 · hielo cilíndrico</span></div>
+    <div class="gira">↻ Tocá y girala</div>
+  </div>
+
+  <div class="modelos">
+    <button data-m="i500" data-c="500" data-link="3d_i500">I-500<small>500 kg/día</small></button>
+    <button data-m="i1000" data-c="1.000" data-link="3d_i1000">I-1.000<small>1.000 kg/día</small></button>
+    <button data-m="i1500" data-c="1.500" data-link="3d_i1500" class="on">I-1.500<small>1.500 kg/día</small></button>
+  </div>
+
+  <a class="cta" href="/fabrica-virtual/" data-link="fabrica_virtual">
+    <span class="ic"><svg viewBox="0 0 24 24"><path d="M3 21V9l9-6 9 6v12"/><path d="M8 21v-7h8v7"/><path d="M3 21h18"/></svg></span>
+    <span><b>Entrá a la fábrica virtual</b><span>Recorrido guiado con mi voz · 1 min</span></span>
+    <span class="fl">›</span>
+  </a>
+  <a class="ar" href="#" id="btn-ar" data-link="3d_realidad_aumentada">📱 Ver la máquina en tamaño real en tu galpón (realidad aumentada)</a>
+
+  <nav class="hist" aria-label="Destacados">
+    <a href="/fabrica-virtual/" data-link="hist_fabrica"><div class="anillo"><div>🏭</div></div><span>Fábrica virtual</span></a>
+    <a href="https://calculadora.frigoinsumos.com/" data-link="hist_calculadora"><div class="anillo"><img src="/videos/resultados.jpg" alt=""></div><span>Calculadora</span></a>
+    <a href="/fabrica-virtual/#ciclo" data-link="hist_como_funciona"><div class="anillo"><img src="/videos/seleccion-maquina.jpg" alt=""></div><span>Cómo funciona</span></a>
+    <a href="https://www.polair.com.ar/ultrafrix" data-link="hist_ultrafrix"><div class="anillo"><img src="/assets/links/t3.webp" alt=""></div><span>Ultra Frix</span></a>
+    <a href="https://www.frigoinsumos.com.ar/" data-link="hist_repuestos"><div class="anillo"><img src="/assets/links/t4.webp" alt=""></div><span>Repuestos</span></a>
+    <a href="/agenda/" data-link="hist_agenda"><div class="anillo"><div>📅</div></div><span>Agendar</span></a>
   </nav>
 
-  <section class="links">
-    <a class="link destacado" href="https://calculadora.frigoinsumos.com/" data-link="calculadora">
-      <span class="ico"><img src="/assets/links/t1.webp" alt=""></span>
-      <span class="txt"><span class="tit">Calculadora de inversión</span><span class="sub">Simulá tu fábrica de hielo: inversión, costos y ganancia</span></span>
-      <span class="flecha">›</span>
-    </a>
-    <a class="link" href="https://polair.com.ar/tu-negocio" data-link="tu_negocio">
-      <span class="ico"><img src="/assets/links/t2.webp" alt=""></span>
-      <span class="txt"><span class="tit">Montá tu propia fábrica de hielo</span><span class="sub">polair.com.ar</span></span>
-      <span class="flecha">›</span>
-    </a>
-    <a class="link" href="https://www.polair.com.ar/ultrafrix" data-link="ultrafrix">
-      <span class="ico"><img src="/assets/links/t3.webp" alt=""></span>
-      <span class="txt"><span class="tit">Abatidores y ultracongeladores</span><span class="sub">Línea Ultra Frix · polair.com.ar</span></span>
-      <span class="flecha">›</span>
-    </a>
-    <a class="link" href="https://www.frigoinsumos.com.ar/" data-link="frigoinsumos">
-      <span class="ico"><img src="/assets/links/t4.webp" alt=""></span>
-      <span class="txt"><span class="tit">Frigoinsumos</span><span class="sub">Repuestos, torres de enfriamiento e intercambiadores</span></span>
-      <span class="flecha">›</span>
-    </a>
-
-    <p class="seccion">Hablemos</p>
-    <a class="link wa" href="https://wa.me/5493417070894?text=Hola%20Cristian%2C%20vengo%20de%20tus%20redes" data-link="whatsapp">
-      <span class="ico"><svg viewBox="0 0 24 24"><path d="M17.47 14.38c-.3-.15-1.75-.86-2.02-.96-.27-.1-.47-.15-.67.15-.2.3-.77.96-.94 1.16-.17.2-.35.22-.64.07-.3-.15-1.25-.46-2.38-1.47-.88-.79-1.47-1.76-1.65-2.06-.17-.3-.02-.46.13-.6.13-.14.3-.35.45-.52.15-.17.2-.3.3-.5.1-.2.05-.37-.03-.52-.07-.15-.67-1.6-.92-2.2-.24-.58-.49-.5-.67-.51h-.57c-.2 0-.52.07-.79.37-.27.3-1.04 1.02-1.04 2.48s1.07 2.88 1.21 3.08c.15.2 2.1 3.2 5.08 4.49.71.31 1.26.49 1.7.63.71.22 1.36.19 1.87.12.57-.09 1.75-.72 2-1.41.25-.69.25-1.29.17-1.41-.07-.13-.27-.2-.57-.35zM12.04 21.8h-.01a9.84 9.84 0 0 1-5.02-1.37l-.36-.21-3.73.98 1-3.64-.24-.37A9.82 9.82 0 0 1 2.2 12C2.2 6.58 6.61 2.17 12.05 2.17c2.63 0 5.1 1.03 6.96 2.89A9.79 9.79 0 0 1 21.9 12c0 5.43-4.42 9.8-9.86 9.8zm8.4-18.2A11.8 11.8 0 0 0 12.04 0C5.5 0 .16 5.33.16 11.9c0 2.1.55 4.14 1.6 5.95L0 24l6.3-1.65a11.88 11.88 0 0 0 5.73 1.46h.01c6.55 0 11.89-5.33 11.89-11.9 0-3.18-1.24-6.17-3.48-8.4z"/></svg></span>
-      <span class="txt"><span class="tit">Hablanos por WhatsApp</span><span class="sub">Te respondemos al toque</span></span>
-      <span class="flecha">›</span>
-    </a>
-    <a class="link" href="/agenda/" data-link="agenda">
-      <span class="ico"><img src="/assets/links/t5.webp" alt=""></span>
-      <span class="txt"><span class="tit">Agendá una reunión</span><span class="sub">30 minutos con el equipo de ventas de Polair</span></span>
-      <span class="flecha">›</span>
-    </a>
-  </section>
-
-  <div class="video">
-    <iframe src="https://www.tiktok.com/player/v1/7632356432234433800?music_info=0&description=0" title="Video de TikTok de Polair" allow="fullscreen" loading="lazy"></iframe>
+  <div class="grilla">
+    <a class="tile" href="https://calculadora.frigoinsumos.com/" data-link="calculadora"><img src="/assets/links/t1.webp" alt=""><div><b>Calculadora de inversión</b><span>Inversión, costos y ganancia</span></div></a>
+    <a class="tile" href="https://polair.com.ar/tu-negocio" data-link="tu_negocio"><img src="/assets/links/t2.webp" alt=""><div><b>Montá tu fábrica</b><span>polair.com.ar</span></div></a>
+    <a class="tile" href="https://www.polair.com.ar/ultrafrix" data-link="ultrafrix"><img src="/assets/links/t3.webp" alt=""><div><b>Ultra Frix</b><span>Abatidores y ultracongeladores</span></div></a>
+    <a class="tile" href="https://www.frigoinsumos.com.ar/" data-link="frigoinsumos"><img src="/assets/links/t4.webp" alt=""><div><b>Frigoinsumos</b><span>Repuestos y torres</span></div></a>
   </div>
 
   <footer>Refrigeración Polair · Rosario, Argentina</footer>
 </main>
 
+<nav class="barra">
+  <a class="wa" href="https://wa.me/5493417070894?text=Hola%20Cristian%2C%20vengo%20de%20tus%20redes" data-link="whatsapp"><svg viewBox="0 0 24 24"><path d="M17.47 14.38c-.3-.15-1.75-.86-2.02-.96-.27-.1-.47-.15-.67.15-.2.3-.77.96-.94 1.16-.17.2-.35.22-.64.07-.3-.15-1.25-.46-2.38-1.47-.88-.79-1.47-1.76-1.65-2.06-.17-.3-.02-.46.13-.6.13-.14.3-.35.45-.52.15-.17.2-.3.3-.5.1-.2.05-.37-.03-.52-.07-.15-.67-1.6-.92-2.2-.24-.58-.49-.5-.67-.51h-.57c-.2 0-.52.07-.79.37-.27.3-1.04 1.02-1.04 2.48s1.07 2.88 1.21 3.08c.15.2 2.1 3.2 5.08 4.49.71.31 1.26.49 1.7.63.71.22 1.36.19 1.87.12.57-.09 1.75-.72 2-1.41.25-.69.25-1.29.17-1.41-.07-.13-.27-.2-.57-.35zM12.04 21.8h-.01a9.84 9.84 0 0 1-5.02-1.37l-.36-.21-3.73.98 1-3.64-.24-.37A9.82 9.82 0 0 1 2.2 12C2.2 6.58 6.61 2.17 12.05 2.17c2.63 0 5.1 1.03 6.96 2.89A9.79 9.79 0 0 1 21.9 12c0 5.43-4.42 9.8-9.86 9.8zm8.4-18.2A11.8 11.8 0 0 0 12.04 0C5.5 0 .16 5.33.16 11.9c0 2.1.55 4.14 1.6 5.95L0 24l6.3-1.65a11.88 11.88 0 0 0 5.73 1.46h.01c6.55 0 11.89-5.33 11.89-11.9 0-3.18-1.24-6.17-3.48-8.4z"/></svg>WhatsApp</a>
+  <a class="ag" href="/agenda/" data-link="agenda">Agendar reunión</a>
+</nav>
+
+<!-- Máquina 3D: selector de modelo, realidad aumentada y carga diferida -->
+<script>
+(function () {
+  var mv = document.getElementById('mv'), escena = document.getElementById('escena');
+  mv.addEventListener('load', function () { escena.classList.add('listo'); });
+  function cargar() { if (!mv.getAttribute('src')) mv.setAttribute('src', mv.dataset.src); }
+  if (document.readyState === 'complete') cargar(); else window.addEventListener('load', cargar);
+  document.querySelectorAll('.modelos button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      document.querySelectorAll('.modelos button').forEach(function (x) { x.classList.remove('on'); });
+      b.classList.add('on');
+      escena.classList.remove('listo');
+      mv.setAttribute('src', '/fabrica-virtual/ar/' + b.dataset.m + '.glb');
+      document.getElementById('cap').textContent = b.dataset.c + ' kg/día';
+      document.getElementById('nom').textContent = 'Roll Ice I-' + b.dataset.c + ' · hielo cilíndrico';
+    });
+  });
+  document.getElementById('btn-ar').addEventListener('click', function (e) {
+    e.preventDefault(); cargar();
+    if (mv.activateAR) mv.activateAR();
+  });
+})();
+</script>
+
 <!-- ── Métricas propias ──────────────────────────────────────────
      Cada vista, clic y salida se guarda en Firestore (colección links_eventos)
      por la API REST con keepalive, así el registro sale aunque el link navegue.
      Las reglas de Firestore validan los campos; solo el admin puede leerlos.
+     Los toques en la máquina 3D se guardan como clic con link "3d_…": el panel
+     los muestra aparte y no los cuenta en el CTR.
      Además: GA4 (whatsapp_click es evento clave/conversión en Ads) y Clarity. -->
 <script>
 (function () {
@@ -282,17 +314,18 @@ footer a { color: inherit; }
   var inicio = Date.now(), clics = 0;
   registrar({ tipo: 'vista', link: '', pos: 0, dur: 0 });
 
-  // Clics en cada link
+  // Clics en cada link (los de la máquina 3D no navegan: no se abren en pestaña nueva)
   var todos = Array.prototype.slice.call(document.querySelectorAll('[data-link]'));
   todos.forEach(function (a, i) {
-    a.setAttribute('target', '_blank');
-    a.setAttribute('rel', 'noopener');
+    var id = a.getAttribute('data-link'), es3d = id.indexOf('3d_') === 0;
+    if (!es3d) { a.setAttribute('target', '_blank'); a.setAttribute('rel', 'noopener'); }
     a.addEventListener('click', function () {
-      var id = a.getAttribute('data-link');
-      clics++;
+      if (!es3d) clics++;
       registrar({ tipo: 'click', link: id, pos: i + 1, dur: Math.round((Date.now() - inicio) / 1000) });
-      var ev = id === 'whatsapp' ? 'whatsapp_click' : id === 'agenda' ? 'agenda_click' : 'link_click';
-      if (window.gtag) gtag('event', ev, { pagina: 'links', link_id: id, link_url: a.href, fuente: base.fuente });
+      var ev = id === 'whatsapp' ? 'whatsapp_click'
+             : (id === 'agenda' || id === 'hist_agenda') ? 'agenda_click'
+             : es3d ? 'modelo_3d' : 'link_click';
+      if (window.gtag) gtag('event', ev, { pagina: 'links', link_id: id, link_url: a.href || '', fuente: base.fuente });
       if (window.clarity) { clarity('event', ev); clarity('set', 'link', id); }
     });
   });
