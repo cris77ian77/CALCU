@@ -94,7 +94,16 @@ model-viewer { width: 100%; height: 100%; --poster-color: transparent; }
 .cta .fl { margin-left: auto; font-size: 1.4rem; }
 .ar { display: block; text-align: center; margin: 10px 0 22px; font-size: .8rem; color: #9fdcff; text-decoration: none; }
 
-.hist { display: flex; gap: 14px; overflow-x: auto; margin: 0 -16px 18px; padding: 2px 16px 4px; scrollbar-width: none; }
+.hist-wrap { position: relative; margin: 0 -16px 18px; }
+.hist { display: flex; gap: 14px; overflow-x: auto; padding: 2px 16px 4px; scrollbar-width: none; scroll-snap-type: x proximity; scroll-behavior: smooth; }
+.hist a { scroll-snap-align: start; scroll-margin-left: 16px; }
+.hist-fl {
+  position: absolute; top: 19px; z-index: 2; width: 34px; height: 34px; border-radius: 50%; border: 1px solid rgba(255,255,255,.25);
+  background: rgba(7,20,39,.85); color: #fff; font: 600 1.1rem/1 'Poppins', sans-serif; cursor: pointer; display: grid; place-items: center;
+  box-shadow: 0 4px 12px rgba(0,0,0,.35); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); transition: opacity .2s;
+}
+.hist-fl.izq { left: 6px; } .hist-fl.der { right: 6px; }
+.hist-fl[hidden] { display: grid; opacity: 0; pointer-events: none; }
 .hist::-webkit-scrollbar { display: none; }
 .hist a { text-decoration: none; color: #fff; text-align: center; flex-shrink: 0; width: 70px; }
 .hist .anillo { width: 66px; height: 66px; border-radius: 50%; padding: 3px; background: conic-gradient(#2fa8ff, #7fe0ff, #0a6fd1, #2fa8ff); margin: 0 auto; }
@@ -162,6 +171,9 @@ footer { text-align: center; font-size: .72rem; opacity: .5; margin-top: 26px; }
   </a>
   <a class="ar" href="#" id="btn-ar" data-link="3d_realidad_aumentada">📱 Ver la máquina en tamaño real en tu galpón (realidad aumentada)</a>
 
+  <div class="hist-wrap">
+  <button class="hist-fl izq" type="button" aria-label="Anteriores" hidden>‹</button>
+  <button class="hist-fl der" type="button" aria-label="Siguientes" hidden>›</button>
   <nav class="hist" aria-label="Destacados">
     <a href="/fabrica-virtual/" data-link="hist_fabrica"><div class="anillo"><div>🏭</div></div><span>Fábrica virtual</span></a>
     <a href="https://calculadora.frigoinsumos.com/" data-link="hist_calculadora"><div class="anillo"><img src="/videos/resultados.jpg" alt=""></div><span>Calculadora</span></a>
@@ -170,6 +182,7 @@ footer { text-align: center; font-size: .72rem; opacity: .5; margin-top: 26px; }
     <a href="https://www.frigoinsumos.com.ar/" data-link="hist_repuestos"><div class="anillo"><img src="/assets/links/t4.webp" alt=""></div><span>Repuestos</span></a>
     <a href="/agenda/" data-link="hist_agenda"><div class="anillo"><div>📅</div></div><span>Agendar</span></a>
   </nav>
+  </div>
 
   <div class="grilla">
     <a class="tile" href="https://calculadora.frigoinsumos.com/" data-link="calculadora"><img src="/assets/links/t1.webp" alt=""><div><b>Calculadora de inversión</b><span>Inversión, costos y ganancia</span></div></a>
@@ -207,6 +220,23 @@ footer { text-align: center; font-size: .72rem; opacity: .5; margin-top: 26px; }
     e.preventDefault(); cargar();
     if (mv.activateAR) mv.activateAR();
   });
+})();
+
+// Círculos: flechas para recorrerlos (se ocultan en cada punta)
+(function () {
+  var hist = document.querySelector('.hist'), izq = document.querySelector('.hist-fl.izq'), der = document.querySelector('.hist-fl.der');
+  function actualizar() {
+    var max = hist.scrollWidth - hist.clientWidth;
+    izq.hidden = hist.scrollLeft <= 4;
+    der.hidden = hist.scrollLeft >= max - 4;
+  }
+  function mover(dir) { hist.scrollBy({ left: dir * Math.max(hist.clientWidth - 90, 84), behavior: 'smooth' }); }
+  izq.addEventListener('click', function () { mover(-1); });
+  der.addEventListener('click', function () { mover(1); });
+  hist.addEventListener('scroll', actualizar, { passive: true });
+  window.addEventListener('resize', actualizar);
+  window.addEventListener('load', actualizar);
+  actualizar();
 })();
 </script>
 
