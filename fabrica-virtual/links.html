@@ -36,8 +36,10 @@
   <h1>Links de la Fábrica Virtual</h1>
   <p class="sub">Elegí qué querés mostrarle al cliente y mandale el link: se abre directo en esa vista.</p>
 
-  <div class="card"><label>Modelo</label><div class="opts" id="modelo"></div></div>
-  <div class="card"><label>Pestaña</label><div class="opts" id="pestana"></div></div>
+  <div class="card"><label>Qué abre el link</label><div class="opts" id="destino"></div>
+    <p class="hint" id="hint-destino"></p></div>
+  <div class="card"><label id="lbl-modelo">Modelo</label><div class="opts" id="modelo"></div></div>
+  <div class="card" id="op-pestana"><label>Pestaña</label><div class="opts" id="pestana"></div></div>
 
   <div class="card" id="op-maquina" hidden>
     <label>Vista</label><div class="opts" id="rayos"></div>
@@ -82,7 +84,8 @@ const INST = { compacta: 'Compacta', remota: 'Condensadora remota', torre: 'Cond
 const AGUA = { '': 'Sin elegir', blanda: 'Blanda', dura: 'Dura (con ósmosis)' };
 const RAYOS = { '': 'Exterior', '1': 'Rayos X' };
 
-const estado = { modelo: 'i1500', pestana: 'inicio', rayos: '', pieza: '', etapa: 'arranque', inst: 'compacta', agua: '' };
+const DESTINOS = { fabrica: 'La Fábrica Virtual de un modelo', selector: 'Elegí tu máquina (las 4 en fila)' };
+const estado = { destino: 'fabrica', modelo: 'i1500', pestana: 'inicio', rayos: '', pieza: '', etapa: 'arranque', inst: 'compacta', agua: '' };
 const $ = id => document.getElementById(id);
 
 function botones(id, opciones, clave) {
@@ -102,6 +105,13 @@ const slug = t => t.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().repla
 function armarLink() {
   const m = MODELOS[estado.modelo];
   const q = new URLSearchParams();
+  // Selector: abre con la máquina elegida al centro; el cliente puede pasar a las otras.
+  if (estado.destino === 'selector') {
+    q.set('m', estado.modelo);
+    const c = slug($('cliente').value);
+    if (c) q.set('c', c);
+    return BASE + 'elegir/?' + q.toString();
+  }
   if (estado.pestana === 'maquina') { if (estado.rayos) q.set('rayos', '1'); if (estado.pieza) q.set('pieza', estado.pieza); }
   if (estado.pestana === 'ciclo' && estado.etapa !== 'arranque') q.set('etapa', estado.etapa);
   if (estado.pestana === 'fabrica') { if (estado.inst !== 'compacta') q.set('inst', estado.inst); if (estado.agua) q.set('agua', estado.agua); }
@@ -114,19 +124,26 @@ function armarLink() {
 function pintar() {
   const m = MODELOS[estado.modelo];
   if (!m.tabs.includes(estado.pestana)) estado.pestana = 'inicio';
+  const sel = estado.destino === 'selector';
+  marcar('destino', estado.destino);
+  $('op-pestana').hidden = sel;
+  $('lbl-modelo').textContent = sel ? 'Máquina que aparece primero' : 'Modelo';
+  $('hint-destino').textContent = sel ? 'Las cuatro Roll Ice en fila, con su ficha y la presentación de Cristián: el cliente elige y entra a la Fábrica Virtual de esa máquina. Ideal si todavía no sabe qué modelo necesita.' : 'Se abre directo en la vista que elijas abajo.';
   botones('pestana', Object.fromEntries(m.tabs.map(t => [t, PESTANAS[t]])), 'pestana');
   for (const [id, v] of [['modelo', estado.modelo], ['pestana', estado.pestana], ['rayos', estado.rayos], ['pieza', estado.pieza], ['etapa', estado.etapa], ['inst', estado.inst], ['agua', estado.agua]]) marcar(id, v);
-  $('op-maquina').hidden = estado.pestana !== 'maquina';
-  $('op-ciclo').hidden = estado.pestana !== 'ciclo';
-  $('op-fabrica').hidden = estado.pestana !== 'fabrica';
+  $('op-maquina').hidden = sel || estado.pestana !== 'maquina';
+  $('op-ciclo').hidden = sel || estado.pestana !== 'ciclo';
+  $('op-fabrica').hidden = sel || estado.pestana !== 'fabrica';
   const link = armarLink();
   $('link').textContent = link;
   $('ver').href = link;
-  const texto = `Te paso la Fábrica Virtual de la Roll Ice ${m.n}, para que la veas en 3D por dentro: ${link}`;
+  const texto = sel ? `Te paso la Fábrica Virtual de Polair: están las cuatro Roll Ice, elegí la que te interese y mirala en 3D por dentro: ${link}`
+    : `Te paso la Fábrica Virtual de la Roll Ice ${m.n}, para que la veas en 3D por dentro: ${link}`;
   $('wa').href = 'https://wa.me/?text=' + encodeURIComponent(texto);
   $('ok').textContent = '';
 }
 
+botones('destino', DESTINOS, 'destino');
 botones('modelo', Object.fromEntries(Object.entries(MODELOS).map(([k, v]) => [k, v.n])), 'modelo');
 botones('rayos', RAYOS, 'rayos');
 botones('pieza', PIEZAS, 'pieza');
