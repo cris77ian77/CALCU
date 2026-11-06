@@ -6,7 +6,8 @@
 import { firebaseConfig } from './firebase-config.js';
 import { initializeApp }             from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js';
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
-         signOut, onAuthStateChanged, sendPasswordResetEmail, updatePassword }
+         signOut, onAuthStateChanged, sendPasswordResetEmail, updatePassword,
+         GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult }
   from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
 import { getFirestore, doc, setDoc, getDoc }
   from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
@@ -126,6 +127,57 @@ export async function migrarPasswordATelefono(telefono) {
   const tel = normalizarTelefono(telefono);
   if (!auth.currentUser) throw new Error('No hay usuario autenticado');
   await updatePassword(auth.currentUser, tel);
+}
+
+// ── Ingreso con Google (popup; si el navegador lo bloquea, redirección) ─────
+export async function loginConGoogle() {
+  const provider = new GoogleAuthProvider();
+  provider.setCustomParameters({ prompt: 'select_account' });
+  try {
+    return (await signInWithPopup(auth, provider)).user;
+  } catch (err) {
+    if (err.code === 'auth/popup-blocked' || err.code === 'auth/operation-not-supported-in-this-environment') {
+      await signInWithRedirect(auth, provider);
+      return null;
+    }
+    throw err;
+  }
+}
+// Devuelve el error de un ingreso con Google por redirección, si lo hubo.
+export async function errorDeRedireccion() {
+  try { await getRedirectResult(auth); return null; } catch (err) { return err; }
+}
+
+// ── Provincia a partir de la característica del celular ─────────────
+// Mapa aproximado de códigos de área argentinos; si no se reconoce, devuelve ''.
+const AREA_EXACTA = {
+  '11':'Buenos Aires','220':'Buenos Aires','221':'Buenos Aires','223':'Buenos Aires','230':'Buenos Aires','236':'Buenos Aires',
+  '237':'Buenos Aires','249':'Buenos Aires','291':'Buenos Aires','348':'Buenos Aires','3487':'Buenos Aires','3489':'Buenos Aires','3407':'Buenos Aires',
+  '2302':'La Pampa','2954':'La Pampa',
+  '260':'Mendoza','261':'Mendoza','263':'Mendoza','264':'San Juan','266':'San Luis',
+  '280':'Chubut','297':'Chubut','2945':'Chubut','294':'Río Negro','298':'Río Negro','2920':'Río Negro','2940':'Río Negro','2946':'Río Negro',
+  '299':'Neuquén','2942':'Neuquén','2948':'Neuquén','2972':'Neuquén','2901':'Tierra del Fuego',
+  '341':'Santa Fe','342':'Santa Fe','343':'Entre Ríos','345':'Entre Ríos','351':'Córdoba','358':'Córdoba',
+  '3463':'Córdoba','3467':'Córdoba','3468':'Córdoba','3472':'Córdoba',
+  '362':'Chaco','364':'Chaco','370':'Formosa','376':'Misiones','379':'Corrientes','380':'La Rioja','381':'Tucumán',
+  '383':'Catamarca','385':'Santiago del Estero','387':'Salta','388':'Jujuy',
+};
+const AREA_PREFIJO = {   // primeros 3 dígitos de códigos de 4 cifras
+  '222':'Buenos Aires','224':'Buenos Aires','225':'Buenos Aires','226':'Buenos Aires','227':'Buenos Aires','228':'Buenos Aires',
+  '229':'Buenos Aires','231':'Buenos Aires','232':'Buenos Aires','234':'Buenos Aires','235':'Buenos Aires','239':'Buenos Aires',
+  '262':'Mendoza','265':'San Luis','296':'Santa Cruz','340':'Santa Fe','349':'Santa Fe','344':'Entre Ríos',
+  '352':'Córdoba','353':'Córdoba','354':'Córdoba','355':'Córdoba','356':'Córdoba','357':'Córdoba',
+  '371':'Formosa','372':'Chaco','373':'Chaco','374':'Misiones','375':'Misiones','377':'Corrientes','378':'Corrientes',
+  '382':'La Rioja','384':'Santiago del Estero','386':'Tucumán',
+};
+export function provinciaDesdeCelular(tel) {
+  let d = String(tel || '').replace(/\D/g, '');
+  if (d.startsWith('54')) d = d.slice(2);
+  if (d.startsWith('9'))  d = d.slice(1);
+  if (d.startsWith('0'))  d = d.slice(1);
+  if (d.length < 10) return '';
+  if (d.startsWith('11')) return AREA_EXACTA['11'];
+  return AREA_EXACTA[d.slice(0,4)] || AREA_EXACTA[d.slice(0,3)] || AREA_PREFIJO[d.slice(0,3)] || '';
 }
 
 // ── Obtener datos de usuario desde Firestore ──────────────────

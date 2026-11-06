@@ -345,500 +345,285 @@
       .perfil-group { grid-template-columns: 1fr; }
       .perfil-card span { flex-direction: row; justify-content: flex-start; padding: .6rem .85rem; }
     }
+
+    /* ── Ingreso simplificado ─────────────────────────────────── */
+    .brand-logo { height: 38px; margin-bottom: .55rem; background:#fff; border-radius:8px; padding:4px 8px; }
+    .btn-google { width:100%; display:flex; align-items:center; justify-content:center; gap:.6rem; padding:.78rem 1rem;
+      background:#fff; color:#1f2937; border:1.5px solid #d1d5db; border-radius:.6rem; font-size:.95rem; font-weight:700; cursor:pointer; }
+    .btn-google:hover { background:#f8fafc; border-color:#9ca3af; }
+    .btn-google:disabled { opacity:.6; cursor:not-allowed; }
+    .divider { display:flex; align-items:center; gap:.75rem; color:#94a3b8; font-size:.8rem; margin:1.1rem 0; }
+    .divider::before, .divider::after { content:''; flex:1; height:1px; background:#e2e8f0; }
+    #extra { display:none; margin:.4rem 0 1rem; padding-top:1rem; border-top:1px dashed #cbd5e1; }
+    #extra.show { display:block; }
+    #extra h3 { font-size:1rem; color:#0d3b66; margin-bottom:.8rem; }
+    input[readonly] { background:#f1f5f9; color:#64748b; }
+    .old-access { margin-top:1rem; text-align:center; }
   </style>
 </head>
 <body>
 
 <div id="auth-widget">
 
-  <!-- Cabecera -->
   <div class="auth-header">
-    <h1>❄️ Portal de Hielo</h1>
-    <p>Ingresá tu email y celular para continuar</p>
+    <img class="brand-logo" src="../assets/polair-logo.png" alt="Polair">
+    <h1>Calculadora de Fábrica de Hielo</h1>
+    <p>Ingresá para ver tu proyección</p>
   </div>
 
-  <!-- Tabs (ocultas en flujo simplificado; quedan en el DOM para fallback) -->
-  <div class="auth-tabs" id="auth-tabs" style="display:none">
-    <button class="tab-btn active" data-tab="login">Iniciar sesión</button>
-    <button class="tab-btn"        data-tab="registro">Registrarse</button>
-  </div>
-
-  <!-- Cuerpo -->
   <div class="auth-body">
-
-    <!-- ── PANEL LOGIN (email + celular) ───────────────────────── -->
     <div id="panel-login" class="panel active">
 
       <div class="alert alert-error" id="login-error"></div>
       <div class="alert alert-success" id="login-success"></div>
 
-      <p class="login-hint">
-        Si es la primera vez, te pediremos algunos datos más en el siguiente paso.
-      </p>
+      <div id="google-wrap">
+        <button type="button" class="btn-google" id="btn-google">
+          <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.1 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.1 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>
+          Continuar con Google
+        </button>
+        <div class="divider">o</div>
+      </div>
 
       <form id="form-login" novalidate>
-
-        <div class="form-row">
+        <div class="form-row" id="row-email">
           <div class="form-group">
-            <label for="login-email">Correo electrónico</label>
-            <input type="email" id="login-email" placeholder="ejemplo@correo.com" autocomplete="email" />
+            <label for="login-email">Email</label>
+            <input type="email" id="login-email" autocomplete="email" />
             <span class="field-error" id="err-login-email"></span>
           </div>
         </div>
-
-        <div class="form-row">
+        <div class="form-row" id="row-telefono">
           <div class="form-group">
             <label for="login-telefono">Celular</label>
-            <input type="tel" id="login-telefono" placeholder="11 1234-5678" autocomplete="tel" />
-            <span class="field-hint">Es tu llave de acceso. La próxima vez ingresás con estos mismos datos.</span>
+            <input type="tel" id="login-telefono" autocomplete="tel" inputmode="tel" />
+            <span class="field-hint">Con código de área, sin el 0 ni el 15. La próxima vez entrás con estos mismos datos.</span>
             <span class="field-error" id="err-login-telefono"></span>
           </div>
         </div>
 
-        <button type="submit" class="btn-primary" id="btn-login">
-          Continuar
-        </button>
+        <!-- Solo para cuentas nuevas o incompletas: aparece en la misma tarjeta -->
+        <div id="extra">
+          <h3>¡Bienvenido! Solo dos datos más</h3>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="extra-nombre">Nombre y apellido</label>
+              <input type="text" id="extra-nombre" autocomplete="name" />
+              <span class="field-error" id="err-extra-nombre"></span>
+            </div>
+          </div>
+          <div class="form-group" style="margin-bottom:.6rem;"><label>¿Para qué es el hielo?</label></div>
+          <div class="perfil-group">
+            <label class="perfil-card"><input type="radio" name="perfil" value="consumo_propio" /><span><span class="icon">🏠</span>Consumo propio</span></label>
+            <label class="perfil-card"><input type="radio" name="perfil" value="venta_negocio" /><span><span class="icon">🏪</span>Venta en negocio</span></label>
+            <label class="perfil-card"><input type="radio" name="perfil" value="distribucion_hielo" /><span><span class="icon">🚚</span>Distribución de hielo</span></label>
+          </div>
+          <span class="field-error" id="err-perfil" style="display:block;margin-bottom:.6rem;"></span>
+        </div>
 
+        <button type="submit" class="btn-primary" id="btn-login">Entrar</button>
       </form>
 
-      <!-- Sección de fallback (aparece si email+celular no matchean) -->
-      <div id="fallback-section" style="display:none; margin-top:1.25rem; padding-top:1rem; border-top:1px solid #e2e8f0;">
-        <p style="font-size:.82rem; color:#64748b; margin-bottom:.6rem;">
-          ¿Te registraste antes con una contraseña?
-        </p>
-        <button type="button" class="btn-link" id="btn-show-old-pw" style="display:block; margin-bottom:.5rem;">
-          Ingresar con mi contraseña anterior
-        </button>
-        <button type="button" class="btn-link" id="btn-forgot" style="display:block;">
-          Recuperar acceso por email
-        </button>
-
-        <!-- Form de password viejo (oculto hasta que se hace clic) -->
-        <div id="old-password-section" style="display:none; margin-top:.85rem;">
-          <div class="form-group" style="margin-bottom:.65rem;">
-            <label for="old-password">Contraseña anterior</label>
-            <div class="input-wrap">
-              <input type="password" id="old-password" placeholder="••••••••" autocomplete="current-password" />
-              <button type="button" class="toggle-pw" data-target="old-password" aria-label="Mostrar contraseña">👁</button>
-            </div>
+      <div class="old-access" id="old-access">
+        <button type="button" class="btn-link" id="btn-show-old-pw">¿Entraste antes con contraseña?</button>
+      </div>
+      <div id="old-password-section" style="display:none; margin-top:.85rem;">
+        <div class="form-group" style="margin-bottom:.65rem;">
+          <label for="old-password">Contraseña anterior</label>
+          <div class="input-wrap">
+            <input type="password" id="old-password" autocomplete="current-password" />
+            <button type="button" class="toggle-pw" data-target="old-password" aria-label="Mostrar contraseña">👁</button>
           </div>
-          <button type="button" class="btn-primary" id="btn-old-login">Ingresar con contraseña</button>
         </div>
+        <button type="button" class="btn-primary" id="btn-old-login">Entrar con contraseña</button>
+        <button type="button" class="btn-link" id="btn-forgot" style="display:block;margin-top:.6rem">Recuperar acceso por email</button>
       </div>
 
-    </div><!-- /panel-login -->
-
-    <!-- ── PANEL REGISTRO ─────────────────────────────────────── -->
-    <div id="panel-registro" class="panel">
-
-      <div class="alert alert-error" id="reg-error"></div>
-
-      <form id="form-registro" novalidate>
-
-        <!-- Nombre y Apellido -->
-        <div class="form-row cols-2">
-          <div class="form-group">
-            <label for="reg-nombre">Nombre</label>
-            <input type="text" id="reg-nombre" placeholder="Juan" autocomplete="given-name" />
-            <span class="field-error" id="err-reg-nombre"></span>
-          </div>
-          <div class="form-group">
-            <label for="reg-apellido">Apellido</label>
-            <input type="text" id="reg-apellido" placeholder="Pérez" autocomplete="family-name" />
-            <span class="field-error" id="err-reg-apellido"></span>
-          </div>
-        </div>
-
-        <!-- Email -->
-        <div class="form-row">
-          <div class="form-group">
-            <label for="reg-email">Correo electrónico</label>
-            <input type="email" id="reg-email" placeholder="ejemplo@correo.com" autocomplete="email" />
-            <span class="field-error" id="err-reg-email"></span>
-          </div>
-        </div>
-
-        <!-- Teléfono y Provincia -->
-        <div class="form-row cols-2">
-          <div class="form-group">
-            <label for="reg-telefono">Teléfono</label>
-            <input type="tel" id="reg-telefono" placeholder="+54 9 11 0000-0000" autocomplete="tel" />
-            <span class="field-error" id="err-reg-telefono"></span>
-          </div>
-          <div class="form-group">
-            <label for="reg-provincia">Provincia</label>
-            <select id="reg-provincia">
-              <option value="">Seleccionar…</option>
-            </select>
-            <span class="field-error" id="err-reg-provincia"></span>
-          </div>
-        </div>
-
-        <!-- CUIT -->
-        <div class="form-row">
-          <div class="form-group">
-            <label for="reg-cuit">CUIT <span class="opt">(opcional)</span></label>
-            <input type="text" id="reg-cuit" placeholder="20-12345678-9" maxlength="13" inputmode="numeric" />
-            <span class="field-error" id="err-reg-cuit"></span>
-          </div>
-        </div>
-
-        <!-- Perfil -->
-        <div class="form-group" style="margin-bottom:.6rem;">
-          <label>Perfil de uso</label>
-        </div>
-        <div class="perfil-group" id="perfil-group">
-          <label class="perfil-card">
-            <input type="radio" name="perfil" value="consumo_propio" />
-            <span><span class="icon">🏠</span>Consumo propio</span>
-          </label>
-          <label class="perfil-card">
-            <input type="radio" name="perfil" value="venta_negocio" />
-            <span><span class="icon">🏪</span>Venta en negocio</span>
-          </label>
-          <label class="perfil-card">
-            <input type="radio" name="perfil" value="distribucion_hielo" />
-            <span><span class="icon">🚚</span>Distribución de hielo</span>
-          </label>
-        </div>
-        <span class="field-error" id="err-perfil" style="display:block;margin-bottom:.6rem;"></span>
-
-        <!-- Contraseña -->
-        <div class="form-row cols-2">
-          <div class="form-group">
-            <label for="reg-password">Contraseña</label>
-            <div class="input-wrap">
-              <input type="password" id="reg-password" placeholder="••••••••" autocomplete="new-password" />
-              <button type="button" class="toggle-pw" data-target="reg-password" aria-label="Mostrar contraseña">👁</button>
-            </div>
-            <span class="field-error" id="err-reg-password"></span>
-          </div>
-          <div class="form-group">
-            <label for="reg-password2">Repetir contraseña</label>
-            <div class="input-wrap">
-              <input type="password" id="reg-password2" placeholder="••••••••" autocomplete="new-password" />
-              <button type="button" class="toggle-pw" data-target="reg-password2" aria-label="Mostrar contraseña">👁</button>
-            </div>
-            <span class="field-error" id="err-reg-password2"></span>
-          </div>
-        </div>
-
-        <button type="submit" class="btn-primary" id="btn-registro">
-          Crear cuenta
-        </button>
-
-      </form>
-    </div><!-- /panel-registro -->
-
-    <!-- ── PANEL SESIÓN INICIADA ──────────────────────────────── -->
-    <div id="panel-sesion" class="panel">
-      <div class="user-card" id="user-card">
-        <div class="user-avatar" id="user-avatar">?</div>
-        <div class="user-name"  id="user-name">Cargando…</div>
-        <div class="user-email" id="user-email"></div>
-        <div class="user-meta"  id="user-meta"></div>
-      </div>
-      <button class="btn-logout" id="btn-logout">Cerrar sesión</button>
     </div>
-
-    <!-- ── PANEL COMPLETAR PERFIL ─────────────────────────────── -->
-    <div id="panel-completar" class="panel">
-      <div class="alert alert-info show">
-        ℹ️ Para acceder al simulador, completá tu perfil.
-      </div>
-      <p style="font-size:.82rem;color:#64748b;margin:.75rem 0 1rem">
-        Cuenta: <strong id="completar-email">—</strong>
-      </p>
-
-      <div class="alert alert-error" id="completar-error"></div>
-
-      <form id="form-completar" novalidate>
-        <div class="form-row cols-2">
-          <div class="form-group">
-            <label for="comp-nombre">Nombre</label>
-            <input type="text" id="comp-nombre" placeholder="Juan" autocomplete="given-name" />
-            <span class="field-error" id="err-comp-nombre"></span>
-          </div>
-          <div class="form-group">
-            <label for="comp-apellido">Apellido</label>
-            <input type="text" id="comp-apellido" placeholder="Pérez" autocomplete="family-name" />
-            <span class="field-error" id="err-comp-apellido"></span>
-          </div>
-        </div>
-        <div class="form-row cols-2">
-          <div class="form-group">
-            <label for="comp-telefono">Teléfono</label>
-            <input type="tel" id="comp-telefono" placeholder="+54 9 11 0000-0000" />
-            <span class="field-error" id="err-comp-telefono"></span>
-          </div>
-          <div class="form-group">
-            <label for="comp-provincia">Provincia</label>
-            <select id="comp-provincia">
-              <option value="">Seleccionar…</option>
-            </select>
-            <span class="field-error" id="err-comp-provincia"></span>
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label for="comp-cuit">CUIT <span class="opt">(opcional)</span></label>
-            <input type="text" id="comp-cuit" placeholder="20-12345678-9" maxlength="13" inputmode="numeric" />
-            <span class="field-error" id="err-comp-cuit"></span>
-          </div>
-        </div>
-        <div class="form-group" style="margin-bottom:.6rem;">
-          <label>Perfil de uso</label>
-        </div>
-        <div class="perfil-group">
-          <label class="perfil-card">
-            <input type="radio" name="comp-perfil" value="consumo_propio" />
-            <span><span class="icon">🏠</span>Consumo propio</span>
-          </label>
-          <label class="perfil-card">
-            <input type="radio" name="comp-perfil" value="venta_negocio" />
-            <span><span class="icon">🏪</span>Venta en negocio</span>
-          </label>
-          <label class="perfil-card">
-            <input type="radio" name="comp-perfil" value="distribucion_hielo" />
-            <span><span class="icon">🚚</span>Distribución de hielo</span>
-          </label>
-        </div>
-        <span class="field-error" id="err-comp-perfil" style="display:block;margin-bottom:.6rem;"></span>
-        <button type="submit" class="btn-primary" id="btn-completar">
-          Guardar y continuar →
-        </button>
-      </form>
-    </div>
-
-  </div><!-- /auth-body -->
+  </div>
 
   <div class="auth-footer">
     Tus datos están protegidos · <a href="#" style="color:#94a3b8">Privacidad</a>
   </div>
-
-</div><!-- /auth-widget -->
-
+</div>
 
 <script type="module">
   import {
-    PROVINCIAS, PERFILES,
-    validarCuit, formatearCuit,
-    validarTelefono,
-    registrar, login, cerrarSesion,
-    recuperarPassword, obtenerDatosUsuario,
+    validarTelefono, normalizarTelefono, provinciaDesdeCelular,
+    login, recuperarPassword, obtenerDatosUsuario,
     completarPerfil, marcarOrigen, onAuthChange,
-    loginConTelefono, registrarConTelefono, migrarPasswordATelefono
+    loginConTelefono, registrarConTelefono, migrarPasswordATelefono,
+    loginConGoogle, errorDeRedireccion
   } from './auth.js';
 
-  // ── Captura UTM params ────────────────────────────────────────
+  // ── UTM ───────────────────────────────────────────────────────
   const UTM_KEYS = ['utm_source','utm_medium','utm_campaign','utm_content','utm_term'];
   const params   = new URLSearchParams(window.location.search);
   const utmDesdeUrl = {};
   UTM_KEYS.forEach(k => { const v = params.get(k); if (v) utmDesdeUrl[k] = v; });
-  if (Object.keys(utmDesdeUrl).length) {
-    sessionStorage.setItem('calcu_utm', JSON.stringify(utmDesdeUrl));
-  }
+  if (Object.keys(utmDesdeUrl).length) sessionStorage.setItem('calcu_utm', JSON.stringify(utmDesdeUrl));
   const utm = JSON.parse(sessionStorage.getItem('calcu_utm') || '{}');
 
-  // ── A dónde volver después del login (por defecto, calculadora de hielo) ──
+  // ── A dónde volver después del ingreso ────────────────────────
   const DESTINOS = { vending: '../vending/' };
   const volver   = DESTINOS[params.get('volver')] ? params.get('volver') : null;
   const DESTINO  = volver ? DESTINOS[volver] : '../index.html';
 
-  // ── Notificación email al admin (fetch directo, sin SDK) ─────
+  // ── Aviso por email al admin de cada usuario nuevo ────────────
   async function notificarAdmin({ nombre, apellido, email, telefono, provincia, perfil }) {
-    const perfLabels = {
-      consumo_propio:     'Consumo propio',
-      venta_negocio:      'Venta en negocio',
-      distribucion_hielo: 'Distribución de hielo',
-    };
+    const perfLabels = { consumo_propio:'Consumo propio', venta_negocio:'Venta en negocio', distribucion_hielo:'Distribución de hielo' };
     try {
-      const res = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
+      await fetch('https://api.emailjs.com/api/v1.0/email/send', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          service_id:  'service_ddo7iqs',
-          template_id: 'template_35q95xh',
-          user_id:     'fYaCaTEQ7ctLYdo6e',
+          service_id: 'service_ddo7iqs', template_id: 'template_35q95xh', user_id: 'fYaCaTEQ7ctLYdo6e',
           template_params: {
-            to_email:     'cristian@polair.com.ar',
-            nombre,
-            apellido,
-            email,
-            telefono:     telefono  || '—',
-            provincia:    provincia || '—',
-            perfil:       perfLabels[perfil] || perfil || '—',
-            utm_source:   utm.utm_source   || 'Directo',
-            utm_medium:   utm.utm_medium   || '—',
-            utm_campaign: utm.utm_campaign || '—',
-            fecha:        new Date().toLocaleString('es-AR'),
+            to_email: 'cristian@polair.com.ar', nombre, apellido, email,
+            telefono: telefono || '—', provincia: provincia || '—', perfil: perfLabels[perfil] || perfil || '—',
+            utm_source: utm.utm_source || 'Directo', utm_medium: utm.utm_medium || '—', utm_campaign: utm.utm_campaign || '—',
+            fecha: new Date().toLocaleString('es-AR'),
           },
         }),
       });
-    } catch(e) {
-      console.warn('[EMAIL] Error al enviar:', e);
-    }
+    } catch (e) { console.warn('[EMAIL] Error al enviar:', e); }
   }
 
   // ── Utilidades DOM ────────────────────────────────────────────
   const $  = (sel) => document.querySelector(sel);
   const $$ = (sel) => document.querySelectorAll(sel);
-
   function showAlert(id, msg, tipo = 'error') {
-    const el = $(id);
-    el.className = `alert alert-${tipo} show`;
+    const el = $(id); el.className = `alert alert-${tipo} show`;
     el.innerHTML = (tipo === 'error' ? '⚠️ ' : tipo === 'success' ? '✅ ' : 'ℹ️ ') + msg;
   }
-  function hideAlert(id) {
-    const el = $(id);
-    el.className = 'alert';
-    el.textContent = '';
+  function hideAlert(id) { const el = $(id); el.className = 'alert'; el.textContent = ''; }
+  function fieldError(id, inputId, msg) {
+    const el = $(id); if (el) { el.textContent = msg; el.style.display = msg ? 'block' : 'none'; }
+    if (inputId) $(inputId).classList.toggle('error', !!msg);
   }
-  function setFieldError(id, msg) {
-    const el = $(id);
-    if (el) { el.textContent = msg; el.style.display = msg ? 'block' : 'none'; }
-  }
-  function setInputError(input, msg) {
-    if (msg) input.classList.add('error');
-    else      input.classList.remove('error');
-  }
-  function clearErrors(...ids) {
-    ids.forEach(id => { setFieldError(id, ''); const el = $(id.replace('err-','#').replace('err-',''));  });
+  function clearErrors() {
     $$('.error').forEach(el => el.classList.remove('error'));
     $$('.field-error').forEach(el => { el.textContent = ''; el.style.display = 'none'; });
+    hideAlert('#login-error'); hideAlert('#login-success');
   }
-  function setLoading(btn, loading) {
-    if (loading) {
-      btn.disabled = true;
-      btn.dataset.orig = btn.innerHTML;
-      btn.innerHTML = '<span class="spinner"></span> Procesando…';
-    } else {
-      btn.disabled = false;
-      btn.innerHTML = btn.dataset.orig || btn.innerHTML;
-    }
+  function setLoading(btn, loading, texto) {
+    if (loading) { btn.disabled = true; btn.dataset.orig = btn.innerHTML; btn.innerHTML = '<span class="spinner"></span> Procesando…'; }
+    else { btn.disabled = false; btn.innerHTML = texto || btn.dataset.orig || btn.innerHTML; }
   }
+  $$('.toggle-pw').forEach(btn => btn.addEventListener('click', () => {
+    const input = $(`#${btn.dataset.target}`);
+    input.type = input.type === 'password' ? 'text' : 'password';
+    btn.textContent = input.type === 'password' ? '👁' : '🙈';
+  }));
 
-  // ── Poblar provincias (registro y completar perfil) ──────────
-  PROVINCIAS.forEach(p => {
-    ['#reg-provincia', '#comp-provincia'].forEach(sel => {
-      const opt = document.createElement('option');
-      opt.value = p; opt.textContent = p;
-      $(sel).appendChild(opt);
-    });
-  });
-
-  // ── Tabs ──────────────────────────────────────────────────────
-  $$('.tab-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      $$('.tab-btn').forEach(b => b.classList.remove('active'));
-      $$('.panel').forEach(p => p.classList.remove('active'));
-      btn.classList.add('active');
-      $(`#panel-${btn.dataset.tab}`).classList.add('active');
-      hideAlert('#login-error');
-      hideAlert('#login-success');
-      hideAlert('#reg-error');
-      clearErrors();
-    });
-  });
-
-  // ── Toggle mostrar/ocultar contraseña ─────────────────────────
-  $$('.toggle-pw').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const input = $(`#${btn.dataset.target}`);
-      input.type = input.type === 'password' ? 'text' : 'password';
-      btn.textContent = input.type === 'password' ? '👁' : '🙈';
-    });
-  });
-
-  // ── Formatear CUIT en tiempo real (registro y completar) ─────
-  ['#reg-cuit', '#comp-cuit'].forEach(id => {
-    $(id).addEventListener('input', function() {
-      const pos = this.selectionStart;
-      this.value = formatearCuit(this.value);
-      try { this.setSelectionRange(pos, pos); } catch(_) {}
-    });
-  });
-
-  // ── Mensajes de error Firebase → español ─────────────────────
   const erroresFirebase = {
-    'auth/email-already-in-use'  : 'Este correo ya está registrado.',
-    'auth/invalid-email'         : 'El correo electrónico no es válido.',
-    'auth/weak-password'         : 'La contraseña debe tener al menos 6 caracteres.',
-    'auth/user-not-found'        : 'No existe una cuenta con ese correo.',
-    'auth/wrong-password'        : 'La contraseña es incorrecta.',
-    'auth/invalid-credential'    : 'Correo o contraseña incorrectos.',
-    'auth/too-many-requests'     : 'Demasiados intentos fallidos. Intentá más tarde.',
-    'auth/network-request-failed': 'Error de conexión. Verificá tu internet.',
+    'auth/invalid-email'          : 'El email no es válido.',
+    'auth/too-many-requests'      : 'Demasiados intentos. Probá de nuevo en unos minutos.',
+    'auth/network-request-failed' : 'Error de conexión. Verificá tu internet.',
+    'auth/wrong-password'         : 'La contraseña es incorrecta.',
+    'auth/invalid-credential'     : 'Los datos no coinciden.',
+    'auth/user-not-found'         : 'No existe una cuenta con ese email.',
+    'auth/account-exists-with-different-credential': 'Ese email ya tiene cuenta: entrá con tu email y tu celular.',
+    'auth/operation-not-allowed'  : 'El ingreso con Google todavía no está habilitado. Entrá con tu email y tu celular.',
+    'auth/configuration-not-found': 'El ingreso con Google todavía no está habilitado. Entrá con tu email y tu celular.',
+    'auth/unauthorized-domain'    : 'El ingreso con Google no está habilitado para este sitio. Entrá con tu email y tu celular.',
   };
-  function tradError(err) {
-    return erroresFirebase[err.code] || err.message || 'Error inesperado.';
+  const tradError = (err) => erroresFirebase[err.code] || err.message || 'Error inesperado.';
+
+  // ── Estado ────────────────────────────────────────────────────
+  let enCurso = false;        // hay un ingreso/registro en marcha: el observador no redirige
+  let usuario = null;         // usuario autenticado que tiene que completar datos
+  let datosPrevios = null;    // documento de Firestore (si existe)
+  let celularIngresado = '';  // celular tipeado en el primer paso
+
+  // Muestra los dos datos extra en la misma tarjeta
+  function mostrarExtra(user, doc) {
+    usuario = user; datosPrevios = doc;
+    $('#google-wrap').style.display = 'none';
+    $('#old-access').style.display = 'none';
+    $('#old-password-section').style.display = 'none';
+    const email = $('#login-email'); email.value = user.email || ''; email.readOnly = true;
+    const tel = $('#login-telefono');
+    const telConocido = celularIngresado || doc?.telefono || '';
+    if (telConocido) { tel.value = telConocido; tel.readOnly = true; }
+    else { tel.readOnly = false; $('#row-telefono .field-hint').textContent = 'Con código de área, sin el 0 ni el 15. Lo usamos para contactarte por WhatsApp.'; }
+    const nombreDoc = [doc?.nombre, doc?.apellido].filter(Boolean).join(' ');
+    $('#extra-nombre').value = nombreDoc || user.displayName || '';
+    if (doc?.perfil) { const r = document.querySelector(`input[name="perfil"][value="${doc.perfil}"]`); if (r) r.checked = true; }
+    $('#extra').classList.add('show');
+    $('#btn-login').innerHTML = 'Ver la calculadora →';
+    (!$('#extra-nombre').value ? $('#extra-nombre') : (tel.readOnly ? $('#extra-nombre') : tel)).focus();
   }
 
-  // ── FORMULARIO LOGIN (email + celular, auto-detect login/registro) ─
+  const perfilCompleto = (doc) => !!(doc && doc.nombre && doc.perfil);
+
+  // ── Envío del formulario: entrar / crear cuenta / completar ───
   $('#form-login').addEventListener('submit', async (e) => {
     e.preventDefault();
-    hideAlert('#login-error');
-    hideAlert('#login-success');
     clearErrors();
+    const btn = $('#btn-login');
 
-    const email    = $('#login-email').value.trim();
+    // Paso de completar datos (cuenta nueva o incompleta)
+    if (usuario) {
+      const nombreCompleto = $('#extra-nombre').value.trim().replace(/\s+/g, ' ');
+      const perfil = document.querySelector('input[name="perfil"]:checked')?.value;
+      const telefono = $('#login-telefono').value.trim();
+      let ok = true;
+      if (!telefono) { fieldError('#err-login-telefono', '#login-telefono', 'Ingresá tu celular.'); ok = false; }
+      else if (!validarTelefono(telefono)) { fieldError('#err-login-telefono', '#login-telefono', 'El celular debe tener al menos 10 dígitos, con código de área.'); ok = false; }
+      if (nombreCompleto.length < 2) { fieldError('#err-extra-nombre', '#extra-nombre', 'Ingresá tu nombre y apellido.'); ok = false; }
+      if (!perfil) { fieldError('#err-perfil', null, 'Elegí para qué es el hielo.'); ok = false; }
+      if (!ok) return;
+
+      const [nombre, ...resto] = nombreCompleto.split(' ');
+      const apellido = resto.join(' ');
+      const provincia = datosPrevios?.provincia || provinciaDesdeCelular(telefono) || null;
+      setLoading(btn, true);
+      enCurso = true;
+      try {
+        await completarPerfil(usuario.uid, usuario.email, {
+          nombre, apellido, telefono: datosPrevios?.telefono || telefono, provincia, perfil, utm,
+          metodoIngreso: usuario.providerData?.some(p => p.providerId === 'google.com') ? 'google' : 'email_celular',
+        });
+        if (!perfilCompleto(datosPrevios)) await notificarAdmin({ nombre, apellido, email: usuario.email, telefono, provincia, perfil });
+        if (volver) await marcarOrigen(usuario.uid, volver);
+        window.location.replace(DESTINO);
+      } catch (err) {
+        enCurso = false;
+        showAlert('#login-error', tradError(err), 'error');
+        setLoading(btn, false);
+      }
+      return;
+    }
+
+    // Primer paso: email + celular
+    const email = $('#login-email').value.trim();
     const telefono = $('#login-telefono').value.trim();
     let ok = true;
-
-    if (!email) {
-      setFieldError('#err-login-email', 'Ingresá tu correo.');
-      setInputError($('#login-email'), true); ok = false;
-    }
-    if (!telefono) {
-      setFieldError('#err-login-telefono', 'Ingresá tu celular.');
-      setInputError($('#login-telefono'), true); ok = false;
-    } else if (!validarTelefono(telefono)) {
-      setFieldError('#err-login-telefono', 'El celular debe tener al menos 10 dígitos.');
-      setInputError($('#login-telefono'), true); ok = false;
-    }
+    if (!email) { fieldError('#err-login-email', '#login-email', 'Ingresá tu email.'); ok = false; }
+    if (!telefono) { fieldError('#err-login-telefono', '#login-telefono', 'Ingresá tu celular.'); ok = false; }
+    else if (!validarTelefono(telefono)) { fieldError('#err-login-telefono', '#login-telefono', 'El celular debe tener al menos 10 dígitos, con código de área.'); ok = false; }
     if (!ok) return;
 
-    const btn = $('#btn-login');
     setLoading(btn, true);
-    $('#fallback-section').style.display = 'none';
-    $('#old-password-section').style.display = 'none';
-
+    enCurso = true;
+    celularIngresado = telefono;
     try {
-      // 1. Intentar login (caso recurrente)
-      await loginConTelefono(email, telefono);
-      // onAuthChange redirige al simulador
-    } catch(loginErr) {
-      const loginCode = loginErr.code || '';
-
-      // Errores que NO son "credenciales que no matchean" → mostrar y abortar.
-      // Firebase devuelve 'invalid-credential' tanto si el email no existe como
-      // si la password es incorrecta (email enumeration protection), así que no
-      // podemos distinguir desde el cliente. La estrategia: intentar registrar.
-      const credCodes = [
-        'auth/user-not-found',
-        'auth/wrong-password',
-        'auth/invalid-credential',
-        'auth/invalid-login-credentials',
-      ];
-      if (!credCodes.includes(loginCode)) {
-        showAlert('#login-error', tradError(loginErr), 'error');
-        setLoading(btn, false);
-        return;
+      const cred = await loginConTelefono(email, telefono);
+      const doc = await obtenerDatosUsuario(cred.user.uid).catch(() => null);
+      if (perfilCompleto(doc)) { window.location.replace(DESTINO); return; }
+      setLoading(btn, false); mostrarExtra(cred.user, doc);
+    } catch (loginErr) {
+      const credCodes = ['auth/user-not-found','auth/wrong-password','auth/invalid-credential','auth/invalid-login-credentials'];
+      if (!credCodes.includes(loginErr.code)) {
+        enCurso = false; showAlert('#login-error', tradError(loginErr), 'error'); setLoading(btn, false); return;
       }
-
-      // 2. Login falló por credenciales. Intentar registrar.
       try {
-        passwordlessRegistrando = true;
-        pendingTelefono = telefono;
-        await registrarConTelefono(email, telefono);
-        // Registro OK → onAuthChange mostrará #panel-completar
-      } catch(regErr) {
-        passwordlessRegistrando = false;
-        pendingTelefono = '';
+        const user = await registrarConTelefono(email, telefono);
+        setLoading(btn, false); mostrarExtra(user, null);
+      } catch (regErr) {
+        enCurso = false; celularIngresado = '';
         if (regErr.code === 'auth/email-already-in-use') {
-          // 3. El email ya existe → era el caso "wrong password" → mostrar fallback
-          showAlert('#login-error', 'Esos datos no coinciden con una cuenta existente.', 'error');
-          $('#fallback-section').style.display = 'block';
+          showAlert('#login-error', 'Ese email ya tiene una cuenta con otro celular. Revisá el número; si antes entraste con Google, usá el botón de Google.', 'error');
         } else {
           showAlert('#login-error', tradError(regErr), 'error');
         }
@@ -847,238 +632,65 @@
     }
   });
 
-  // ── Mostrar input de password vieja (fallback) ────────────────
-  $('#btn-show-old-pw').addEventListener('click', () => {
-    $('#old-password-section').style.display = 'block';
-    $('#old-password').focus();
-  });
-
-  // ── Login con password vieja + ofrecer migrar al celular ─────
-  $('#btn-old-login').addEventListener('click', async () => {
-    hideAlert('#login-error');
-    hideAlert('#login-success');
-
-    const email    = $('#login-email').value.trim();
-    const telefono = $('#login-telefono').value.trim();
-    const oldPw    = $('#old-password').value;
-
-    if (!email) {
-      showAlert('#login-error', 'Ingresá tu correo en el campo de arriba.', 'error');
-      return;
-    }
-    if (!oldPw) {
-      showAlert('#login-error', 'Ingresá tu contraseña anterior.', 'error');
-      return;
-    }
-
-    const btn = $('#btn-old-login');
-    setLoading(btn, true);
+  // ── Continuar con Google ──────────────────────────────────────
+  $('#btn-google').addEventListener('click', async () => {
+    clearErrors();
+    const btn = $('#btn-google');
+    btn.disabled = true; enCurso = true;
     try {
-      await login(email, oldPw);
-      // Logueado con password vieja. Si tipearon celular válido arriba, ofrecer migrar.
-      if (telefono && validarTelefono(telefono)) {
-        const ok = window.confirm(
-          '¿Querés que la próxima vez puedas ingresar solo con tu email y celular?\n\n' +
-          '(Recomendado: no más contraseñas que recordar.)'
-        );
-        if (ok) {
-          try { await migrarPasswordATelefono(telefono); }
-          catch(_) { /* silencioso: si falla, la password vieja sigue funcionando */ }
-        }
-      }
-      // onAuthChange redirige al simulador
-    } catch(err) {
-      showAlert('#login-error', tradError(err), 'error');
-      setLoading(btn, false);
-    }
+      const user = await loginConGoogle();
+      if (!user) return; // redirección en curso
+      const doc = await obtenerDatosUsuario(user.uid).catch(() => null);
+      if (perfilCompleto(doc) && doc.telefono) { window.location.replace(DESTINO); return; }
+      mostrarExtra(user, doc);
+    } catch (err) {
+      enCurso = false;
+      if (err.code !== 'auth/popup-closed-by-user' && err.code !== 'auth/cancelled-popup-request') showAlert('#login-error', tradError(err), 'error');
+    } finally { btn.disabled = false; }
   });
 
-  // ── Recuperar contraseña ──────────────────────────────────────
+  // ── Acceso con contraseña vieja ───────────────────────────────
+  $('#btn-show-old-pw').addEventListener('click', () => {
+    const sec = $('#old-password-section');
+    sec.style.display = sec.style.display === 'none' ? 'block' : 'none';
+    if (sec.style.display === 'block') $('#old-password').focus();
+  });
+  $('#btn-old-login').addEventListener('click', async () => {
+    clearErrors();
+    const email = $('#login-email').value.trim();
+    const telefono = $('#login-telefono').value.trim();
+    const oldPw = $('#old-password').value;
+    if (!email) { showAlert('#login-error', 'Ingresá tu email arriba.', 'error'); return; }
+    if (!oldPw) { showAlert('#login-error', 'Ingresá tu contraseña anterior.', 'error'); return; }
+    const btn = $('#btn-old-login');
+    setLoading(btn, true); enCurso = true;
+    try {
+      const user = await login(email, oldPw);
+      if (telefono && validarTelefono(telefono) &&
+          window.confirm('¿Querés que la próxima vez puedas entrar solo con tu email y celular?')) {
+        try { await migrarPasswordATelefono(telefono); } catch (_) { /* la contraseña vieja sigue funcionando */ }
+      }
+      const doc = await obtenerDatosUsuario(user.uid).catch(() => null);
+      if (perfilCompleto(doc)) { window.location.replace(DESTINO); return; }
+      setLoading(btn, false); mostrarExtra(user, doc);
+    } catch (err) {
+      enCurso = false; showAlert('#login-error', tradError(err), 'error'); setLoading(btn, false);
+    }
+  });
   $('#btn-forgot').addEventListener('click', async () => {
     const email = $('#login-email').value.trim();
-    if (!email) {
-      setFieldError('#err-login-email', 'Ingresá tu correo en el campo de arriba.');
-      setInputError($('#login-email'), true);
-      return;
-    }
-    try {
-      await recuperarPassword(email);
-      showAlert('#login-success', 'Te enviamos un correo para restablecer tu acceso.', 'success');
-    } catch(err) {
-      showAlert('#login-error', tradError(err), 'error');
-    }
+    if (!email) { fieldError('#err-login-email', '#login-email', 'Ingresá tu email arriba.'); return; }
+    try { await recuperarPassword(email); showAlert('#login-success', 'Te enviamos un correo para recuperar el acceso.', 'success'); }
+    catch (err) { showAlert('#login-error', tradError(err), 'error'); }
   });
 
-  // ── FORMULARIO REGISTRO ───────────────────────────────────────
-  $('#form-registro').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    clearErrors();
-    hideAlert('#reg-error');
-
-    const nombre    = $('#reg-nombre').value.trim();
-    const apellido  = $('#reg-apellido').value.trim();
-    const email     = $('#reg-email').value.trim();
-    const telefono  = $('#reg-telefono').value.trim();
-    const provincia = $('#reg-provincia').value;
-    const cuit      = $('#reg-cuit').value.trim();
-    const perfil    = document.querySelector('input[name="perfil"]:checked')?.value;
-    const password  = $('#reg-password').value;
-    const password2 = $('#reg-password2').value;
-
-    let ok = true;
-
-    const req = (val, errId, inputId, msg) => {
-      if (!val) { setFieldError(errId, msg); setInputError($(inputId), true); ok = false; }
-    };
-
-    req(nombre,    '#err-reg-nombre',    '#reg-nombre',    'Ingresá tu nombre.');
-    req(apellido,  '#err-reg-apellido',  '#reg-apellido',  'Ingresá tu apellido.');
-    req(email,     '#err-reg-email',     '#reg-email',     'Ingresá tu correo.');
-    req(telefono,  '#err-reg-telefono',  '#reg-telefono',  'Ingresá tu teléfono.');
-    req(provincia, '#err-reg-provincia', '#reg-provincia', 'Seleccioná una provincia.');
-
-    if (cuit && !validarCuit(cuit)) {
-      setFieldError('#err-reg-cuit', 'El CUIT ingresado no es válido.');
-      setInputError($('#reg-cuit'), true); ok = false;
-    }
-
-    if (!perfil) {
-      setFieldError('#err-perfil', 'Seleccioná un perfil de uso.'); ok = false;
-    }
-
-    if (!password) {
-      setFieldError('#err-reg-password', 'Ingresá una contraseña.');
-      setInputError($('#reg-password'), true); ok = false;
-    } else if (password.length < 6) {
-      setFieldError('#err-reg-password', 'Mínimo 6 caracteres.');
-      setInputError($('#reg-password'), true); ok = false;
-    }
-
-    if (!password2) {
-      setFieldError('#err-reg-password2', 'Repetí la contraseña.');
-      setInputError($('#reg-password2'), true); ok = false;
-    } else if (password !== password2) {
-      setFieldError('#err-reg-password2', 'Las contraseñas no coinciden.');
-      setInputError($('#reg-password2'), true); ok = false;
-    }
-
-    if (!ok) return;
-
-    const btn = $('#btn-registro');
-    setLoading(btn, true);
-    registrando = true;
-    try {
-      const nuevo = await registrar({ nombre, apellido, email, telefono, provincia, cuit, perfil, password, utm });
-      await notificarAdmin({ nombre, apellido, email, telefono, provincia, perfil });
-      if (volver) await marcarOrigen(nuevo.uid, volver);
-      window.location.replace(DESTINO);
-    } catch(err) {
-      registrando = false;
-      showAlert('#reg-error', tradError(err), 'error');
-      setLoading(btn, false);
-    }
-  });
-
-  // ── Cerrar sesión ─────────────────────────────────────────────
-  $('#btn-logout').addEventListener('click', async () => {
-    await cerrarSesion();
-  });
-
-  // ── Etiquetas de perfil ───────────────────────────────────────
-  const labelPerfil = {
-    consumo_propio:     '🏠 Consumo propio',
-    venta_negocio:      '🏪 Venta en negocio',
-    distribucion_hielo: '🚚 Distribución de hielo',
-  };
-
-  // ── Referencia al usuario actual (usada por form-completar) ───
-  let currentUser  = null;
-  let registrando  = false; // flujo viejo: evita redirect entre createUser y setDoc
-  let passwordlessRegistrando = false; // flujo nuevo: muestra paso 2 (completar)
-  let pendingTelefono = '';            // celular tipeado en paso 1, pre-llena paso 2
-
-  // ── FORMULARIO COMPLETAR PERFIL ───────────────────────────────
-  $('#form-completar').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    clearErrors();
-    hideAlert('#completar-error');
-
-    const nombre    = $('#comp-nombre').value.trim();
-    const apellido  = $('#comp-apellido').value.trim();
-    const telefono  = $('#comp-telefono').value.trim();
-    const provincia = $('#comp-provincia').value;
-    const cuit      = $('#comp-cuit').value.trim();
-    const perfil    = document.querySelector('input[name="comp-perfil"]:checked')?.value;
-    let ok = true;
-
-    const req = (val, errId, inputId, msg) => {
-      if (!val) { setFieldError(errId, msg); setInputError($(inputId), true); ok = false; }
-    };
-    req(nombre,    '#err-comp-nombre',    '#comp-nombre',    'Ingresá tu nombre.');
-    req(apellido,  '#err-comp-apellido',  '#comp-apellido',  'Ingresá tu apellido.');
-    req(telefono,  '#err-comp-telefono',  '#comp-telefono',  'Ingresá tu teléfono.');
-    req(provincia, '#err-comp-provincia', '#comp-provincia', 'Seleccioná una provincia.');
-
-    if (cuit && !validarCuit(cuit)) {
-      setFieldError('#err-comp-cuit', 'El CUIT ingresado no es válido.');
-      setInputError($('#comp-cuit'), true); ok = false;
-    }
-    if (!perfil) {
-      setFieldError('#err-comp-perfil', 'Seleccioná un perfil de uso.'); ok = false;
-    }
-    if (!ok || !currentUser) return;
-
-    const btn = $('#btn-completar');
-    setLoading(btn, true);
-    try {
-      await completarPerfil(currentUser.uid, currentUser.email, {
-        nombre, apellido, telefono, provincia,
-        cuit: cuit || null, perfil, utm,
-      });
-      await notificarAdmin({ nombre, apellido, email: currentUser.email, telefono, provincia, perfil });
-      if (volver) await marcarOrigen(currentUser.uid, volver);
-      window.location.replace(DESTINO);
-    } catch(err) {
-      showAlert('#completar-error', tradError(err), 'error');
-      setLoading(btn, false);
-    }
-  });
-
-  // ── Observador de autenticación ───────────────────────────────
+  // ── Sesión ya iniciada al abrir la página ─────────────────────
+  errorDeRedireccion().then(err => { if (err && err.code !== 'auth/popup-closed-by-user') showAlert('#login-error', tradError(err), 'error'); });
   onAuthChange(async (user) => {
-    const tabs = $('#auth-tabs');
-    const completar = new URLSearchParams(window.location.search).get('completar') === '1';
-
-    $$('.panel').forEach(p => p.classList.remove('active'));
-    $$('.tab-btn').forEach(b => b.classList.remove('active'));
-
-    if (user) {
-      currentUser = user;
-      if (passwordlessRegistrando) {
-        // Recién registrado via email+celular → paso 2 (completar perfil)
-        if (tabs) tabs.style.display = 'none';
-        $('#completar-email').textContent = user.email;
-        if (pendingTelefono) {
-          $('#comp-telefono').value = pendingTelefono;
-          $('#comp-telefono').readOnly = true;
-        }
-        $('#panel-completar').classList.add('active');
-      } else if (completar) {
-        // Usuario ya logueado pero sin perfil completo
-        if (tabs) tabs.style.display = 'none';
-        $('#completar-email').textContent = user.email;
-        $('#panel-completar').classList.add('active');
-      } else if (!registrando) {
-        // Sesión activa normal → redirigir al simulador
-        // (si registrando=true, el form-registro viejo redirige después de setDoc)
-        window.location.replace(DESTINO);
-      }
-      return;
-    } else {
-      // Sin sesión: panel de login por defecto
-      currentUser = null;
-      $('#panel-login').classList.add('active');
-    }
+    if (!user || enCurso || usuario) return;
+    const doc = await obtenerDatosUsuario(user.uid).catch(() => null);
+    if (perfilCompleto(doc)) window.location.replace(DESTINO);
+    else mostrarExtra(user, doc);
   });
 </script>
 
