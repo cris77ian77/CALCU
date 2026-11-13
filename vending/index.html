@@ -600,7 +600,7 @@ thead th.mes0-col { background: #7d4e00 !important; border-right: 2px solid #e8c
     <div class="tbl-wrap"><table id="tabla"></table></div>
     <p class="footnote">
       * Inversión registrada en Mes 0 (previo al inicio de operaciones).<br>
-      ** Energía calculada desde ficha técnica: consumo promedio × utilización × horas × días × precio kWh.<br>
+      ** Energía: 2 kW mientras produce (utilización × 24 h) y 0,5 kW en reposo el resto del día, × 30 días × precio kWh.<br>
       *** Cuotas en financiado se expresan en la moneda seleccionada al tipo de cambio ingresado.
     </p>
   </div>
@@ -647,7 +647,7 @@ thead th.mes0-col { background: #7d4e00 !important; border-right: 2px solid #e8c
 const MV450 = {
   name: 'MV-450', cap: 450,
   contado: 23500, financiado: 25800,
-  kwProm: 2, kwMax: 3, agua: 450
+  kwProm: 2, kwReposo: 0.5, kwMax: 3, agua: 450
 };
 
 const MES_LABELS    = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
@@ -886,7 +886,9 @@ function recalc() {
   document.getElementById('maquina').value = maquinaUSD;
 
   const fx = currency === 'ARS' ? dolar : 1;
-  const kwhMes100 = m.kwProm * horasDia * diasMes;
+  // kWh del mes: produciendo (utilización × 24 h) a kwProm, el resto del día en reposo a kwReposo
+  const kwhMes = util => (m.kwProm * util + m.kwReposo * (1 - util)) * horasDia * diasMes;
+  const kwhMes100 = kwhMes(1), kwhMes0 = kwhMes(0);
 
   document.getElementById('maquina-ars').textContent  = currency==='ARS' ? `= ${fmt(maquinaUSD*fx)}` : '';
   if (locacionMode === 'fijo') {
@@ -895,7 +897,7 @@ function recalc() {
   document.getElementById('hielo-ars').textContent      = currency==='ARS' ? `= ${fmt(precioHielo*fx)}/kg` : '';
   document.getElementById('hielo-ars-hint').textContent = dolar > 0 ? `≈ $ ${(precioHielo * dolar).toLocaleString('es-AR', {minimumFractionDigits:2, maximumFractionDigits:2})} / kg en pesos` : '';
   document.getElementById('kwh-ars').textContent        = currency==='ARS' ? `= ${fmt(precioKwh*dolar,2)}/kWh ARS` : '';
-  document.getElementById('kwh-mensual').textContent    = `Al 100%: ${kwhMes100.toLocaleString('es-AR',{maximumFractionDigits:0})} kWh/mes → ${fmt(kwhMes100*precioKwh*fx)}/mes`;
+  document.getElementById('kwh-mensual').textContent    = `Al 100%: ${kwhMes100.toLocaleString('es-AR',{maximumFractionDigits:0})} kWh/mes → ${fmt(kwhMes100*precioKwh*fx)}/mes · Sin producir: ${kwhMes0.toLocaleString('es-AR',{maximumFractionDigits:0})} kWh/mes → ${fmt(kwhMes0*precioKwh*fx)}/mes`;
 
   document.getElementById('bolsa-hint').textContent = dolar > 0
     ? `≈ $ ${(precioBolsa / kgBolsa).toLocaleString('es-AR', {maximumFractionDigits:0})} por kg · USD ${(precioBolsa / dolar).toFixed(2)} por bolsa`
@@ -912,7 +914,7 @@ function recalc() {
 
     const produccion       = capDia * diasMes * util;
     const ingresos         = produccion * precioHielo;
-    const costoEnergia     = m.kwProm * util * horasDia * diasMes * precioKwh;
+    const costoEnergia     = kwhMes(util) * precioKwh;
     const costoBolsas      = produccion * bolsaUSDkg;
     const costoAgua        = ingresos * pctAgua;
     const costoLocVar      = locacionMode === 'pct' ? ingresos * locPct : 0;
