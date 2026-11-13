@@ -71,7 +71,9 @@
         locacionPct:    v('locacionPct'),
         precioKwh:      v('precioKwh'),
         precioHielo:    v('precioHielo'),
-        pctOtros:       v('pctOtros'),
+        precioBolsa:    v('precioBolsa'),
+        kgBolsa:        v('kgBolsa'),
+        pctAgua:        v('pctAgua'),
       };
     }
 
@@ -552,9 +554,21 @@ thead th.mes0-col { background: #7d4e00 !important; border-right: 2px solid #e8c
       </div>
 
       <div class="field">
-        <label>Otros costos variables (% ingresos)</label>
-        <input type="number" id="pctOtros" value="5" min="0" max="100" step="1" oninput="recalc()">
-        <div class="hint">Bolsas, agua, insumos varios</div>
+        <label>Precio de la bolsa ($ por bolsa)</label>
+        <input type="number" id="precioBolsa" value="400" min="0" step="10" oninput="recalc()">
+        <div class="hint" id="bolsa-hint"></div>
+      </div>
+
+      <div class="field">
+        <label>Kg por bolsa</label>
+        <input type="number" id="kgBolsa" value="4" min="0.5" step="0.5" oninput="recalc()">
+        <div class="hint">Kilos de hielo que entrega cada venta</div>
+      </div>
+
+      <div class="field">
+        <label>Agua (% del precio de venta)</label>
+        <input type="number" id="pctAgua" value="3" min="0" max="100" step="0.5" oninput="recalc()">
+        <div class="hint">Costo del agua sobre los ingresos</div>
       </div>
 
       <div class="field">
@@ -852,7 +866,10 @@ function recalc() {
   const diasMes     = 30;
   const precioHielo = n(+document.getElementById('precioHielo').value);
   const capDia      = m.cap;
-  const pctOtros    = n(+document.getElementById('pctOtros').value) / 100;
+  const precioBolsa = n(+document.getElementById('precioBolsa').value);          // $ ARS por bolsa
+  const kgBolsa     = n(+document.getElementById('kgBolsa').value) || 4;
+  const pctAgua     = n(+document.getElementById('pctAgua').value) / 100;
+  const bolsaUSDkg  = dolar > 0 ? precioBolsa / dolar / kgBolsa : 0;          // costo de bolsa por kg, en USD
   const locFijo     = locacionMode === 'fijo' ? n(+document.getElementById('locacionFijo').value) : 0;
   const locPct      = locacionMode === 'pct'  ? n(+document.getElementById('locacionPct').value) / 100 : 0;
 
@@ -870,6 +887,9 @@ function recalc() {
   document.getElementById('kwh-ars').textContent        = currency==='ARS' ? `= ${fmt(precioKwh*dolar,2)}/kWh ARS` : '';
   document.getElementById('kwh-mensual').textContent    = `Al 100%: ${kwhMes100.toLocaleString('es-AR',{maximumFractionDigits:0})} kWh/mes → ${fmt(kwhMes100*precioKwh*fx)}/mes`;
 
+  document.getElementById('bolsa-hint').textContent = dolar > 0
+    ? `≈ $ ${(precioBolsa / kgBolsa).toLocaleString('es-AR', {maximumFractionDigits:0})} por kg · USD ${(precioBolsa / dolar).toFixed(2)} por bolsa`
+    : 'Cargá el dólar de referencia';
   renderPagoDetail(maquinaUSD, fx);
 
   // ── MONTHS ──
@@ -883,9 +903,10 @@ function recalc() {
     const produccion       = capDia * diasMes * util;
     const ingresos         = produccion * precioHielo;
     const costoEnergia     = m.kwProm * util * horasDia * diasMes * precioKwh;
-    const otrosVar         = ingresos * pctOtros;
+    const costoBolsas      = produccion * bolsaUSDkg;
+    const costoAgua        = ingresos * pctAgua;
     const costoLocVar      = locacionMode === 'pct' ? ingresos * locPct : 0;
-    const totalVar         = costoEnergia + otrosVar + costoLocVar;
+    const totalVar         = costoEnergia + costoBolsas + costoAgua + costoLocVar;
     const costoLocFijo     = locacionMode === 'fijo' ? locFijo : 0;
     const totalFijo        = costoLocFijo;
 
@@ -896,7 +917,7 @@ function recalc() {
     const ebitda    = ingresos - totalVar - totalFijo;
     const flujoNeto = ebitda - cuotaMes;
 
-    months.push({ lbl, util, produccion, ingresos, costoEnergia, otrosVar,
+    months.push({ lbl, util, produccion, ingresos, costoEnergia, costoBolsas, costoAgua,
                   costoLocVar, costoLocFijo, totalVar, totalFijo,
                   cuotaMes, ebitda, flujoNeto });
   }
@@ -1050,7 +1071,8 @@ function recalc() {
       ${hdrRow('▶ EGRESOS VARIABLES')}
       ${row('Costo Energía (electricidad)', null, months.map(mo=>-mo.costoEnergia))}
       ${locacionMode === 'pct' ? row('Pago al dueño de locación (% ventas)', null, months.map(mo=>-mo.costoLocVar)) : ''}
-      ${row('Otros Costos Variables (bolsas/agua)', null, months.map(mo=>-mo.otrosVar))}
+      ${row('Bolsas', null, months.map(mo=>-mo.costoBolsas))}
+      ${row('Agua', null, months.map(mo=>-mo.costoAgua))}
       ${row('Total Egresos Variables', null, months.map(mo=>-mo.totalVar))}
       ${hdrRow('▶ EGRESOS FIJOS')}
       ${locacionMode === 'fijo' ? row('Pago al dueño de locación (fijo)', null, months.map(mo=>-mo.costoLocFijo)) : ''}
