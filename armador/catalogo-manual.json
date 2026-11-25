@@ -1,0 +1,28 @@
+{
+  "descripcion": "Ítems de lista que no salen de los boletines que se leen para armar el catálogo del armador. Se fusionan en armador.html con aplicar_catalogo_manual.py para que no se pierdan si se regenera el catálogo. No inventar precios: cada ítem cita su fuente.",
+  "actualizado": "2026-11-11",
+  "items": [
+    {
+      "id": "MV-450",
+      "cat": "Vending autoexpendedora de hielo",
+      "model": "MV-450",
+      "desc": "Vending autoexpendedora de hielo MV-450 (Crystal Ice Cube) · 450 kg de hielo en cubos cada 24 h. Cobra con monedas, fichas, billetes y QR. Purificador RO de 200 GPD, pantalla LED de 27\", gestión remota por app. Solo necesita agua de red y luz.",
+      "contado": 23500,
+      "financiado": 25800,
+      "iva": 10.5,
+      "source": "VENDING/VENDING.pdf (PDF oficial)",
+      "date": "2026-07-13",
+      "plazo": "Entrega inmediata",
+      "pagoContado": "50% de anticipo por transferencia dentro de los 7 días de la fecha de la NP y 50% de saldo antes de la entrega.",
+      "pagoFinanciado": "40% de anticipo antes de la entrega y 60% hasta en 12 cheques fijos en pesos, emitidos antes de la entrega.",
+      "presetContado": "vending-contado-50-50",
+      "presetFinanciado": "vending-financiado-40-60",
+      "notas": [
+        "Pago en dólares o en pesos al tipo de cambio oficial BNA.",
+        "No incluye flete, seguro de transporte, instalación, materiales e insumos para la instalación ni viáticos del personal instalador.",
+        "Garantía de un año desde la entrega por defecto de fabricación, rotura o error de montaje, excepto componentes eléctricos y electromecánicos. Los viáticos del service no entran en la garantía."
+      ],
+      "insertAfterId": "CIC-250-EMB"
+    }
+  ]
+}
