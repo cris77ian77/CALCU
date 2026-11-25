@@ -540,7 +540,7 @@ thead th.mes0-col { background: #7d4e00 !important; border-right: 2px solid #e8c
 
       <div class="field">
         <label>Dólar de referencia (ARS/$)</label>
-        <input type="number" id="dolar" value="1425" min="1" oninput="recalc()">
+        <input type="number" id="dolar" value="1425" min="1" oninput="actualizarCamaras();recalc()">
         <div class="hint" id="dolar-bna-hint">Tipo de cambio BNA vendedor</div>
       </div>
 
@@ -689,31 +689,36 @@ function computeDefaultUtil() {
 }
 
 const CAMARAS = {
-  CAM_0: {
-    name: 'Sin cámara frigorífica', equipo: 'Solo máquina de hielo',
-    capacidad: '—',
-    contado: 0, financiado: 0,
-    detalle: { camC: 0, camF: 0, eqC: 0, eqF: 0 }
-  },
-  CAM_A: {
-    name: 'Cámara 2,36 × 2,36 m', equipo: 'Equipo MT 2.0 · 2 HP · Copeland',
-    capacidad: '5.000 kg almacenamiento',
-    contado: 8600, financiado: 9700,
-    detalle: { camC: 4600, camF: 5200, eqC: 4000, eqF: 4500 }
-  },
-  CAM_B: {
-    name: 'Cámara 2,36 × 3,54 m', equipo: 'Equipo MT 3.0 · 3 HP · Copeland',
-    capacidad: '10.000 kg almacenamiento',
-    contado: 9995, financiado: 11215,
-    detalle: { camC: 4695, camF: 5215, eqC: 5300, eqF: 6000 }
-  },
-  CAM_C: {
-    name: 'Cámara 2,36 × 4,72 m', equipo: 'Equipo MT 5.0 · 5 HP · Copeland',
-    capacidad: '10.000 kg almacenamiento',
-    contado: 12142, financiado: 13569,
-    detalle: { camC: 5642, camF: 6269, eqC: 6500, eqF: 7300 }
-  },
+  CAM_0: { name:'Sin cámara frigorífica', equipo:'Solo máquina de hielo', capacidad:'—', contado:0, financiado:0, detalle:{camC:0,camF:0,eqC:0,eqF:0} },
+  CAM_A: { name:'Cámara 2,36 × 2,36 m', equipo:'Equipo MT 2.0 · 2 HP · Copeland', ancho:2360, largo:2360, detalle:{eqC:4000,eqF:4500} },
+  CAM_B: { name:'Cámara 2,36 × 3,54 m', equipo:'Equipo MT 3.0 · 3 HP · Copeland', ancho:2360, largo:3540, detalle:{eqC:5300,eqF:6000} },
+  CAM_C: { name:'Cámara 2,36 × 4,72 m', equipo:'Equipo MT 5.0 · 5 HP · Copeland', ancho:2360, largo:4720, detalle:{eqC:6500,eqF:7300} },
 };
+// Precio de la cámara con la fórmula del cotizador de cámaras (camara.html): panel 60 mm con piso, alto 2,58 m.
+// Costo en pesos = base + $/m² de panel, pasado a dólares con el dólar del día; contado = costo +40 %, financiado = contado +10 %.
+// El equipo de frío mantiene su precio de lista en dólares.
+const CAM_COTIZADOR = { base: 1044668, porM2: 89132, alto: 2580, margenContado: 0.40, margenFinanciado: 0.10, kgPorM3: 400 };
+function actualizarCamaras() {
+  const dolar = +document.getElementById('dolar').value || 1490;
+  const redondear = x => Math.ceil(x / 50) * 50;
+  Object.values(CAMARAS).forEach(c => {
+    if (!c.ancho) return;
+    const a = c.ancho, l = c.largo, h = CAM_COTIZADOR.alto;
+    const m2 = (a * l + 2 * a * h + 2 * l * h + a * l) / 1e6;
+    const costoUSD = (CAM_COTIZADOR.base + CAM_COTIZADOR.porM2 * m2) / dolar;
+    c.detalle.camC = redondear(costoUSD * (1 + CAM_COTIZADOR.margenContado));
+    c.detalle.camF = redondear(c.detalle.camC * (1 + CAM_COTIZADOR.margenFinanciado));
+    c.contado = c.detalle.camC + c.detalle.eqC;
+    c.financiado = c.detalle.camF + c.detalle.eqF;
+    const kg = Math.round(a * l * h / 1e9 * CAM_COTIZADOR.kgPorM3 / 100) * 100;
+    c.capacidad = kg.toLocaleString('es-AR') + ' kg almacenamiento';
+  });
+  if (document.getElementById('camera-grid')?.children.length) {
+    buildCameraGrid();
+    const cam = CAMARAS[selectedCamara];
+    document.getElementById('camara').value = pagoMode === 'financiado' ? cam.financiado : cam.contado;
+  }
+}
 
 let selectedModel  = 'I1500';
 // Explorador 3D interactivo por modelo (por ahora solo la I-1.500).
@@ -750,6 +755,7 @@ async function fetchDolarBNA() {
     const venta = data.venta;
     if (venta && !isNaN(venta)) {
       document.getElementById('dolar').value = venta;
+      actualizarCamaras();
       hint.textContent = `✅ BNA vendedor hoy: $${venta}`;
       hint.style.color = '#27ae60';
       recalc();
@@ -766,6 +772,7 @@ async function fetchDolarBNA() {
 // ── INIT ──
 function init() {
   buildModelGrid();
+  actualizarCamaras();
   buildCameraGrid();
   initSliders();                  // inicializa utilArr antes de cualquier recalc()
   selectCamara(selectedCamara);   // setea precio inicial de cámara
