@@ -1,6 +1,6 @@
 {
   "descripcion": "Ítems de lista que no salen de los boletines que se leen para armar el catálogo del armador. Se fusionan en armador.html con aplicar_catalogo_manual.py para que no se pierdan si se regenera el catálogo. No inventar precios: cada ítem cita su fuente.",
-  "actualizado": "2026-11-11",
+  "actualizado": "2026-11-25",
   "items": [
     {
       "id": "MV-450",
@@ -22,7 +22,7 @@
         "No incluye flete, seguro de transporte, instalación, materiales e insumos para la instalación ni viáticos del personal instalador.",
         "Garantía de un año desde la entrega por defecto de fabricación, rotura o error de montaje, excepto componentes eléctricos y electromecánicos. Los viáticos del service no entran en la garantía."
       ],
-      "insertAfterId": "CIC-250-EMB"
+      "insertAfterId": "I-3000"
     }
   ]
 }
