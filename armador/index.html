@@ -97,6 +97,7 @@ table.env td.acc button{font-size:12px;padding:4px 8px;margin:1px}
 <nav class="tabs no-print" id="tabs" role="tablist">
   <button type="button" id="tab-armador" class="active" role="tab" data-tab="armador">Armador</button>
   <button type="button" id="tab-enviados" role="tab" data-tab="enviados">Enviados<span class="badge" id="env-count">0</span></button>
+  <button type="button" id="tab-costo" role="tab" data-tab="costo">Costo financiero</button>
 </nav>
 <div class="enviados no-print" id="view-enviados" hidden>
   <div class="panel">
@@ -113,6 +114,18 @@ table.env td.acc button{font-size:12px;padding:4px 8px;margin:1px}
       <thead><tr><th>Fecha y hora (Rosario)</th><th>Cliente</th><th>Celular</th><th>Modelo(s)</th><th style="text-align:right">Total U$S</th><th>Acciones</th></tr></thead>
       <tbody id="env-body"></tbody>
     </table>
+  </div>
+</div>
+<div class="enviados no-print" id="view-costo" hidden>
+  <div class="panel">
+    <h2>Costo financiero de cada forma de pago</h2>
+    <p class="hint">Uso interno: no sale en la propuesta. Toma los equipos cargados en el Armador y calcula, para cada forma de pago, cuánto te cuesta negociar (descontar) los cheques y cuánto terminás cobrando hoy. Las transferencias no tienen costo; cada cheque se descuenta a la TNA indicada por sus días de plazo: neto = monto ÷ (1 + TNA × días ÷ 365) − comisión. Los planes de 12 cheques sin días cargados se toman mensuales (30, 60 … 360 días).</p>
+    <div class="env-tools">
+      <label>TNA de descuento <input type="number" id="cf-tna" value="30" min="0" step="0.5" class="num" style="width:80px"> %</label>
+      <label>Comisión y gastos <input type="number" id="cf-com" value="0" min="0" step="0.1" class="num" style="width:70px"> % del cheque</label>
+      <label>Precios <select id="cf-modo"><option value="auto">según el plan (con cheques = financiado)</option><option value="contado">todos a precio de contado</option><option value="financiado">todos a precio financiado</option></select></label>
+    </div>
+    <div id="cf-out"></div>
   </div>
 </div>
 <div class="layout" id="view-armador">
@@ -1905,10 +1918,75 @@ $('env-import-file').addEventListener('change', function(){
   }).catch(function(err){ $('env-status').textContent = 'No se pudo importar: ' + (err && err.message || err); });
 });
 $('env-filter').addEventListener('input', renderEnviados);
+// ---------- costo financiero (solapa interna) ----------
+function evalPlan(mode, tramos){
+  var sm = state.priceMode, st = state.tramos, c;
+  state.priceMode = mode; state.tramos = tramos;
+  try { c = compute(); } finally { state.priceMode = sm; state.tramos = st; }
+  var tna = Math.max(0, Number($('cf-tna').value) || 0) / 100;
+  var com = Math.max(0, Number($('cf-com').value) || 0) / 100;
+  var pagos = [], costo = 0, diasPond = 0, enCheques = 0;
+  c.tramos.forEach(function(r, i){
+    var t = tramos[i], dias = r.dias || [];
+    var esCheque = (t.n || 1) > 1 || dias.length > 0;
+    r.cheques.forEach(function(m, j){
+      var monto = fromCents(m);
+      if (!esCheque) { pagos.push({ desc: t.desc, dias: null, monto: monto, neto: monto }); return; }
+      var d = dias[j] != null ? dias[j] : (dias.length ? dias[dias.length - 1] : 30 * (j + 1));
+      var neto = monto / (1 + tna * d / 365) - monto * com;
+      pagos.push({ desc: t.desc + (r.cheques.length > 1 ? ' · cheque ' + (j + 1) + '/' + r.cheques.length : ''), dias: d, monto: monto, neto: neto });
+      costo += monto - neto; diasPond += d * monto; enCheques += monto;
+    });
+  });
+  var total = fromCents(c.total);
+  return { mode: mode, total: total, tc: c.tc, costo: costo, neto: total - costo, enCheques: enCheques,
+           plazoProm: enCheques ? diasPond / enCheques : 0, pagos: pagos, warnings: c.warnings };
+}
+function tieneCheques(tramos){ return tramos.some(function(t){ return (t.n || 1) > 1 || parseDias(t.dias).length > 0; }); }
+function renderCosto(){
+  var out = $('cf-out');
+  if (!state.items.length) { out.innerHTML = '<p class="warn">Cargá al menos un equipo en la solapa Armador para ver el cálculo.</p>'; return; }
+  var vending = state.items.some(function(it){ return it.catId && /^MV-/.test(it.catId); });
+  var modoSel = $('cf-modo').value;
+  var planes = [];
+  if (state.tramos.length) planes.push({ label: 'Plan cargado en esta propuesta', tramos: state.tramos, mode: state.priceMode, actual: true });
+  Object.keys(PRESETS).forEach(function(k){
+    if (/^vending-/.test(k) !== vending) return;
+    var tr = PRESETS[k].tramos.map(function(t){ return Object.assign({ pesos: 0 }, t); });
+    planes.push({ label: PRESETS[k].label, tramos: tr, mode: modoSel === 'auto' ? (tieneCheques(tr) ? 'financiado' : 'contado') : modoSel });
+  });
+  if (modoSel !== 'auto') planes.forEach(function(p){ if (p.actual) p.mode = modoSel; });
+  var ref = evalPlan('contado', [{ desc: 'Contado', tipo: 'pct', pct: 100, n: 1, dias: '' }]);
+  var tc = ref.tc;
+  function usd(x){ return 'U$S ' + fmt(x); }
+  function ars(x){ return tc ? '<br><small class="hint">$ ' + fmt(x * tc, 0) + '</small>' : ''; }
+  var h = '<p>Referencia: <b>precio de contado ' + usd(ref.total) + '</b> (IVA incluido' + (tc ? ', dólar ' + fmt(tc) : '') + '). La última columna muestra si el plan te deja más o menos que cobrar todo de contado hoy.</p>';
+  h += '<table class="env" id="cf-table"><thead><tr><th>Forma de pago</th><th>Precios</th><th style="text-align:right">Total que paga el cliente</th><th style="text-align:right">En cheques</th><th style="text-align:right">Plazo prom.</th><th style="text-align:right">Costo de descontar</th><th style="text-align:right">Cobrás hoy</th><th style="text-align:right">vs. contado</th></tr></thead><tbody>';
+  planes.forEach(function(p, i){
+    var e = evalPlan(p.mode, p.tramos);
+    var dif = e.neto - ref.total, pctCosto = e.total ? e.costo / e.total * 100 : 0;
+    h += '<tr' + (p.actual ? ' style="background:#fff8e6"' : '') + '><td><b>' + esc(p.label) + '</b>' + (e.warnings.length ? '<div class="warn">' + esc(e.warnings[0]) + '</div>' : '') +
+      '<details><summary class="hint">ver pagos</summary><table class="env"><tbody>' +
+      e.pagos.map(function(g){ return '<tr><td>' + esc(g.desc) + '</td><td class="r">' + (g.dias == null ? 'transferencia' : g.dias + ' días') + '</td><td class="r">' + usd(g.monto) + '</td><td class="r">neto ' + usd(g.neto) + '</td></tr>'; }).join('') +
+      '</tbody></table></details></td>' +
+      '<td>' + (p.mode === 'financiado' ? 'financiado' : 'contado') + '</td>' +
+      '<td class="r">' + usd(e.total) + ars(e.total) + '</td>' +
+      '<td class="r">' + (e.enCheques ? usd(e.enCheques) : '—') + '</td>' +
+      '<td class="r">' + (e.enCheques ? fmt(e.plazoProm, 0) + ' días' : '—') + '</td>' +
+      '<td class="r" data-role="cf-costo">' + usd(e.costo) + '<br><small class="hint">' + fmtPct(pctCosto) + '% del total</small></td>' +
+      '<td class="r" data-role="cf-neto"><b>' + usd(e.neto) + '</b>' + ars(e.neto) + '</td>' +
+      '<td class="r" data-role="cf-dif" style="color:' + (dif < -0.005 ? '#b3261e' : '#1d6b33') + '"><b>' + (dif >= 0 ? '+' : '') + usd(dif) + '</b><br><small>' + (dif >= 0 ? '+' : '') + fmtPct(ref.total ? dif / ref.total * 100 : 0) + '%</small></td></tr>';
+  });
+  h += '</tbody></table>';
+  h += '<p class="hint">Se supone que negociás todos los cheques el mismo día en que los recibís, así que cobrás pesos hoy y el riesgo de suba del dólar no corre por tu cuenta. Los días se cuentan desde ese momento. Si cobrás una transferencia más adelante (por ejemplo "a la entrega"), acá no se le resta nada.</p>';
+  out.innerHTML = h;
+}
+['cf-tna', 'cf-com', 'cf-modo'].forEach(function(id){ $(id).addEventListener('input', renderCosto); $(id).addEventListener('change', renderCosto); });
 function showTab(t){
-  $('view-armador').hidden = t !== 'armador'; $('view-enviados').hidden = t !== 'enviados';
-  $('tab-armador').classList.toggle('active', t === 'armador'); $('tab-enviados').classList.toggle('active', t === 'enviados');
+  $('view-armador').hidden = t !== 'armador'; $('view-enviados').hidden = t !== 'enviados'; $('view-costo').hidden = t !== 'costo';
+  $('tab-armador').classList.toggle('active', t === 'armador'); $('tab-enviados').classList.toggle('active', t === 'enviados'); $('tab-costo').classList.toggle('active', t === 'costo');
   if (t === 'enviados') refreshEnviados();
+  if (t === 'costo') renderCosto();
 }
 $('tabs').addEventListener('click', function(e){ var b = e.target.closest('[data-tab]'); if (b) showTab(b.dataset.tab); });
 var toastTimer = null;
@@ -1932,6 +2010,7 @@ function getTotals(){
   };
 }
 window.armador = {
+  costoFinanciero: function(mode, preset){ var k = resolvePreset(preset); return evalPlan(mode, PRESETS[k].tramos.map(function(t){ return Object.assign({ pesos: 0 }, t); })); },
   catalog: CATALOG,
   presets: Object.keys(PRESETS),
   addItem: function(q, qty){
